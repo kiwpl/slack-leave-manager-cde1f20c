@@ -27,8 +27,8 @@ export default function MyRequestsPage() {
       .eq("employee_id", user.id)
       .order("submitted_at", { ascending: false });
 
-    if (typeFilter !== "all") query = query.eq("request_type", typeFilter);
-    if (statusFilter !== "all") query = query.eq("status", statusFilter);
+    if (typeFilter !== "all") query = query.eq("request_type", typeFilter as any);
+    if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
 
     query.then(({ data }) => {
       setRequests(data || []);

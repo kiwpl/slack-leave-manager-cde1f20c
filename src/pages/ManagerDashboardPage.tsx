@@ -22,7 +22,7 @@ export default function ManagerDashboardPage() {
       .select("*, profiles!time_off_requests_employee_id_fkey(full_name)")
       .order("submitted_at", { ascending: false });
 
-    if (statusFilter !== "all") query = query.eq("status", statusFilter);
+    if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
 
     query.then(({ data }) => {
       setRequests((data as any) || []);
