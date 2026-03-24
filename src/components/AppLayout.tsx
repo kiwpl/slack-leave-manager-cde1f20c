@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
-  Calendar, ClipboardList, Home, LogOut, Settings, Shield, Users, FileText, Activity
+  Calendar, ClipboardList, Home, LogOut, Settings, Shield, Users, FileText, Activity, User
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,7 @@ const navItems = [
   { to: "/", label: "Dashboard", icon: Home, roles: [] as string[] },
   { to: "/submit-request", label: "Submit Request", icon: Calendar, roles: [] as string[] },
   { to: "/my-requests", label: "My Requests", icon: ClipboardList, roles: [] as string[] },
+  { to: "/profile", label: "Profile", icon: User, roles: [] as string[] },
   { to: "/manager", label: "Manager View", icon: Users, roles: ["manager", "admin", "superadmin"] },
   { to: "/admin/settings", label: "Admin Settings", icon: Settings, roles: ["admin", "superadmin"] },
   { to: "/admin/users", label: "User Management", icon: Shield, roles: ["admin", "superadmin"] },
