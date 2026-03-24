@@ -65,9 +65,9 @@ export default function ProfileSettingsPage() {
         )}
 
         {hasSlackId && (
-          <Alert className="border-green-500/30 bg-green-500/5">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-700">
+          <Alert className="border-primary/30 bg-primary/5">
+            <CheckCircle className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-foreground">
               Slack user ID is set. You can submit requests.
             </AlertDescription>
           </Alert>
