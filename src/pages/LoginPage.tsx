@@ -1,41 +1,37 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { MessageSquare } from "lucide-react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [fullName, setFullName] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const [searchParams] = useSearchParams();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [redirecting, setRedirecting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-
-    if (isSignUp) {
-      const { error } = await signUp(email, password, fullName);
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success("Account created. Check your email for verification.");
-      }
-    } else {
-      const { error } = await signIn(email, password);
-      if (error) {
-        toast.error(error.message);
-      } else {
-        navigate("/");
-      }
+  // Show error from Slack OAuth redirect
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error) {
+      toast.error(error);
     }
-    setSubmitting(false);
+  }, [searchParams]);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!loading && user) {
+      navigate("/", { replace: true });
+    }
+  }, [user, loading, navigate]);
+
+  const handleSlackLogin = () => {
+    setRedirecting(true);
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const redirectUrl = `${window.location.origin}`;
+    window.location.href = `${supabaseUrl}/functions/v1/slack-auth?redirect=${encodeURIComponent(redirectUrl)}`;
   };
 
   return (
@@ -44,59 +40,23 @@ export default function LoginPage() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Time Off Manager</CardTitle>
           <CardDescription>
-            {isSignUp ? "Create your account" : "Sign in to manage your time off"}
+            Sign in with your Slack account to manage your time off
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {isSignUp && (
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="John Smith"
-                  required
-                />
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@company.com"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                minLength={6}
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? "Please wait..." : isSignUp ? "Create Account" : "Sign In"}
-            </Button>
-          </form>
-          <div className="mt-4 text-center">
-            <button
-              type="button"
-              className="text-sm text-primary hover:underline"
-              onClick={() => setIsSignUp(!isSignUp)}
-            >
-              {isSignUp ? "Already have an account? Sign in" : "Need an account? Sign up"}
-            </button>
-          </div>
+        <CardContent className="space-y-4">
+          <Button
+            className="w-full gap-2"
+            size="lg"
+            onClick={handleSlackLogin}
+            disabled={redirecting || loading}
+          >
+            <MessageSquare className="h-5 w-5" />
+            {redirecting ? "Redirecting to Slack..." : "Sign in with Slack"}
+          </Button>
+          <p className="text-xs text-center text-muted-foreground">
+            You must have an active employee account linked to your Slack identity.
+            Contact your admin if you need access.
+          </p>
         </CardContent>
       </Card>
     </div>
