@@ -157,6 +157,23 @@ export default function EditRequestPage() {
       details: { changes: updates },
     });
 
+    // Slack & calendar notifications
+    if (wasApproved && isVacation) {
+      // Remove calendar event since it's going back to pending
+      supabase.functions.invoke("sync-google-calendar", {
+        body: { request_id: id, action: "delete" },
+      });
+    }
+    supabase.functions.invoke("send-slack-notification", {
+      body: { request_id: id, notification_type: "edit_notification" },
+    });
+    if (request.status === "rejected" || (wasApproved && isVacation)) {
+      // Re-send approval request to managers
+      supabase.functions.invoke("send-slack-notification", {
+        body: { request_id: id, notification_type: "approval_request" },
+      });
+    }
+
     toast.success(
       wasApproved
         ? "Request updated and sent back for approval."
