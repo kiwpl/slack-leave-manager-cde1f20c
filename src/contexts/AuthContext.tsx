@@ -1,10 +1,20 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
-import type { Tables, Enums } from "@/integrations/supabase/types";
+import type { Enums } from "@/integrations/supabase/types";
 
-type Profile = Tables<"profiles">;
 type AppRole = Enums<"app_role">;
+
+interface Profile {
+  id: string;
+  full_name: string;
+  email: string;
+  slack_user_id: string | null;
+  status: Enums<"user_status">;
+  department: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -13,6 +23,8 @@ interface AuthContextType {
   roles: AppRole[];
   loading: boolean;
   signOut: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   hasRole: (role: AppRole) => boolean;
   hasAnyRole: (roles: AppRole[]) => boolean;
   isAdmin: boolean;
@@ -35,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .select("*")
       .eq("id", userId)
       .single();
-    setProfile(profileData);
+    setProfile(profileData as Profile | null);
 
     const { data: rolesData } = await supabase
       .from("user_roles")
@@ -75,6 +87,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error: error as Error | null };
+  };
+
+  const signUp = async (email: string, password: string, fullName: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName } },
+    });
+    return { error: error as Error | null };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -92,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user, session, profile, roles, loading,
-        signOut,
+        signOut, signIn, signUp,
         hasRole, hasAnyRole, isAdmin, isManager, refreshProfile,
       }}
     >
