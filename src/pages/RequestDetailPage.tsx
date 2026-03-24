@@ -87,6 +87,18 @@ export default function RequestDetailPage() {
       details: { reason: cancellationReason || "No reason provided" },
     });
 
+    // Delete calendar event if it was approved
+    if (request.status === "approved" && request.google_calendar_event_id) {
+      supabase.functions.invoke("sync-google-calendar", {
+        body: { request_id: id, action: "delete" },
+      });
+    }
+
+    // Notify via Slack
+    supabase.functions.invoke("send-slack-notification", {
+      body: { request_id: id, notification_type: "cancellation_notification" },
+    });
+
     toast.success("Request cancelled.");
     setCancelDialogOpen(false);
     fetchData();

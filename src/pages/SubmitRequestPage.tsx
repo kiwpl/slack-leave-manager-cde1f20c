@@ -94,6 +94,24 @@ export default function SubmitRequestPage() {
       details: { request_type: requestType },
     });
 
+    // Slack notifications (fire-and-forget)
+    if (isSickDay) {
+      supabase.functions.invoke("send-slack-notification", {
+        body: { request_id: data.id, notification_type: "auto_approved_notification" },
+      });
+      // Calendar sync for auto-approved sick days
+      supabase.functions.invoke("sync-google-calendar", {
+        body: { request_id: data.id, action: "create" },
+      });
+    } else {
+      supabase.functions.invoke("send-slack-notification", {
+        body: { request_id: data.id, notification_type: "submission_confirmation" },
+      });
+      supabase.functions.invoke("send-slack-notification", {
+        body: { request_id: data.id, notification_type: "approval_request" },
+      });
+    }
+
     toast.success(
       isSickDay
         ? "Sick day recorded and auto-approved."
