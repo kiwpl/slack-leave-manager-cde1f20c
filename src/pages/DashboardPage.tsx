@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { AlertCircle, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import RequestSummary from "@/components/RequestSummary";
 
 type Request = Tables<"time_off_requests">;
 
