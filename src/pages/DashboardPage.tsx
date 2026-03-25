@@ -162,21 +162,19 @@ export default function DashboardPage() {
   const displayedRequests = showAll ? requests : requests.slice(0, 5);
 
   const formatRequestDates = (req: Request) => {
-    const portion = req.day_portion;
+    const portion = req.day_portion as string;
+    const halfSuffix = portion === "am" ? " (last day morning)" : portion === "pm" ? " (last day afternoon)" : "";
     if (req.request_type === "vacation") {
-      if (portion === "am") return `Morning off · ${req.start_date}`;
-      if (portion === "pm") return `Afternoon off · ${req.start_date}`;
-      if (req.start_date === req.end_date) return req.start_date;
-      if (req.start_date && req.end_date && req.start_date !== req.end_date) {
-        const suffix = portion === "am" ? " (last day morning)" : portion === "pm" ? " (last day afternoon)" : "";
-        return `${req.start_date} → ${req.end_date}${suffix}`;
+      if (req.start_date === req.end_date || !req.end_date) {
+        if (portion === "am") return `Morning off · ${req.start_date}`;
+        if (portion === "pm") return `Afternoon off · ${req.start_date}`;
+        return req.start_date;
       }
-      return req.start_date;
+      return `${req.start_date} → ${req.end_date}${halfSuffix}`;
     }
     // sick
     if (req.start_date && req.end_date && req.start_date !== req.end_date) {
-      const suffix = portion === "am" ? " (last day morning)" : portion === "pm" ? " (last day afternoon)" : "";
-      return `${req.start_date} → ${req.end_date}${suffix}`;
+      return `${req.start_date} → ${req.end_date}${halfSuffix}`;
     }
     if (portion === "am") return `Morning · ${req.sick_date || req.start_date}`;
     if (portion === "pm") return `Afternoon · ${req.sick_date || req.start_date}`;
