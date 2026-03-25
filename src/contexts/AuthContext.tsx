@@ -112,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasRole = (role: AppRole) => roles.includes(role);
   const hasAnyRole = (r: AppRole[]) => r.some((role) => roles.includes(role));
   const isAdmin = hasAnyRole(["admin", "superadmin"]);
-  const isManager = hasAnyRole(["manager", "admin", "superadmin"]);
+  const isManager = hasAnyRole(["manager", "office_manager", "admin", "superadmin"]);
 
   return (
     <AuthContext.Provider
