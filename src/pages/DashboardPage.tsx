@@ -314,8 +314,18 @@ export default function DashboardPage() {
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {req.request_type === "vacation"
-                          ? `${req.start_date} → ${req.end_date}`
-                          : req.sick_date}
+                          ? (req as any).day_portion === "am"
+                            ? `Morning off · ${req.start_date}`
+                            : (req as any).day_portion === "pm"
+                              ? `Afternoon off · ${req.start_date}`
+                              : req.start_date === req.end_date
+                                ? req.start_date
+                                : `${req.start_date} → ${req.end_date}`
+                          : (req as any).day_portion === "am"
+                            ? `Morning · ${req.sick_date}`
+                            : (req as any).day_portion === "pm"
+                              ? `Afternoon · ${req.sick_date}`
+                              : req.sick_date}
                       </p>
                     </div>
                     <span className="text-xs text-muted-foreground">
