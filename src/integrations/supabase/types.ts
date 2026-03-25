@@ -340,7 +340,7 @@ export type Database = {
     }
     Enums: {
       actor_type: "staff" | "manager" | "admin" | "system"
-      app_role: "staff" | "manager" | "admin" | "superadmin"
+      app_role: "staff" | "manager" | "admin" | "superadmin" | "office_manager"
       approval_source: "manager" | "system_auto_approved"
       calendar_action_type: "create" | "update" | "delete" | "failed"
       request_status: "pending_approval" | "approved" | "rejected" | "cancelled"
@@ -483,7 +483,7 @@ export const Constants = {
   public: {
     Enums: {
       actor_type: ["staff", "manager", "admin", "system"],
-      app_role: ["staff", "manager", "admin", "superadmin"],
+      app_role: ["staff", "manager", "admin", "superadmin", "office_manager"],
       approval_source: ["manager", "system_auto_approved"],
       calendar_action_type: ["create", "update", "delete", "failed"],
       request_status: ["pending_approval", "approved", "rejected", "cancelled"],
