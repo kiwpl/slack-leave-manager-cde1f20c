@@ -208,19 +208,41 @@ export default function DashboardPage() {
                     {errors.requestType && <p className="text-sm text-destructive">{errors.requestType}</p>}
                   </div>
 
+                  {requestType && (
+                    <div className="space-y-2">
+                      <Label>Duration</Label>
+                      <Select value={dayPortion} onValueChange={(v) => setDayPortion(v as any)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="full">Full day</SelectItem>
+                          <SelectItem value="am">Morning only</SelectItem>
+                          <SelectItem value="pm">Afternoon only</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   {requestType === "vacation" && (
-                    <div className="grid grid-cols-2 gap-3">
+                    dayPortion === "full" ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label>Start</Label>
+                          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                          {errors.startDate && <p className="text-sm text-destructive">{errors.startDate}</p>}
+                        </div>
+                        <div className="space-y-2">
+                          <Label>End</Label>
+                          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                          {errors.endDate && <p className="text-sm text-destructive">{errors.endDate}</p>}
+                        </div>
+                      </div>
+                    ) : (
                       <div className="space-y-2">
-                        <Label>Start</Label>
+                        <Label>Date</Label>
                         <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                         {errors.startDate && <p className="text-sm text-destructive">{errors.startDate}</p>}
                       </div>
-                      <div className="space-y-2">
-                        <Label>End</Label>
-                        <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                        {errors.endDate && <p className="text-sm text-destructive">{errors.endDate}</p>}
-                      </div>
-                    </div>
+                    )
                   )}
 
                   {requestType === "sick" && (
@@ -229,6 +251,16 @@ export default function DashboardPage() {
                       <Input type="date" value={sickDate} onChange={(e) => setSickDate(e.target.value)} max={today} />
                       {errors.sickDate && <p className="text-sm text-destructive">{errors.sickDate}</p>}
                     </div>
+                  )}
+
+                  {requestType && (
+                    <RequestSummary
+                      requestType={requestType}
+                      startDate={startDate}
+                      endDate={endDate}
+                      sickDate={sickDate}
+                      dayPortion={dayPortion}
+                    />
                   )}
 
                   {requestType && (
