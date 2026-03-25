@@ -10,11 +10,8 @@ import SignupPage from "@/pages/SignupPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import DashboardPage from "@/pages/DashboardPage";
-import SubmitRequestPage from "@/pages/SubmitRequestPage";
-import MyRequestsPage from "@/pages/MyRequestsPage";
 import RequestDetailPage from "@/pages/RequestDetailPage";
 import EditRequestPage from "@/pages/EditRequestPage";
-import ProfileSettingsPage from "@/pages/ProfileSettingsPage";
 import ManagerDashboardPage from "@/pages/ManagerDashboardPage";
 import AdminSettingsPage from "@/pages/AdminSettingsPage";
 import UserManagementPage from "@/pages/UserManagementPage";
@@ -37,14 +34,11 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-            <Route path="/submit-request" element={<ProtectedRoute><SubmitRequestPage /></ProtectedRoute>} />
-            <Route path="/my-requests" element={<ProtectedRoute><MyRequestsPage /></ProtectedRoute>} />
             <Route path="/requests/:id" element={<ProtectedRoute><RequestDetailPage /></ProtectedRoute>} />
             <Route path="/requests/:id/edit" element={<ProtectedRoute><EditRequestPage /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><ProfileSettingsPage /></ProtectedRoute>} />
-            <Route path="/manager" element={<ProtectedRoute requiredRoles={["manager", "admin", "superadmin"]}><ManagerDashboardPage /></ProtectedRoute>} />
+            <Route path="/manager" element={<ProtectedRoute requiredRoles={["manager", "office_manager", "admin", "superadmin"]}><ManagerDashboardPage /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute requiredRoles={["admin", "superadmin"]}><AdminSettingsPage /></ProtectedRoute>} />
-            <Route path="/admin/users" element={<ProtectedRoute requiredRoles={["admin", "superadmin"]}><UserManagementPage /></ProtectedRoute>} />
+            <Route path="/admin/users" element={<ProtectedRoute requiredRoles={["admin", "superadmin", "office_manager"]}><UserManagementPage /></ProtectedRoute>} />
             <Route path="/admin/policy" element={<ProtectedRoute requiredRoles={["admin", "superadmin"]}><PolicyEditorPage /></ProtectedRoute>} />
             <Route path="/admin/audit-log" element={<ProtectedRoute requiredRoles={["admin", "superadmin"]}><AuditLogPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
