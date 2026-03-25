@@ -8,9 +8,19 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import type { Tables, Enums } from "@/integrations/supabase/types";
-import { KeyRound } from "lucide-react";
+import { KeyRound, Trash2 } from "lucide-react";
 
 type Profile = Tables<"profiles">;
 
@@ -29,6 +39,11 @@ export default function UserManagementPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [resetting, setResetting] = useState(false);
+
+  // Delete confirmation state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<UserWithRoles | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchUsers = async () => {
     const { data: profiles } = await supabase.from("profiles").select("*").order("full_name");
@@ -59,13 +74,6 @@ export default function UserManagementPage() {
   const updateSlackId = async (userId: string, slackId: string) => {
     await supabase.from("profiles").update({ slack_user_id: slackId }).eq("id", userId);
     toast.success("Slack ID updated");
-    fetchUsers();
-  };
-
-  const toggleStatus = async (userId: string, currentStatus: Enums<"user_status">) => {
-    const newStatus = currentStatus === "active" ? "inactive" : "active";
-    await supabase.from("profiles").update({ status: newStatus }).eq("id", userId);
-    toast.success(`User ${newStatus === "active" ? "activated" : "deactivated"}`);
     fetchUsers();
   };
 
@@ -114,6 +122,27 @@ export default function UserManagementPage() {
     setResetting(false);
   };
 
+  const openDeleteDialog = (u: UserWithRoles) => {
+    setDeleteTarget(u);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const { data, error } = await supabase.functions.invoke("admin-reset-password", {
+      body: { action: "delete-user", userId: deleteTarget.id },
+    });
+    if (error || data?.error) {
+      toast.error(data?.error || error?.message || "Failed to delete user");
+    } else {
+      toast.success(`${deleteTarget.full_name} has been deleted`);
+      setDeleteDialogOpen(false);
+      fetchUsers();
+    }
+    setDeleting(false);
+  };
+
   return (
     <AppLayout>
       <div className="max-w-5xl mx-auto space-y-6">
@@ -133,9 +162,6 @@ export default function UserManagementPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <p className="font-medium text-foreground">{u.full_name}</p>
-                        <Badge variant={u.status === "active" ? "default" : "secondary"}>
-                          {u.status}
-                        </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">{u.email}</p>
                       <div className="flex gap-1 mt-2">
@@ -177,20 +203,22 @@ export default function UserManagementPage() {
                         })}
                         <Button
                           size="sm"
-                          variant="ghost"
-                          className="text-xs h-7"
-                          onClick={() => toggleStatus(u.id, u.status)}
-                        >
-                          {u.status === "active" ? "Deactivate" : "Activate"}
-                        </Button>
-                        <Button
-                          size="sm"
                           variant="outline"
                           className="text-xs h-7"
                           onClick={() => openResetDialog(u)}
                         >
                           <KeyRound className="h-3 w-3 mr-1" />
                           Reset Password
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="text-xs h-7"
+                          onClick={() => openDeleteDialog(u)}
+                          disabled={u.id === user?.id}
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Delete
                         </Button>
                       </div>
                     </div>
@@ -276,6 +304,28 @@ export default function UserManagementPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete user account</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong>{deleteTarget?.full_name}</strong> ({deleteTarget?.email}) and all their data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }

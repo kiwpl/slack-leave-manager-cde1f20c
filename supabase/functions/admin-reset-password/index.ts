@@ -27,6 +27,45 @@ serve(async (req) => {
       });
     }
 
+    const { action, userId, email, password } = await req.json();
+
+    // Delete user requires admin or manager role
+    if (action === "delete-user") {
+      const { data: canDelete } = await supabase.rpc("has_any_role", {
+        _user_id: caller.id,
+        _roles: ["manager", "office_manager", "admin", "superadmin"],
+      });
+      if (!canDelete) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (!userId) {
+        return new Response(JSON.stringify({ error: "userId is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // Prevent self-deletion
+      if (userId === caller.id) {
+        return new Response(JSON.stringify({ error: "Cannot delete your own account" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // Delete profile and roles (cascade will handle related data)
+      await supabase.from("user_roles").delete().eq("user_id", userId);
+      await supabase.from("profiles").delete().eq("id", userId);
+      // Delete from auth.users
+      const { error } = await supabase.auth.admin.deleteUser(userId);
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true, message: "User deleted" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Other actions require admin role
     const { data: isAdmin } = await supabase.rpc("has_any_role", {
       _user_id: caller.id,
       _roles: ["admin", "superadmin"],
@@ -37,8 +76,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const { action, userId, email, password } = await req.json();
 
     if (action === "set-password" && userId && password) {
       const { error } = await supabase.auth.admin.updateUserById(userId, { password });
