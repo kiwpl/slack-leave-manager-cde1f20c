@@ -50,6 +50,11 @@ export default function LoginPage() {
             <Button type="submit" className="w-full" disabled={submitting || loading}>
               {submitting ? "Signing in..." : "Sign In"}
             </Button>
+            <div className="text-right">
+              <Link to="/forgot-password" className="text-sm text-primary underline">
+                Forgot password?
+              </Link>
+            </div>
           </form>
           <p className="text-sm text-center text-muted-foreground mt-4">
             Don't have an account?{" "}
