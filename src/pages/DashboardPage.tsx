@@ -64,9 +64,11 @@ export default function DashboardPage() {
     if (!requestType) newErrors.requestType = "Please select a request type.";
     if (requestType === "vacation") {
       if (!startDate) newErrors.startDate = "Start date is required.";
-      if (!endDate) newErrors.endDate = "End date is required.";
-      if (startDate && endDate && startDate > endDate) {
-        newErrors.endDate = "End date must be on or after start date.";
+      if (dayPortion === "full") {
+        if (!endDate) newErrors.endDate = "End date is required.";
+        if (startDate && endDate && startDate > endDate) {
+          newErrors.endDate = "End date must be on or after start date.";
+        }
       }
     }
     if (requestType === "sick") {
