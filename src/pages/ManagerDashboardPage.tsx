@@ -16,7 +16,8 @@ export default function ManagerDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("pending_approval");
 
-  useEffect(() => {
+  const fetchRequests = async () => {
+    setLoading(true);
     let query = supabase
       .from("time_off_requests")
       .select("*, profiles!time_off_requests_employee_id_fkey(full_name)")
@@ -24,10 +25,16 @@ export default function ManagerDashboardPage() {
 
     if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
 
-    query.then(({ data }) => {
-      setRequests((data as any) || []);
-      setLoading(false);
-    });
+    const { data, error } = await query;
+    if (error) {
+      console.error("Manager dashboard query error:", error);
+    }
+    setRequests((data as any) || []);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchRequests();
   }, [statusFilter]);
 
   return (
