@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import PolicyDisplay from "@/components/PolicyDisplay";
+import RequestSummary from "@/components/RequestSummary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,8 +23,9 @@ export default function SubmitRequestPage() {
   const [requestType, setRequestType] = useState<"vacation" | "sick" | "">("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [sickDate, setSickDate] = useState("");
   const [note, setNote] = useState("");
+  const [halfDay, setHalfDay] = useState(false);
+  const [halfDayPortion, setHalfDayPortion] = useState<"am" | "pm">("am");
   const [policyAcknowledged, setPolicyAcknowledged] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -34,18 +36,20 @@ export default function SubmitRequestPage() {
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!requestType) newErrors.requestType = "Please select a request type.";
+    if (!startDate) newErrors.startDate = "Start date is required.";
     if (requestType === "vacation") {
-      if (!startDate) newErrors.startDate = "Start date is required.";
       if (!endDate) newErrors.endDate = "End date is required.";
       if (startDate && endDate && startDate > endDate) {
         newErrors.endDate = "End date must be on or after start date.";
       }
     }
     if (requestType === "sick") {
-      if (!sickDate) {
-        newErrors.sickDate = "Sick date is required.";
-      } else if (sickDate > today) {
-        newErrors.sickDate = "Future sick days cannot be submitted. Please submit a vacation request or contact your manager.";
+      if (startDate && startDate > today) {
+        newErrors.startDate = "Future sick days cannot be submitted. Please submit a vacation request or contact your manager.";
+      }
+      const effectiveEnd = endDate || startDate;
+      if (effectiveEnd && effectiveEnd > today) {
+        newErrors.endDate = "Sick day end date cannot be in the future.";
       }
     }
     if (!policyAcknowledged) {
@@ -63,15 +67,18 @@ export default function SubmitRequestPage() {
     const isSickDay = requestType === "sick";
     const status = isSickDay ? "approved" : "pending_approval";
     const approvalSource = isSickDay ? "system_auto_approved" : null;
+    const dayPortion = halfDay ? halfDayPortion : "full";
+    const effectiveEnd = endDate || startDate;
 
     const { data, error } = await supabase.from("time_off_requests").insert({
       employee_id: user.id,
       request_type: requestType as "vacation" | "sick",
-      start_date: requestType === "vacation" ? startDate : null,
-      end_date: requestType === "vacation" ? endDate : null,
-      sick_date: requestType === "sick" ? sickDate : null,
+      start_date: startDate,
+      end_date: effectiveEnd,
+      sick_date: isSickDay ? startDate : null,
       note: note || null,
       status,
+      day_portion: dayPortion as any,
       approval_source: approvalSource,
       approved_at: isSickDay ? new Date().toISOString() : null,
     }).select().single();
@@ -106,16 +113,14 @@ export default function SubmitRequestPage() {
       });
     }
 
-    toast.success(
-      isSickDay
-        ? "Sick day recorded and auto-approved."
-        : "Vacation request submitted for approval."
-    );
+    toast.success(isSickDay ? "Sick day recorded and auto-approved." : "Vacation request submitted for approval.");
     navigate("/my-requests");
     setSubmitting(false);
   };
 
-  if (!hasSlackId) {
+  const dayPortion = halfDay ? halfDayPortion : "full";
+
+  if (!hasSlackId && profile) {
     return (
       <AppLayout>
         <div className="max-w-2xl mx-auto space-y-6">
@@ -126,8 +131,7 @@ export default function SubmitRequestPage() {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Please add your Slack user ID before submitting a request.{" "}
-              <Link to="/profile" className="underline font-medium">Go to Profile Settings</Link>
+              Your Slack ID is not set up. Please contact your <strong>Office Manager</strong> to get this configured before submitting requests.
             </AlertDescription>
           </Alert>
         </div>
@@ -163,50 +167,75 @@ export default function SubmitRequestPage() {
                 {errors.requestType && <p className="text-sm text-destructive">{errors.requestType}</p>}
               </div>
 
-              {requestType === "vacation" && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="startDate">Start Date</Label>
-                    <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                    {errors.startDate && <p className="text-sm text-destructive">{errors.startDate}</p>}
+              {requestType && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Start Date</Label>
+                      <Input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => {
+                          setStartDate(e.target.value);
+                          if (!endDate || endDate < e.target.value) setEndDate(e.target.value);
+                        }}
+                        max={requestType === "sick" ? today : undefined}
+                      />
+                      {errors.startDate && <p className="text-sm text-destructive">{errors.startDate}</p>}
+                    </div>
+                    <div className="space-y-2">
+                      <Label>End Date</Label>
+                      <Input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        min={startDate || undefined}
+                        max={requestType === "sick" ? today : undefined}
+                      />
+                      {errors.endDate && <p className="text-sm text-destructive">{errors.endDate}</p>}
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="endDate">End Date</Label>
-                    <Input id="endDate" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                    {errors.endDate && <p className="text-sm text-destructive">{errors.endDate}</p>}
+
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <Checkbox id="halfDay" checked={halfDay} onCheckedChange={(c) => setHalfDay(c === true)} />
+                      <Label htmlFor="halfDay" className="text-sm cursor-pointer">Half day on last day</Label>
+                    </div>
+                    {halfDay && (
+                      <Select value={halfDayPortion} onValueChange={(v) => setHalfDayPortion(v as "am" | "pm")}>
+                        <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="am">Morning only</SelectItem>
+                          <SelectItem value="pm">Afternoon only</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
-                </div>
-              )}
 
-              {requestType === "sick" && (
-                <div className="space-y-2">
-                  <Label htmlFor="sickDate">Sick Date</Label>
-                  <Input id="sickDate" type="date" value={sickDate} onChange={(e) => setSickDate(e.target.value)} max={today} />
-                  {errors.sickDate && <p className="text-sm text-destructive">{errors.sickDate}</p>}
-                </div>
-              )}
+                  <RequestSummary
+                    requestType={requestType}
+                    startDate={startDate}
+                    endDate={endDate}
+                    dayPortion={dayPortion}
+                  />
 
-              {requestType && (
-                <div className="space-y-2">
-                  <Label htmlFor="note">Note (optional)</Label>
-                  <Textarea id="note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Any additional details..." rows={3} />
-                </div>
-              )}
+                  <div className="space-y-2">
+                    <Label>Note (optional)</Label>
+                    <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Any additional details..." rows={3} />
+                  </div>
 
-              {requestType && (
-                <div className="flex items-start gap-3 p-4 rounded-lg border border-border bg-muted/50">
-                  <Checkbox id="policyAck" checked={policyAcknowledged} onCheckedChange={(checked) => setPolicyAcknowledged(checked === true)} />
-                  <Label htmlFor="policyAck" className="text-sm leading-snug cursor-pointer">
-                    I have read and understand the vacation and sick day policy
-                  </Label>
-                </div>
-              )}
-              {errors.policy && <p className="text-sm text-destructive">{errors.policy}</p>}
+                  <div className="flex items-start gap-3 p-4 rounded-lg border border-border bg-muted/50">
+                    <Checkbox id="policyAck" checked={policyAcknowledged} onCheckedChange={(checked) => setPolicyAcknowledged(checked === true)} />
+                    <Label htmlFor="policyAck" className="text-sm leading-snug cursor-pointer">
+                      I have read and understand the vacation and sick day policy
+                    </Label>
+                  </div>
+                  {errors.policy && <p className="text-sm text-destructive">{errors.policy}</p>}
 
-              {requestType && (
-                <Button type="submit" className="w-full" disabled={submitting}>
-                  {submitting ? "Submitting..." : "Submit Request"}
-                </Button>
+                  <Button type="submit" className="w-full" disabled={submitting}>
+                    {submitting ? "Submitting..." : "Submit Request"}
+                  </Button>
+                </>
               )}
             </form>
           </CardContent>

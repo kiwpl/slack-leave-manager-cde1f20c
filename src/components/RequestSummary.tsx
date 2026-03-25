@@ -1,10 +1,9 @@
-import { format, differenceInCalendarDays, parseISO } from "date-fns";
+import { format, parseISO, eachDayOfInterval, isWeekend } from "date-fns";
 
 interface RequestSummaryProps {
   requestType: "vacation" | "sick" | "";
   startDate: string;
   endDate: string;
-  sickDate: string;
   dayPortion: "full" | "am" | "pm";
 }
 
@@ -16,44 +15,72 @@ function formatDate(dateStr: string): string {
   }
 }
 
+function countBusinessDays(start: string, end: string): number {
+  try {
+    const days = eachDayOfInterval({ start: parseISO(start), end: parseISO(end) });
+    return days.filter((d) => !isWeekend(d)).length;
+  } catch {
+    return 0;
+  }
+}
+
+function formatDayCount(businessDays: number, isHalfDay: boolean): string {
+  const total = isHalfDay ? businessDays - 0.5 : businessDays;
+  if (total <= 0) return "";
+  if (total === 1) return "1 business day";
+  if (total % 1 === 0) return `${total} business days`;
+  return `${total} business days`;
+}
+
 export default function RequestSummary({
   requestType,
   startDate,
   endDate,
-  sickDate,
   dayPortion,
 }: RequestSummaryProps) {
+  const incomplete = "Please complete the form to see your request summary.";
+  const isHalfDay = dayPortion === "am" || dayPortion === "pm";
+  const halfLabel = dayPortion === "am" ? "morning" : "afternoon";
+
   const getSummary = (): string => {
-    if (!requestType) return "Please complete the form to see your request summary.";
+    if (!requestType) return incomplete;
 
     if (requestType === "vacation") {
-      if (dayPortion === "am" && startDate) {
-        return `You will take the morning off on ${formatDate(startDate)}.`;
+      if (!startDate || !endDate) return incomplete;
+      const biz = countBusinessDays(startDate, endDate);
+      if (biz === 0) return incomplete;
+
+      const sameDay = startDate === endDate;
+
+      if (sameDay && isHalfDay) {
+        return `You will take the ${halfLabel} off on ${formatDate(startDate)}.`;
       }
-      if (dayPortion === "pm" && startDate) {
-        return `You will take the afternoon off on ${formatDate(startDate)}.`;
+      if (sameDay) {
+        return `You will take 1 business day off on ${formatDate(startDate)}.`;
       }
-      if (!startDate || !endDate) return "Please complete the form to see your request summary.";
-      if (startDate === endDate) {
-        return `You will take 1 full day off on ${formatDate(startDate)}.`;
-      }
-      const days = differenceInCalendarDays(parseISO(endDate), parseISO(startDate)) + 1;
-      if (days < 1) return "Please complete the form to see your request summary.";
-      return `You will take vacation from ${formatDate(startDate)} to ${formatDate(endDate)} (${days} days).`;
+      const count = formatDayCount(biz, isHalfDay);
+      return `You will take vacation from ${formatDate(startDate)} to ${formatDate(endDate)} (${count}).`;
     }
 
     if (requestType === "sick") {
-      if (!sickDate) return "Please complete the form to see your request summary.";
-      if (dayPortion === "am") {
-        return `You were sick in the morning on ${formatDate(sickDate)}.`;
+      if (!startDate) return incomplete;
+      const end = endDate || startDate;
+      const biz = countBusinessDays(startDate, end);
+      if (biz === 0) return incomplete;
+
+      const sameDay = startDate === end;
+
+      if (sameDay && isHalfDay) {
+        return `You were sick in the ${halfLabel} on ${formatDate(startDate)}.`;
       }
-      if (dayPortion === "pm") {
-        return `You were sick in the afternoon on ${formatDate(sickDate)}.`;
+      if (sameDay) {
+        return `You were sick on ${formatDate(startDate)}.`;
       }
-      return `You were sick on ${formatDate(sickDate)}.`;
+      const count = formatDayCount(biz, isHalfDay);
+      return `You were sick from ${formatDate(startDate)} to ${formatDate(end)} (${count}).`;
     }
 
-    return "Please complete the form to see your request summary.";
+    return incomplete;
   };
 
   return (

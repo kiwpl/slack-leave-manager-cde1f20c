@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import PolicyDisplay from "@/components/PolicyDisplay";
 import StatusBadge from "@/components/StatusBadge";
+import RequestSummary from "@/components/RequestSummary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +18,6 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { AlertCircle, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
-import RequestSummary from "@/components/RequestSummary";
 
 type Request = Tables<"time_off_requests">;
 
@@ -32,9 +32,9 @@ export default function DashboardPage() {
   const [requestType, setRequestType] = useState<"vacation" | "sick" | "">("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [sickDate, setSickDate] = useState("");
   const [note, setNote] = useState("");
-  const [dayPortion, setDayPortion] = useState<"full" | "am" | "pm">("full");
+  const [halfDay, setHalfDay] = useState(false);
+  const [halfDayPortion, setHalfDayPortion] = useState<"am" | "pm">("am");
   const [policyAcknowledged, setPolicyAcknowledged] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -55,29 +55,30 @@ export default function DashboardPage() {
       });
   };
 
-  useEffect(() => {
-    fetchRequests();
-  }, [user]);
+  useEffect(() => { fetchRequests(); }, [user]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!requestType) newErrors.requestType = "Please select a request type.";
+    if (!startDate) newErrors.startDate = "Start date is required.";
+
     if (requestType === "vacation") {
-      if (!startDate) newErrors.startDate = "Start date is required.";
-      if (dayPortion === "full") {
-        if (!endDate) newErrors.endDate = "End date is required.";
-        if (startDate && endDate && startDate > endDate) {
-          newErrors.endDate = "End date must be on or after start date.";
-        }
+      if (!endDate) newErrors.endDate = "End date is required.";
+      if (startDate && endDate && startDate > endDate) {
+        newErrors.endDate = "End date must be on or after start date.";
       }
     }
+
     if (requestType === "sick") {
-      if (!sickDate) {
-        newErrors.sickDate = "Sick date is required.";
-      } else if (sickDate > today) {
-        newErrors.sickDate = "Future sick days cannot be submitted.";
+      if (startDate && startDate > today) {
+        newErrors.startDate = "Future sick days cannot be submitted. Please submit a vacation request or contact your manager.";
+      }
+      const effectiveEnd = endDate || startDate;
+      if (effectiveEnd && effectiveEnd > today) {
+        newErrors.endDate = "Sick day end date cannot be in the future.";
       }
     }
+
     if (!policyAcknowledged) {
       newErrors.policy = "You must acknowledge the policy before submitting.";
     }
@@ -89,9 +90,9 @@ export default function DashboardPage() {
     setRequestType("");
     setStartDate("");
     setEndDate("");
-    setSickDate("");
     setNote("");
-    setDayPortion("full");
+    setHalfDay(false);
+    setHalfDayPortion("am");
     setPolicyAcknowledged(false);
     setErrors({});
     setShowForm(false);
@@ -105,13 +106,15 @@ export default function DashboardPage() {
     const isSickDay = requestType === "sick";
     const status = isSickDay ? "approved" : "pending_approval";
     const approvalSource = isSickDay ? "system_auto_approved" : null;
+    const dayPortion = halfDay ? halfDayPortion : "full";
+    const effectiveEnd = endDate || startDate;
 
     const { data, error } = await supabase.from("time_off_requests").insert({
       employee_id: user.id,
       request_type: requestType as "vacation" | "sick",
-      start_date: requestType === "vacation" ? startDate : null,
-      end_date: requestType === "vacation" ? (dayPortion !== "full" ? startDate : endDate) : null,
-      sick_date: requestType === "sick" ? sickDate : null,
+      start_date: startDate,
+      end_date: effectiveEnd,
+      sick_date: isSickDay ? startDate : null,
       note: note || null,
       status,
       day_portion: dayPortion as any,
@@ -155,13 +158,34 @@ export default function DashboardPage() {
     setSubmitting(false);
   };
 
+  const dayPortion = halfDay ? halfDayPortion : "full";
   const displayedRequests = showAll ? requests : requests.slice(0, 5);
+
+  const formatRequestDates = (req: Request) => {
+    const portion = req.day_portion as string;
+    const halfSuffix = portion === "am" ? " (last day morning)" : portion === "pm" ? " (last day afternoon)" : "";
+    if (req.request_type === "vacation") {
+      if (req.start_date === req.end_date || !req.end_date) {
+        if (portion === "am") return `Morning off · ${req.start_date}`;
+        if (portion === "pm") return `Afternoon off · ${req.start_date}`;
+        return req.start_date;
+      }
+      return `${req.start_date} → ${req.end_date}${halfSuffix}`;
+    }
+    // sick
+    if (req.start_date && req.end_date && req.start_date !== req.end_date) {
+      return `${req.start_date} → ${req.end_date}${halfSuffix}`;
+    }
+    if (portion === "am") return `Morning · ${req.sick_date || req.start_date}`;
+    if (portion === "pm") return `Afternoon · ${req.sick_date || req.start_date}`;
+    return req.sick_date || req.start_date;
+  };
 
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto space-y-6">
-        {/* Slack ID warning */}
-        {!hasSlackId && (
+        {/* Slack ID warning — only when profile is loaded */}
+        {profile && !hasSlackId && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
@@ -170,25 +194,17 @@ export default function DashboardPage() {
           </Alert>
         )}
 
-        {/* New Request toggle */}
+        {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-foreground">Time Off</h1>
           {hasSlackId && (
-            <Button
-              onClick={() => setShowForm(!showForm)}
-              variant={showForm ? "outline" : "default"}
-              size="sm"
-            >
-              {showForm ? (
-                <>Cancel</>
-              ) : (
-                <><Plus className="h-4 w-4 mr-1" /> New Request</>
-              )}
+            <Button onClick={() => setShowForm(!showForm)} variant={showForm ? "outline" : "default"} size="sm">
+              {showForm ? <>Cancel</> : <><Plus className="h-4 w-4 mr-1" /> New Request</>}
             </Button>
           )}
         </div>
 
-        {/* Inline submit form */}
+        {/* Submit form */}
         {showForm && (
           <>
             <PolicyDisplay />
@@ -198,6 +214,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Type */}
                   <div className="space-y-2">
                     <Label>Type</Label>
                     <Select value={requestType} onValueChange={(v) => setRequestType(v as any)}>
@@ -211,66 +228,73 @@ export default function DashboardPage() {
                   </div>
 
                   {requestType && (
-                    <div className="space-y-2">
-                      <Label>Duration</Label>
-                      <Select value={dayPortion} onValueChange={(v) => setDayPortion(v as any)}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="full">Full day</SelectItem>
-                          <SelectItem value="am">Morning only</SelectItem>
-                          <SelectItem value="pm">Afternoon only</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {requestType === "vacation" && (
-                    dayPortion === "full" ? (
+                    <>
+                      {/* Dates */}
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-2">
-                          <Label>Start</Label>
-                          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                          <Label>Start Date</Label>
+                          <Input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => {
+                              setStartDate(e.target.value);
+                              if (!endDate || endDate < e.target.value) setEndDate(e.target.value);
+                            }}
+                            max={requestType === "sick" ? today : undefined}
+                          />
                           {errors.startDate && <p className="text-sm text-destructive">{errors.startDate}</p>}
                         </div>
                         <div className="space-y-2">
-                          <Label>End</Label>
-                          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                          <Label>End Date</Label>
+                          <Input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            min={startDate || undefined}
+                            max={requestType === "sick" ? today : undefined}
+                          />
                           {errors.endDate && <p className="text-sm text-destructive">{errors.endDate}</p>}
                         </div>
                       </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <Label>Date</Label>
-                        <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                        {errors.startDate && <p className="text-sm text-destructive">{errors.startDate}</p>}
+
+                      {/* Half day toggle */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            id="halfDay"
+                            checked={halfDay}
+                            onCheckedChange={(c) => setHalfDay(c === true)}
+                          />
+                          <Label htmlFor="halfDay" className="text-sm cursor-pointer">
+                            Half day on last day
+                          </Label>
+                        </div>
+                        {halfDay && (
+                          <Select value={halfDayPortion} onValueChange={(v) => setHalfDayPortion(v as "am" | "pm")}>
+                            <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="am">Morning only</SelectItem>
+                              <SelectItem value="pm">Afternoon only</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
                       </div>
-                    )
-                  )}
 
-                  {requestType === "sick" && (
-                    <div className="space-y-2">
-                      <Label>Date</Label>
-                      <Input type="date" value={sickDate} onChange={(e) => setSickDate(e.target.value)} max={today} />
-                      {errors.sickDate && <p className="text-sm text-destructive">{errors.sickDate}</p>}
-                    </div>
-                  )}
+                      {/* Summary */}
+                      <RequestSummary
+                        requestType={requestType}
+                        startDate={startDate}
+                        endDate={endDate}
+                        dayPortion={dayPortion}
+                      />
 
-                  {requestType && (
-                    <RequestSummary
-                      requestType={requestType}
-                      startDate={startDate}
-                      endDate={endDate}
-                      sickDate={sickDate}
-                      dayPortion={dayPortion}
-                    />
-                  )}
-
-                  {requestType && (
-                    <>
+                      {/* Note */}
                       <div className="space-y-2">
                         <Label>Note (optional)</Label>
                         <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Any details..." rows={2} />
                       </div>
+
+                      {/* Policy ack */}
                       <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/50">
                         <Checkbox id="policyAck" checked={policyAcknowledged} onCheckedChange={(c) => setPolicyAcknowledged(c === true)} />
                         <Label htmlFor="policyAck" className="text-sm leading-snug cursor-pointer">
@@ -278,6 +302,7 @@ export default function DashboardPage() {
                         </Label>
                       </div>
                       {errors.policy && <p className="text-sm text-destructive">{errors.policy}</p>}
+
                       <Button type="submit" className="w-full" disabled={submitting}>
                         {submitting ? "Submitting..." : "Submit"}
                       </Button>
@@ -314,21 +339,7 @@ export default function DashboardPage() {
                         </span>
                         <StatusBadge status={req.status} approvalSource={req.approval_source} />
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {req.request_type === "vacation"
-                          ? (req as any).day_portion === "am"
-                            ? `Morning off · ${req.start_date}`
-                            : (req as any).day_portion === "pm"
-                              ? `Afternoon off · ${req.start_date}`
-                              : req.start_date === req.end_date
-                                ? req.start_date
-                                : `${req.start_date} → ${req.end_date}`
-                          : (req as any).day_portion === "am"
-                            ? `Morning · ${req.sick_date}`
-                            : (req as any).day_portion === "pm"
-                              ? `Afternoon · ${req.sick_date}`
-                              : req.sick_date}
-                      </p>
+                      <p className="text-xs text-muted-foreground">{formatRequestDates(req)}</p>
                     </div>
                     <span className="text-xs text-muted-foreground">
                       {new Date(req.submitted_at).toLocaleDateString()}
@@ -336,17 +347,8 @@ export default function DashboardPage() {
                   </Link>
                 ))}
                 {requests.length > 5 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => setShowAll(!showAll)}
-                  >
-                    {showAll ? (
-                      <><ChevronUp className="h-4 w-4 mr-1" /> Show less</>
-                    ) : (
-                      <><ChevronDown className="h-4 w-4 mr-1" /> Show all {requests.length} requests</>
-                    )}
+                  <Button variant="ghost" size="sm" className="w-full" onClick={() => setShowAll(!showAll)}>
+                    {showAll ? <><ChevronUp className="h-4 w-4 mr-1" /> Show less</> : <><ChevronDown className="h-4 w-4 mr-1" /> Show all {requests.length} requests</>}
                   </Button>
                 )}
               </div>
