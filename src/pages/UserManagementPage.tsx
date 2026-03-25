@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import type { Tables, Enums } from "@/integrations/supabase/types";
-import { KeyRound, Trash2 } from "lucide-react";
+import { KeyRound, Trash2, UserPlus } from "lucide-react";
 
 type Profile = Tables<"profiles">;
 
@@ -33,22 +33,28 @@ export default function UserManagementPage() {
   const [users, setUsers] = useState<UserWithRoles[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Password reset dialog state
+  // Password reset dialog
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [resetTarget, setResetTarget] = useState<UserWithRoles | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [resetting, setResetting] = useState(false);
 
-  // Delete confirmation state
+  // Delete confirmation
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<UserWithRoles | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Add user dialog
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [addEmail, setAddEmail] = useState("");
+  const [addFullName, setAddFullName] = useState("");
+  const [addPassword, setAddPassword] = useState("");
+  const [adding, setAdding] = useState(false);
+
   const fetchUsers = async () => {
     const { data: profiles } = await supabase.from("profiles").select("*").order("full_name");
     const { data: roles } = await supabase.from("user_roles").select("*");
-
     if (profiles) {
       const usersWithRoles = profiles.map((p) => ({
         ...p,
@@ -77,6 +83,7 @@ export default function UserManagementPage() {
     fetchUsers();
   };
 
+  // Password reset
   const openResetDialog = (u: UserWithRoles) => {
     setResetTarget(u);
     setNewPassword("");
@@ -86,14 +93,8 @@ export default function UserManagementPage() {
 
   const handleSetPassword = async () => {
     if (!resetTarget) return;
-    if (newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters.");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      toast.error("Passwords do not match.");
-      return;
-    }
+    if (newPassword.length < 6) { toast.error("Password must be at least 6 characters."); return; }
+    if (newPassword !== confirmPassword) { toast.error("Passwords do not match."); return; }
     setResetting(true);
     const { data, error } = await supabase.functions.invoke("admin-reset-password", {
       body: { action: "set-password", userId: resetTarget.id, password: newPassword },
@@ -122,6 +123,7 @@ export default function UserManagementPage() {
     setResetting(false);
   };
 
+  // Delete user
   const openDeleteDialog = (u: UserWithRoles) => {
     setDeleteTarget(u);
     setDeleteDialogOpen(true);
@@ -143,12 +145,44 @@ export default function UserManagementPage() {
     setDeleting(false);
   };
 
+  // Add user
+  const handleAddUser = async () => {
+    if (!addEmail || !addFullName || !addPassword) {
+      toast.error("All fields are required.");
+      return;
+    }
+    if (addPassword.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+    setAdding(true);
+    const { data, error } = await supabase.functions.invoke("admin-reset-password", {
+      body: { action: "create-user", email: addEmail, fullName: addFullName, password: addPassword },
+    });
+    if (error || data?.error) {
+      toast.error(data?.error || error?.message || "Failed to create user");
+    } else {
+      toast.success(`${addFullName} has been added`);
+      setAddDialogOpen(false);
+      setAddEmail("");
+      setAddFullName("");
+      setAddPassword("");
+      fetchUsers();
+    }
+    setAdding(false);
+  };
+
   return (
     <AppLayout>
       <div className="max-w-5xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">User Management</h1>
-          <p className="text-muted-foreground">Manage users, roles, and Slack mappings</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">User Management</h1>
+            <p className="text-muted-foreground">Manage users, roles, and Slack mappings</p>
+          </div>
+          <Button onClick={() => setAddDialogOpen(true)} size="sm">
+            <UserPlus className="h-4 w-4 mr-1" /> Add User
+          </Button>
         </div>
 
         {loading ? (
@@ -160,15 +194,11 @@ export default function UserManagementPage() {
                 <CardContent className="pt-6">
                   <div className="flex flex-col md:flex-row md:items-center gap-4">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="font-medium text-foreground">{u.full_name}</p>
-                      </div>
+                      <p className="font-medium text-foreground">{u.full_name}</p>
                       <p className="text-sm text-muted-foreground">{u.email}</p>
                       <div className="flex gap-1 mt-2">
                         {u.roles.map((role) => (
-                          <Badge key={role} variant="outline" className="text-xs">
-                            {role}
-                          </Badge>
+                          <Badge key={role} variant="outline" className="text-xs">{role}</Badge>
                         ))}
                       </div>
                     </div>
@@ -190,35 +220,16 @@ export default function UserManagementPage() {
                         {(["manager", "admin"] as Enums<"app_role">[]).map((role) => {
                           const has = u.roles.includes(role);
                           return (
-                            <Button
-                              key={role}
-                              size="sm"
-                              variant={has ? "default" : "outline"}
-                              className="text-xs h-7"
-                              onClick={() => toggleRole(u.id, role, has)}
-                            >
+                            <Button key={role} size="sm" variant={has ? "default" : "outline"} className="text-xs h-7" onClick={() => toggleRole(u.id, role, has)}>
                               {has ? `✓ ${role}` : `+ ${role}`}
                             </Button>
                           );
                         })}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-xs h-7"
-                          onClick={() => openResetDialog(u)}
-                        >
-                          <KeyRound className="h-3 w-3 mr-1" />
-                          Reset Password
+                        <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => openResetDialog(u)}>
+                          <KeyRound className="h-3 w-3 mr-1" /> Reset Password
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="text-xs h-7"
-                          onClick={() => openDeleteDialog(u)}
-                          disabled={u.id === user?.id}
-                        >
-                          <Trash2 className="h-3 w-3 mr-1" />
-                          Delete
+                        <Button size="sm" variant="destructive" className="text-xs h-7" onClick={() => openDeleteDialog(u)} disabled={u.id === user?.id}>
+                          <Trash2 className="h-3 w-3 mr-1" /> Delete
                         </Button>
                       </div>
                     </div>
@@ -229,6 +240,36 @@ export default function UserManagementPage() {
           </div>
         )}
       </div>
+
+      {/* Add User Dialog */}
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+            <DialogDescription>Create a new user account. They will be assigned the staff role by default.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="addFullName">Full Name</Label>
+              <Input id="addFullName" value={addFullName} onChange={(e) => setAddFullName(e.target.value)} placeholder="John Smith" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="addEmail">Email</Label>
+              <Input id="addEmail" type="email" value={addEmail} onChange={(e) => setAddEmail(e.target.value)} placeholder="john@company.com" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="addPassword">Password</Label>
+              <Input id="addPassword" type="password" value={addPassword} onChange={(e) => setAddPassword(e.target.value)} placeholder="Min 6 characters" minLength={6} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAddDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddUser} disabled={adding}>
+              {adding ? "Creating..." : "Create User"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Password Reset Dialog */}
       <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
@@ -244,68 +285,35 @@ export default function UserManagementPage() {
               <h4 className="text-sm font-medium text-foreground">Option 1: Set a new password</h4>
               <div className="space-y-2">
                 <Label htmlFor="adminNewPassword" className="text-xs">New Password</Label>
-                <Input
-                  id="adminNewPassword"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Min 6 characters"
-                  minLength={6}
-                />
+                <Input id="adminNewPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Min 6 characters" minLength={6} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="adminConfirmPassword" className="text-xs">Confirm Password</Label>
-                <Input
-                  id="adminConfirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm password"
-                  minLength={6}
-                />
+                <Input id="adminConfirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm password" minLength={6} />
               </div>
-              <Button
-                onClick={handleSetPassword}
-                disabled={resetting || !newPassword}
-                className="w-full"
-                size="sm"
-              >
+              <Button onClick={handleSetPassword} disabled={resetting || !newPassword} className="w-full" size="sm">
                 {resetting ? "Setting..." : "Set Password"}
               </Button>
             </div>
             <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">or</span>
-              </div>
+              <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
+              <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">or</span></div>
             </div>
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-foreground">Option 2: Send reset email</h4>
-              <p className="text-xs text-muted-foreground">
-                Send a password reset link to the user's email address.
-              </p>
-              <Button
-                variant="outline"
-                onClick={handleSendResetEmail}
-                disabled={resetting}
-                className="w-full"
-                size="sm"
-              >
+              <p className="text-xs text-muted-foreground">Send a password reset link to the user's email address.</p>
+              <Button variant="outline" onClick={handleSendResetEmail} disabled={resetting} className="w-full" size="sm">
                 {resetting ? "Sending..." : "Send Reset Email"}
               </Button>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setResetDialogOpen(false)}>
-              Cancel
-            </Button>
+            <Button variant="ghost" onClick={() => setResetDialogOpen(false)}>Cancel</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -316,11 +324,7 @@ export default function UserManagementPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteUser}
-              disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
+            <AlertDialogAction onClick={handleDeleteUser} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {deleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
