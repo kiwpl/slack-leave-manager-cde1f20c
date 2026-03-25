@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
 
     const managerRoles = roles?.map((r) => r.role) || [];
     const isManagerOrAdmin = managerRoles.some((r) =>
-      ["manager", "admin", "superadmin"].includes(r)
+      ["manager", "office_manager", "admin", "superadmin"].includes(r)
     );
 
     if (!isManagerOrAdmin) {
