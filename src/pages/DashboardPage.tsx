@@ -108,10 +108,11 @@ export default function DashboardPage() {
       employee_id: user.id,
       request_type: requestType as "vacation" | "sick",
       start_date: requestType === "vacation" ? startDate : null,
-      end_date: requestType === "vacation" ? endDate : null,
+      end_date: requestType === "vacation" ? (dayPortion !== "full" ? startDate : endDate) : null,
       sick_date: requestType === "sick" ? sickDate : null,
       note: note || null,
       status,
+      day_portion: dayPortion as any,
       approval_source: approvalSource,
       approved_at: isSickDay ? new Date().toISOString() : null,
     }).select().single();
