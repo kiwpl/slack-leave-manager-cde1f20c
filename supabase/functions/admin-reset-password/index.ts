@@ -99,7 +99,11 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      // Clear all FK references before deleting auth user
       await supabase.from("user_roles").delete().eq("user_id", userId);
+      await supabase.from("audit_logs").update({ actor_id: null }).eq("actor_id", userId);
+      await supabase.from("vacation_policy").update({ updated_by_user_id: null }).eq("updated_by_user_id", userId);
+      await supabase.from("time_off_requests").delete().eq("employee_id", userId);
       await supabase.from("profiles").delete().eq("id", userId);
       const { error } = await supabase.auth.admin.deleteUser(userId);
       if (error) throw error;
