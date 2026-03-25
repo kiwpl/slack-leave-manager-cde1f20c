@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Tables } from "@/integrations/supabase/types";
 
-type Request = Tables<"time_off_requests"> & { profiles?: { full_name: string } };
+type Request = Tables<"time_off_requests"> & { employee_name?: string };
 
 export default function ManagerDashboardPage() {
   const { user } = useAuth();
@@ -20,7 +20,7 @@ export default function ManagerDashboardPage() {
     setLoading(true);
     let query = supabase
       .from("time_off_requests")
-      .select("*, profiles!time_off_requests_employee_id_fkey(full_name)")
+      .select("*")
       .order("submitted_at", { ascending: false });
 
     if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
@@ -28,8 +28,22 @@ export default function ManagerDashboardPage() {
     const { data, error } = await query;
     if (error) {
       console.error("Manager dashboard query error:", error);
+      setRequests([]);
+      setLoading(false);
+      return;
     }
-    setRequests((data as any) || []);
+
+    // Fetch employee names separately
+    const employeeIds = [...new Set((data || []).map((r) => r.employee_id))];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", employeeIds);
+
+    const nameMap = new Map((profiles || []).map((p) => [p.id, p.full_name]));
+    setRequests(
+      (data || []).map((r) => ({ ...r, employee_name: nameMap.get(r.employee_id) || "Unknown" }))
+    );
     setLoading(false);
   };
 
