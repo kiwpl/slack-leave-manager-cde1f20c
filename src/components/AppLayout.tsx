@@ -2,18 +2,15 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
-  Calendar, ClipboardList, Home, LogOut, Settings, Shield, Users, FileText, Activity, User
+  Home, LogOut, Settings, Shield, Users, FileText, Activity
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { to: "/", label: "Dashboard", icon: Home, roles: [] as string[] },
-  { to: "/submit-request", label: "Submit Request", icon: Calendar, roles: [] as string[] },
-  { to: "/my-requests", label: "My Requests", icon: ClipboardList, roles: [] as string[] },
-  { to: "/profile", label: "Profile", icon: User, roles: [] as string[] },
-  { to: "/manager", label: "Manager View", icon: Users, roles: ["manager", "admin", "superadmin"] },
+  { to: "/", label: "Time Off", icon: Home, roles: [] as string[] },
+  { to: "/manager", label: "Manager View", icon: Users, roles: ["manager", "office_manager", "admin", "superadmin"] },
   { to: "/admin/settings", label: "Admin Settings", icon: Settings, roles: ["admin", "superadmin"] },
-  { to: "/admin/users", label: "User Management", icon: Shield, roles: ["admin", "superadmin"] },
+  { to: "/admin/users", label: "User Management", icon: Shield, roles: ["admin", "superadmin", "office_manager"] },
   { to: "/admin/policy", label: "Policy Editor", icon: FileText, roles: ["admin", "superadmin"] },
   { to: "/admin/audit-log", label: "Audit Log", icon: Activity, roles: ["admin", "superadmin"] },
 ];
@@ -30,13 +27,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-background">
       {/* Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-r border-border bg-card">
-        <div className="p-6 border-b border-border">
+      <aside className="hidden md:flex w-56 flex-col border-r border-border bg-card">
+        <div className="p-5 border-b border-border">
           <h1 className="text-lg font-bold text-foreground">Time Off Manager</h1>
-          <p className="text-xs text-muted-foreground mt-1">Internal HR Tool</p>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-3 space-y-1">
           {visibleItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.to;
@@ -65,7 +61,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate text-foreground">{profile?.full_name}</p>
-              <p className="text-xs text-muted-foreground truncate">{roles.join(", ")}</p>
             </div>
           </div>
           <Button
@@ -90,27 +85,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Mobile nav */}
-        <nav className="md:hidden flex overflow-x-auto border-b border-border bg-card px-2 gap-1">
-          {visibleItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.to;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition-colors",
-                  isActive
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+        {visibleItems.length > 1 && (
+          <nav className="md:hidden flex overflow-x-auto border-b border-border bg-card px-2 gap-1">
+            {visibleItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.to;
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition-colors",
+                    isActive
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
 
         <main className="flex-1 p-4 md:p-8 overflow-auto">
           {children}
