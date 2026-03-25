@@ -34,6 +34,7 @@ export default function DashboardPage() {
   const [endDate, setEndDate] = useState("");
   const [sickDate, setSickDate] = useState("");
   const [note, setNote] = useState("");
+  const [dayPortion, setDayPortion] = useState<"full" | "am" | "pm">("full");
   const [policyAcknowledged, setPolicyAcknowledged] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
