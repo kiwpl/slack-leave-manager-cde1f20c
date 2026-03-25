@@ -89,6 +89,7 @@ export default function DashboardPage() {
     setEndDate("");
     setSickDate("");
     setNote("");
+    setDayPortion("full");
     setPolicyAcknowledged(false);
     setErrors({});
     setShowForm(false);
