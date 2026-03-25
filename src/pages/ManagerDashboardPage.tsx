@@ -91,7 +91,7 @@ export default function ManagerDashboardPage() {
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-medium text-foreground">
-                          {(req as any).profiles?.full_name || "Unknown"}
+                          {req.employee_name || "Unknown"}
                         </span>
                         <span className="text-sm text-muted-foreground capitalize">
                           · {req.request_type === "vacation" ? "Vacation" : "Sick Day"}
