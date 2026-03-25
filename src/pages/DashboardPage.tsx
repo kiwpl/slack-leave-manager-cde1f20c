@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { AlertCircle, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import RequestSummary from "@/components/RequestSummary";
 
 type Request = Tables<"time_off_requests">;
 
@@ -33,6 +34,7 @@ export default function DashboardPage() {
   const [endDate, setEndDate] = useState("");
   const [sickDate, setSickDate] = useState("");
   const [note, setNote] = useState("");
+  const [dayPortion, setDayPortion] = useState<"full" | "am" | "pm">("full");
   const [policyAcknowledged, setPolicyAcknowledged] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -62,9 +64,11 @@ export default function DashboardPage() {
     if (!requestType) newErrors.requestType = "Please select a request type.";
     if (requestType === "vacation") {
       if (!startDate) newErrors.startDate = "Start date is required.";
-      if (!endDate) newErrors.endDate = "End date is required.";
-      if (startDate && endDate && startDate > endDate) {
-        newErrors.endDate = "End date must be on or after start date.";
+      if (dayPortion === "full") {
+        if (!endDate) newErrors.endDate = "End date is required.";
+        if (startDate && endDate && startDate > endDate) {
+          newErrors.endDate = "End date must be on or after start date.";
+        }
       }
     }
     if (requestType === "sick") {
@@ -87,6 +91,7 @@ export default function DashboardPage() {
     setEndDate("");
     setSickDate("");
     setNote("");
+    setDayPortion("full");
     setPolicyAcknowledged(false);
     setErrors({});
     setShowForm(false);
@@ -105,10 +110,11 @@ export default function DashboardPage() {
       employee_id: user.id,
       request_type: requestType as "vacation" | "sick",
       start_date: requestType === "vacation" ? startDate : null,
-      end_date: requestType === "vacation" ? endDate : null,
+      end_date: requestType === "vacation" ? (dayPortion !== "full" ? startDate : endDate) : null,
       sick_date: requestType === "sick" ? sickDate : null,
       note: note || null,
       status,
+      day_portion: dayPortion as any,
       approval_source: approvalSource,
       approved_at: isSickDay ? new Date().toISOString() : null,
     }).select().single();
@@ -204,19 +210,41 @@ export default function DashboardPage() {
                     {errors.requestType && <p className="text-sm text-destructive">{errors.requestType}</p>}
                   </div>
 
+                  {requestType && (
+                    <div className="space-y-2">
+                      <Label>Duration</Label>
+                      <Select value={dayPortion} onValueChange={(v) => setDayPortion(v as any)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="full">Full day</SelectItem>
+                          <SelectItem value="am">Morning only</SelectItem>
+                          <SelectItem value="pm">Afternoon only</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   {requestType === "vacation" && (
-                    <div className="grid grid-cols-2 gap-3">
+                    dayPortion === "full" ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label>Start</Label>
+                          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                          {errors.startDate && <p className="text-sm text-destructive">{errors.startDate}</p>}
+                        </div>
+                        <div className="space-y-2">
+                          <Label>End</Label>
+                          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                          {errors.endDate && <p className="text-sm text-destructive">{errors.endDate}</p>}
+                        </div>
+                      </div>
+                    ) : (
                       <div className="space-y-2">
-                        <Label>Start</Label>
+                        <Label>Date</Label>
                         <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                         {errors.startDate && <p className="text-sm text-destructive">{errors.startDate}</p>}
                       </div>
-                      <div className="space-y-2">
-                        <Label>End</Label>
-                        <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                        {errors.endDate && <p className="text-sm text-destructive">{errors.endDate}</p>}
-                      </div>
-                    </div>
+                    )
                   )}
 
                   {requestType === "sick" && (
@@ -225,6 +253,16 @@ export default function DashboardPage() {
                       <Input type="date" value={sickDate} onChange={(e) => setSickDate(e.target.value)} max={today} />
                       {errors.sickDate && <p className="text-sm text-destructive">{errors.sickDate}</p>}
                     </div>
+                  )}
+
+                  {requestType && (
+                    <RequestSummary
+                      requestType={requestType}
+                      startDate={startDate}
+                      endDate={endDate}
+                      sickDate={sickDate}
+                      dayPortion={dayPortion}
+                    />
                   )}
 
                   {requestType && (
@@ -278,8 +316,18 @@ export default function DashboardPage() {
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {req.request_type === "vacation"
-                          ? `${req.start_date} → ${req.end_date}`
-                          : req.sick_date}
+                          ? (req as any).day_portion === "am"
+                            ? `Morning off · ${req.start_date}`
+                            : (req as any).day_portion === "pm"
+                              ? `Afternoon off · ${req.start_date}`
+                              : req.start_date === req.end_date
+                                ? req.start_date
+                                : `${req.start_date} → ${req.end_date}`
+                          : (req as any).day_portion === "am"
+                            ? `Morning · ${req.sick_date}`
+                            : (req as any).day_portion === "pm"
+                              ? `Afternoon · ${req.sick_date}`
+                              : req.sick_date}
                       </p>
                     </div>
                     <span className="text-xs text-muted-foreground">
