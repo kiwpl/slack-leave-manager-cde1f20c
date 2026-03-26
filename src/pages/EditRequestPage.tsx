@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,6 +46,7 @@ export default function EditRequestPage() {
           setEndDate(data.end_date || "");
           setSickDate(data.sick_date || "");
           setNote(data.note || "");
+          setStartHalfDay(data.start_day_portion === "pm");
         }
         setLoading(false);
       });
@@ -101,8 +103,10 @@ export default function EditRequestPage() {
 
     setSubmitting(true);
 
+    const startPortion = startHalfDay ? "pm" : "full";
     const updates: any = {
       note: note || null,
+      start_day_portion: startPortion,
       last_edited_at: new Date().toISOString(),
       last_edited_by_user_id: user.id,
     };
