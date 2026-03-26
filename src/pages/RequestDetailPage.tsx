@@ -55,6 +55,8 @@ export default function RequestDetailPage() {
 
   const canRemind = request && user && request.employee_id === user.id && request.status === "pending_approval";
 
+  const needsCancelReason = request?.status === "approved" && request?.request_type === "vacation";
+
   const handleReminder = async () => {
     if (!request || !user || !id) return;
     setSendingReminder(true);
