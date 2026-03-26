@@ -66,6 +66,7 @@ export default function DashboardPage() {
       if (startDate && endDate && startDate > endDate) {
         newErrors.endDate = "End date must be on or after start date.";
       }
+      if (!note.trim()) newErrors.note = "Please provide a reason for your vacation request.";
     }
 
     if (requestType === "sick") {
@@ -282,10 +283,11 @@ export default function DashboardPage() {
                         ) : null;
                       })()}
 
-                      {/* Note */}
+                      {/* Note / Reason */}
                       <div className="space-y-2">
-                        <Label>Note (optional)</Label>
-                        <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Any details..." rows={2} />
+                        <Label>{requestType === "vacation" ? "Reason" : "Note (optional)"}</Label>
+                        <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder={requestType === "vacation" ? "Please provide a reason for your request..." : "Any details..."} rows={2} />
+                        {errors.note && <p className="text-sm text-destructive">{errors.note}</p>}
                       </div>
 
                       {/* Policy ack */}
