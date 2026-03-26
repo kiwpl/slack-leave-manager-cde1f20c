@@ -16,7 +16,7 @@ function formatDate(dateStr: string): string {
   }
 }
 
-function countBusinessDays(start: string, end: string): number {
+export function countBusinessDays(start: string, end: string): number {
   try {
     const days = eachDayOfInterval({ start: parseISO(start), end: parseISO(end) });
     return days.filter((d) => !isWeekend(d)).length;
@@ -25,7 +25,7 @@ function countBusinessDays(start: string, end: string): number {
   }
 }
 
-function calcTotal(businessDays: number, startPortion: string, endPortion: string, sameDay: boolean): number {
+export function calcTotal(businessDays: number, startPortion: string, endPortion: string, sameDay: boolean): number {
   let total = businessDays;
   if (sameDay) {
     // For same day, either portion being half makes it 0.5

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import PolicyDisplay from "@/components/PolicyDisplay";
-import RequestSummary from "@/components/RequestSummary";
+import RequestSummary, { countBusinessDays, calcTotal } from "@/components/RequestSummary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle } from "lucide-react";
 
 export default function SubmitRequestPage() {
   const { user, profile } = useAuth();
@@ -241,6 +241,21 @@ export default function SubmitRequestPage() {
                     startDayPortion={startHalfDay ? startHalfDayPortion : "full"}
                     endDayPortion={endHalfDay ? endHalfDayPortion : "full"}
                   />
+
+                  {requestType === "vacation" && startDate && endDate && (() => {
+                    const biz = countBusinessDays(startDate, endDate);
+                    const sPortion = startHalfDay ? startHalfDayPortion : "full";
+                    const ePortion = endHalfDay ? endHalfDayPortion : "full";
+                    const total = calcTotal(biz, sPortion, ePortion, startDate === endDate);
+                    return total > 10 ? (
+                      <Alert className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20">
+                        <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                        <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                          This request exceeds 10 business days and will require <strong>special approval</strong> from management.
+                        </AlertDescription>
+                      </Alert>
+                    ) : null;
+                  })()}
 
                   <div className="space-y-2">
                     <Label>Note (optional)</Label>

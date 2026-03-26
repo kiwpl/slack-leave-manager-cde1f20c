@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import PolicyDisplay from "@/components/PolicyDisplay";
 import StatusBadge from "@/components/StatusBadge";
-import RequestSummary from "@/components/RequestSummary";
+import RequestSummary, { countBusinessDays, calcTotal } from "@/components/RequestSummary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +16,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { AlertCircle, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { AlertCircle, AlertTriangle, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Request = Tables<"time_off_requests">;
@@ -308,6 +308,19 @@ export default function DashboardPage() {
                         startDayPortion={startDayPortion}
                         endDayPortion={endDayPortion}
                       />
+
+                      {requestType === "vacation" && startDate && endDate && (() => {
+                        const biz = countBusinessDays(startDate, endDate);
+                        const total = calcTotal(biz, startDayPortion, endDayPortion, startDate === endDate);
+                        return total > 10 ? (
+                          <Alert className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20">
+                            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                            <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                              This request exceeds 10 business days and will require <strong>special approval</strong> from management.
+                            </AlertDescription>
+                          </Alert>
+                        ) : null;
+                      })()}
 
                       {/* Note */}
                       <div className="space-y-2">
