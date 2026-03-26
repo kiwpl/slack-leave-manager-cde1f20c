@@ -233,6 +233,13 @@ export default function EditRequestPage() {
                 </div>
               )}
 
+              {!isApprovedSickDay && (
+                <div className="flex items-center gap-3">
+                  <Checkbox id="editStartHalfDay" checked={startHalfDay} onCheckedChange={(c) => setStartHalfDay(c === true)} />
+                  <Label htmlFor="editStartHalfDay" className="text-sm cursor-pointer">Half day on first day (afternoon off)</Label>
+                </div>
+              )}
+
               {request.request_type === "sick" && !isApprovedSickDay && (
                 <div className="space-y-2">
                   <Label>Sick Date</Label>
