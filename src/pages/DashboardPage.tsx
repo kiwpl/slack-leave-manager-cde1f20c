@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import PolicyDisplay from "@/components/PolicyDisplay";
 import StatusBadge from "@/components/StatusBadge";
-import RequestSummary from "@/components/RequestSummary";
+import RequestSummary, { countBusinessDays, calcTotal } from "@/components/RequestSummary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +16,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { AlertCircle, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { AlertCircle, AlertTriangle, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Request = Tables<"time_off_requests">;
