@@ -41,6 +41,7 @@ export default function SubmitRequestPage() {
       if (startDate && endDate && startDate > endDate) {
         newErrors.endDate = "End date must be on or after start date.";
       }
+      if (!note.trim()) newErrors.note = "Please provide a reason for your vacation request.";
     }
     if (requestType === "sick") {
       if (startDate && startDate > today) {
@@ -223,8 +224,9 @@ export default function SubmitRequestPage() {
                   })()}
 
                   <div className="space-y-2">
-                    <Label>Note (optional)</Label>
-                    <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Any additional details..." rows={3} />
+                    <Label>{requestType === "vacation" ? "Reason" : "Note (optional)"}</Label>
+                    <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder={requestType === "vacation" ? "Please provide a reason for your request..." : "Any additional details..."} rows={3} />
+                    {errors.note && <p className="text-sm text-destructive">{errors.note}</p>}
                   </div>
 
                   <div className="flex items-start gap-3 p-4 rounded-lg border border-border bg-muted/50">
