@@ -267,7 +267,7 @@ Deno.serve(async (req) => {
       }
 
       case "approval_reminder": {
-        // Send reminder to all managers
+        // Send reminder to all managers with approve/reject buttons
         const { data: reminderManagerRoles } = await supabase
           .from("user_roles")
           .select("user_id")
@@ -286,6 +286,35 @@ Deno.serve(async (req) => {
             messages.push({
               slackUserId: mgr.slack_user_id,
               text: `🔔 *Reminder:* ${employee.full_name}'s ${typeLabel} request (${dateRange}) is still pending your approval.`,
+              blocks: [
+                {
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text: `🔔 *Reminder: Pending ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${request.note ? `\n*Note:* ${request.note}` : ""}`,
+                  },
+                },
+                {
+                  type: "actions",
+                  block_id: `approval_${request_id}`,
+                  elements: [
+                    {
+                      type: "button",
+                      text: { type: "plain_text", text: "✅ Approve" },
+                      style: "primary",
+                      action_id: "approve_request",
+                      value: request_id,
+                    },
+                    {
+                      type: "button",
+                      text: { type: "plain_text", text: "❌ Reject" },
+                      style: "danger",
+                      action_id: "reject_request",
+                      value: request_id,
+                    },
+                  ],
+                },
+              ],
               messageType: "approval_request",
             });
           }
