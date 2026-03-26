@@ -24,6 +24,7 @@ export default function EditRequestPage() {
   const [endDate, setEndDate] = useState("");
   const [sickDate, setSickDate] = useState("");
   const [note, setNote] = useState("");
+  const [startHalfDay, setStartHalfDay] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});

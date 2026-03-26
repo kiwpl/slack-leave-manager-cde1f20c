@@ -188,13 +188,18 @@ export default function RequestDetailPage() {
                 <>
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wider">Dates</p>
-                    <p className="font-medium text-foreground">{request.start_date} → {request.end_date}</p>
+                    <p className="font-medium text-foreground">
+                      {request.start_date}{request.start_day_portion === "pm" ? " (afternoon)" : ""} → {request.end_date}
+                    </p>
                   </div>
                 </>
               ) : (
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Sick Date</p>
-                  <p className="font-medium text-foreground">{request.sick_date}</p>
+                  <p className="font-medium text-foreground">
+                    {request.sick_date || request.start_date}{request.start_day_portion === "pm" ? " (afternoon)" : ""}
+                    {request.end_date && request.end_date !== (request.sick_date || request.start_date) ? ` → ${request.end_date}` : ""}
+                  </p>
                 </div>
               )}
               <div>
