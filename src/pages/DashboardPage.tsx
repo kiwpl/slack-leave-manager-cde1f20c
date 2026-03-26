@@ -33,8 +33,10 @@ export default function DashboardPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [note, setNote] = useState("");
-  const [halfDay, setHalfDay] = useState(false);
-  const [halfDayPortion, setHalfDayPortion] = useState<"am" | "pm">("am");
+  const [startHalfDay, setStartHalfDay] = useState(false);
+  const [startHalfDayPortion, setStartHalfDayPortion] = useState<"am" | "pm">("am");
+  const [endHalfDay, setEndHalfDay] = useState(false);
+  const [endHalfDayPortion, setEndHalfDayPortion] = useState<"am" | "pm">("am");
   const [policyAcknowledged, setPolicyAcknowledged] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -91,8 +93,10 @@ export default function DashboardPage() {
     setStartDate("");
     setEndDate("");
     setNote("");
-    setHalfDay(false);
-    setHalfDayPortion("am");
+    setStartHalfDay(false);
+    setStartHalfDayPortion("am");
+    setEndHalfDay(false);
+    setEndHalfDayPortion("am");
     setPolicyAcknowledged(false);
     setErrors({});
     setShowForm(false);
@@ -106,7 +110,8 @@ export default function DashboardPage() {
     const isSickDay = requestType === "sick";
     const status = isSickDay ? "approved" : "pending_approval";
     const approvalSource = isSickDay ? "system_auto_approved" : null;
-    const dayPortion = halfDay ? halfDayPortion : "full";
+    const startPortion = startHalfDay ? startHalfDayPortion : "full";
+    const endPortion = endHalfDay ? endHalfDayPortion : "full";
     const effectiveEnd = endDate || startDate;
 
     const { data, error } = await supabase.from("time_off_requests").insert({
@@ -117,7 +122,9 @@ export default function DashboardPage() {
       sick_date: isSickDay ? startDate : null,
       note: note || null,
       status,
-      day_portion: dayPortion as any,
+      day_portion: endPortion as any,
+      start_day_portion: startPortion as any,
+      end_day_portion: endPortion as any,
       approval_source: approvalSource,
       approved_at: isSickDay ? new Date().toISOString() : null,
     }).select().single();
@@ -158,26 +165,29 @@ export default function DashboardPage() {
     setSubmitting(false);
   };
 
-  const dayPortion = halfDay ? halfDayPortion : "full";
+  const startDayPortion = startHalfDay ? startHalfDayPortion : "full";
+  const endDayPortion = endHalfDay ? endHalfDayPortion : "full";
   const displayedRequests = showAll ? requests : requests.slice(0, 5);
 
   const formatRequestDates = (req: Request) => {
-    const portion = req.day_portion as string;
-    const halfSuffix = portion === "am" ? " (last day morning)" : portion === "pm" ? " (last day afternoon)" : "";
+    const startP = (req as any).start_day_portion || "full";
+    const endP = (req as any).end_day_portion || req.day_portion || "full";
+    const startSuffix = startP === "am" ? " (morning)" : startP === "pm" ? " (afternoon)" : "";
+    const endSuffix = endP === "am" ? " (morning)" : endP === "pm" ? " (afternoon)" : "";
+
     if (req.request_type === "vacation") {
       if (req.start_date === req.end_date || !req.end_date) {
-        if (portion === "am") return `Morning off · ${req.start_date}`;
-        if (portion === "pm") return `Afternoon off · ${req.start_date}`;
+        if (startP === "am" || endP === "am") return `Morning off · ${req.start_date}`;
+        if (startP === "pm" || endP === "pm") return `Afternoon off · ${req.start_date}`;
         return req.start_date;
       }
-      return `${req.start_date} → ${req.end_date}${halfSuffix}`;
+      return `${req.start_date}${startSuffix} → ${req.end_date}${endSuffix}`;
     }
-    // sick
     if (req.start_date && req.end_date && req.start_date !== req.end_date) {
-      return `${req.start_date} → ${req.end_date}${halfSuffix}`;
+      return `${req.start_date}${startSuffix} → ${req.end_date}${endSuffix}`;
     }
-    if (portion === "am") return `Morning · ${req.sick_date || req.start_date}`;
-    if (portion === "pm") return `Afternoon · ${req.sick_date || req.start_date}`;
+    if (startP === "am" || endP === "am") return `Morning · ${req.sick_date || req.start_date}`;
+    if (startP === "pm" || endP === "pm") return `Afternoon · ${req.sick_date || req.start_date}`;
     return req.sick_date || req.start_date;
   };
 
@@ -257,20 +267,30 @@ export default function DashboardPage() {
                         </div>
                       </div>
 
-                      {/* Half day toggle */}
+                      {/* Half day toggles */}
                       <div className="space-y-3">
                         <div className="flex items-center gap-3">
-                          <Checkbox
-                            id="halfDay"
-                            checked={halfDay}
-                            onCheckedChange={(c) => setHalfDay(c === true)}
-                          />
-                          <Label htmlFor="halfDay" className="text-sm cursor-pointer">
-                            Half day on last day
-                          </Label>
+                          <Checkbox id="startHalfDay" checked={startHalfDay} onCheckedChange={(c) => setStartHalfDay(c === true)} />
+                          <Label htmlFor="startHalfDay" className="text-sm cursor-pointer">Half day on first day</Label>
                         </div>
-                        {halfDay && (
-                          <Select value={halfDayPortion} onValueChange={(v) => setHalfDayPortion(v as "am" | "pm")}>
+                        {startHalfDay && (
+                          <Select value={startHalfDayPortion} onValueChange={(v) => setStartHalfDayPortion(v as "am" | "pm")}>
+                            <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="am">Morning only</SelectItem>
+                              <SelectItem value="pm">Afternoon only</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <Checkbox id="endHalfDay" checked={endHalfDay} onCheckedChange={(c) => setEndHalfDay(c === true)} />
+                          <Label htmlFor="endHalfDay" className="text-sm cursor-pointer">Half day on last day</Label>
+                        </div>
+                        {endHalfDay && (
+                          <Select value={endHalfDayPortion} onValueChange={(v) => setEndHalfDayPortion(v as "am" | "pm")}>
                             <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
                             <SelectContent>
                               <SelectItem value="am">Morning only</SelectItem>
@@ -285,7 +305,8 @@ export default function DashboardPage() {
                         requestType={requestType}
                         startDate={startDate}
                         endDate={endDate}
-                        dayPortion={dayPortion}
+                        startDayPortion={startDayPortion}
+                        endDayPortion={endDayPortion}
                       />
 
                       {/* Note */}

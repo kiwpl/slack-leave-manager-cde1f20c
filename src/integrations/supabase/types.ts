@@ -197,6 +197,7 @@ export type Database = {
           day_portion: Database["public"]["Enums"]["day_portion"]
           employee_id: string
           end_date: string | null
+          end_day_portion: Database["public"]["Enums"]["day_portion"]
           google_calendar_event_id: string | null
           id: string
           last_edited_at: string | null
@@ -208,6 +209,7 @@ export type Database = {
           request_type: Database["public"]["Enums"]["request_type"]
           sick_date: string | null
           start_date: string | null
+          start_day_portion: Database["public"]["Enums"]["day_portion"]
           status: Database["public"]["Enums"]["request_status"]
           submitted_at: string
           updated_at: string
@@ -225,6 +227,7 @@ export type Database = {
           day_portion?: Database["public"]["Enums"]["day_portion"]
           employee_id: string
           end_date?: string | null
+          end_day_portion?: Database["public"]["Enums"]["day_portion"]
           google_calendar_event_id?: string | null
           id?: string
           last_edited_at?: string | null
@@ -236,6 +239,7 @@ export type Database = {
           request_type: Database["public"]["Enums"]["request_type"]
           sick_date?: string | null
           start_date?: string | null
+          start_day_portion?: Database["public"]["Enums"]["day_portion"]
           status?: Database["public"]["Enums"]["request_status"]
           submitted_at?: string
           updated_at?: string
@@ -253,6 +257,7 @@ export type Database = {
           day_portion?: Database["public"]["Enums"]["day_portion"]
           employee_id?: string
           end_date?: string | null
+          end_day_portion?: Database["public"]["Enums"]["day_portion"]
           google_calendar_event_id?: string | null
           id?: string
           last_edited_at?: string | null
@@ -264,6 +269,7 @@ export type Database = {
           request_type?: Database["public"]["Enums"]["request_type"]
           sick_date?: string | null
           start_date?: string | null
+          start_day_portion?: Database["public"]["Enums"]["day_portion"]
           status?: Database["public"]["Enums"]["request_status"]
           submitted_at?: string
           updated_at?: string
