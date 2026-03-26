@@ -24,8 +24,10 @@ export default function SubmitRequestPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [note, setNote] = useState("");
-  const [halfDay, setHalfDay] = useState(false);
-  const [halfDayPortion, setHalfDayPortion] = useState<"am" | "pm">("am");
+  const [startHalfDay, setStartHalfDay] = useState(false);
+  const [startHalfDayPortion, setStartHalfDayPortion] = useState<"am" | "pm">("am");
+  const [endHalfDay, setEndHalfDay] = useState(false);
+  const [endHalfDayPortion, setEndHalfDayPortion] = useState<"am" | "pm">("am");
   const [policyAcknowledged, setPolicyAcknowledged] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -67,7 +69,8 @@ export default function SubmitRequestPage() {
     const isSickDay = requestType === "sick";
     const status = isSickDay ? "approved" : "pending_approval";
     const approvalSource = isSickDay ? "system_auto_approved" : null;
-    const dayPortion = halfDay ? halfDayPortion : "full";
+    const startPortion = startHalfDay ? startHalfDayPortion : "full";
+    const endPortion = endHalfDay ? endHalfDayPortion : "full";
     const effectiveEnd = endDate || startDate;
 
     const { data, error } = await supabase.from("time_off_requests").insert({
@@ -78,7 +81,9 @@ export default function SubmitRequestPage() {
       sick_date: isSickDay ? startDate : null,
       note: note || null,
       status,
-      day_portion: dayPortion as any,
+      day_portion: endPortion as any,
+      start_day_portion: startPortion as any,
+      end_day_portion: endPortion as any,
       approval_source: approvalSource,
       approved_at: isSickDay ? new Date().toISOString() : null,
     }).select().single();
@@ -118,7 +123,8 @@ export default function SubmitRequestPage() {
     setSubmitting(false);
   };
 
-  const dayPortion = halfDay ? halfDayPortion : "full";
+  const startDayPortion = startHalfDay ? startHalfDayPortion : "full";
+  const endDayPortion = endHalfDay ? endHalfDayPortion : "full";
 
   if (!hasSlackId && profile) {
     return (
@@ -198,11 +204,27 @@ export default function SubmitRequestPage() {
 
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
-                      <Checkbox id="halfDay" checked={halfDay} onCheckedChange={(c) => setHalfDay(c === true)} />
-                      <Label htmlFor="halfDay" className="text-sm cursor-pointer">Half day on last day</Label>
+                      <Checkbox id="startHalfDay" checked={startHalfDay} onCheckedChange={(c) => setStartHalfDay(c === true)} />
+                      <Label htmlFor="startHalfDay" className="text-sm cursor-pointer">Half day on first day</Label>
                     </div>
-                    {halfDay && (
-                      <Select value={halfDayPortion} onValueChange={(v) => setHalfDayPortion(v as "am" | "pm")}>
+                    {startHalfDay && (
+                      <Select value={startHalfDayPortion} onValueChange={(v) => setStartHalfDayPortion(v as "am" | "pm")}>
+                        <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="am">Morning only</SelectItem>
+                          <SelectItem value="pm">Afternoon only</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <Checkbox id="endHalfDay" checked={endHalfDay} onCheckedChange={(c) => setEndHalfDay(c === true)} />
+                      <Label htmlFor="endHalfDay" className="text-sm cursor-pointer">Half day on last day</Label>
+                    </div>
+                    {endHalfDay && (
+                      <Select value={endHalfDayPortion} onValueChange={(v) => setEndHalfDayPortion(v as "am" | "pm")}>
                         <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="am">Morning only</SelectItem>
@@ -216,7 +238,8 @@ export default function SubmitRequestPage() {
                     requestType={requestType}
                     startDate={startDate}
                     endDate={endDate}
-                    dayPortion={dayPortion}
+                    startDayPortion={startHalfDay ? startHalfDayPortion : "full"}
+                    endDayPortion={endHalfDay ? endHalfDayPortion : "full"}
                   />
 
                   <div className="space-y-2">
