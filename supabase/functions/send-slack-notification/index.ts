@@ -15,7 +15,8 @@ interface NotificationPayload {
     | "rejection_notification"
     | "edit_notification"
     | "cancellation_notification"
-    | "auto_approved_notification";
+    | "auto_approved_notification"
+    | "approval_reminder";
   extra?: Record<string, string>;
 }
 
@@ -261,6 +262,33 @@ Deno.serve(async (req) => {
             text: `✅ Your ${typeLabel} (${dateRange}) has been auto-approved.`,
             messageType: "auto_approved_notification",
           });
+        }
+        break;
+      }
+
+      case "approval_reminder": {
+        // Send reminder to all managers
+        const { data: reminderManagerRoles } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .in("role", ["manager", "admin", "superadmin"]);
+
+        if (reminderManagerRoles) {
+          const reminderManagerIds = [...new Set(reminderManagerRoles.map((r) => r.user_id))];
+          const { data: reminderManagers } = await supabase
+            .from("profiles")
+            .select("id, slack_user_id")
+            .in("id", reminderManagerIds)
+            .eq("status", "active");
+
+          for (const mgr of reminderManagers || []) {
+            if (!mgr.slack_user_id) continue;
+            messages.push({
+              slackUserId: mgr.slack_user_id,
+              text: `🔔 *Reminder:* ${employee.full_name}'s ${typeLabel} request (${dateRange}) is still pending your approval.`,
+              messageType: "approval_request",
+            });
+          }
         }
         break;
       }
