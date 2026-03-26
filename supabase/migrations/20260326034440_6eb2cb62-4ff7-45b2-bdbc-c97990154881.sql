@@ -1,0 +1,1 @@
+UPDATE profiles SET status = 'active' WHERE email = 'kelvin@prelook.com';
