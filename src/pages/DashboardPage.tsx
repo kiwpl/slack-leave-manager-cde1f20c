@@ -309,6 +309,19 @@ export default function DashboardPage() {
                         endDayPortion={endDayPortion}
                       />
 
+                      {requestType === "vacation" && startDate && endDate && (() => {
+                        const biz = countBusinessDays(startDate, endDate);
+                        const total = calcTotal(biz, startDayPortion, endDayPortion, startDate === endDate);
+                        return total > 10 ? (
+                          <Alert className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20">
+                            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                            <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                              This request exceeds 10 business days and will require <strong>special approval</strong> from management.
+                            </AlertDescription>
+                          </Alert>
+                        ) : null;
+                      })()}
+
                       {/* Note */}
                       <div className="space-y-2">
                         <Label>Note (optional)</Label>

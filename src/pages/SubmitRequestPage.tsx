@@ -242,6 +242,21 @@ export default function SubmitRequestPage() {
                     endDayPortion={endHalfDay ? endHalfDayPortion : "full"}
                   />
 
+                  {requestType === "vacation" && startDate && endDate && (() => {
+                    const biz = countBusinessDays(startDate, endDate);
+                    const sPortion = startHalfDay ? startHalfDayPortion : "full";
+                    const ePortion = endHalfDay ? endHalfDayPortion : "full";
+                    const total = calcTotal(biz, sPortion, ePortion, startDate === endDate);
+                    return total > 10 ? (
+                      <Alert className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20">
+                        <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                        <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                          This request exceeds 10 business days and will require <strong>special approval</strong> from management.
+                        </AlertDescription>
+                      </Alert>
+                    ) : null;
+                  })()}
+
                   <div className="space-y-2">
                     <Label>Note (optional)</Label>
                     <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Any additional details..." rows={3} />
