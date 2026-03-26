@@ -12,7 +12,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { ArrowLeft, Calendar, Edit, Trash2 } from "lucide-react";
+import { ArrowLeft, Bell, Calendar, Edit, Trash2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Request = Tables<"time_off_requests">;
@@ -28,6 +28,7 @@ export default function RequestDetailPage() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
+  const [sendingReminder, setSendingReminder] = useState(false);
 
   const fetchData = async () => {
     if (!id) return;
@@ -43,6 +44,39 @@ export default function RequestDetailPage() {
   useEffect(() => { fetchData(); }, [id]);
 
   const canEdit = request && user && request.employee_id === user.id && (
+    request.status === "pending_approval" ||
+    request.status === "approved" ||
+    request.status === "rejected"
+  );
+
+  const canCancel = request && user && request.employee_id === user.id && (
+    request.status === "pending_approval" || request.status === "approved"
+  );
+
+  const canRemind = request && user && request.employee_id === user.id && request.status === "pending_approval";
+
+  const handleReminder = async () => {
+    if (!request || !user || !id) return;
+    setSendingReminder(true);
+    try {
+      const { error } = await supabase.functions.invoke("send-slack-notification", {
+        body: { request_id: id, notification_type: "approval_reminder" },
+      });
+      if (error) throw error;
+      await supabase.from("audit_logs").insert({
+        request_id: id,
+        action_type: "reminder_sent",
+        actor_type: "staff" as const,
+        actor_id: user.id,
+        details: {},
+      });
+      toast.success("Reminder sent to managers.");
+      fetchData();
+    } catch {
+      toast.error("Failed to send reminder.");
+    }
+    setSendingReminder(false);
+  };
     request.status === "pending_approval" ||
     request.status === "approved" ||
     request.status === "rejected"
@@ -203,8 +237,14 @@ export default function RequestDetailPage() {
         </Card>
 
         {/* Actions */}
-        {(canEdit || canCancel) && (
+        {(canEdit || canCancel || canRemind) && (
           <div className="flex gap-3">
+            {canRemind && (
+              <Button variant="outline" onClick={handleReminder} disabled={sendingReminder}>
+                <Bell className="h-4 w-4 mr-2" />
+                {sendingReminder ? "Sending..." : "Remind Manager"}
+              </Button>
+            )}
             {canEdit && (
               <Button variant="outline" asChild>
                 <Link to={`/requests/${request.id}/edit`}>
