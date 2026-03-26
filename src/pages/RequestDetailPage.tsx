@@ -77,10 +77,6 @@ export default function RequestDetailPage() {
     }
     setSendingReminder(false);
   };
-    request.status === "pending_approval" ||
-    request.status === "approved" ||
-    request.status === "rejected"
-  );
 
   const canCancel = request && user && request.employee_id === user.id && (
     request.status === "pending_approval" || request.status === "approved"
