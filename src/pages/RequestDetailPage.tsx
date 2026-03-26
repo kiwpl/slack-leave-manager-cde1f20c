@@ -78,11 +78,6 @@ export default function RequestDetailPage() {
     setSendingReminder(false);
   };
 
-  const canCancel = request && user && request.employee_id === user.id && (
-    request.status === "pending_approval" || request.status === "approved"
-  );
-
-  const needsCancelReason = request?.status === "approved" && request?.request_type === "vacation";
 
   const handleCancel = async () => {
     if (!request || !user || !id) return;
