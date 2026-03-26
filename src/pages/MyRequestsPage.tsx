@@ -100,8 +100,8 @@ export default function MyRequestsPage() {
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {req.request_type === "vacation"
-                          ? `${req.start_date} → ${req.end_date}`
-                          : req.sick_date}
+                          ? `${req.start_date}${req.start_day_portion === "pm" ? " (afternoon)" : ""} → ${req.end_date}`
+                          : `${req.sick_date || req.start_date}${req.start_day_portion === "pm" ? " (afternoon)" : ""}`}
                         {req.note && ` · ${req.note.substring(0, 50)}${req.note.length > 50 ? "..." : ""}`}
                       </p>
                     </div>
