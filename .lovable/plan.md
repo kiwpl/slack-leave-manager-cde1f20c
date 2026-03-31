@@ -1,29 +1,17 @@
 
 
-# Store Slack Secrets and Deploy Edge Functions
+## Update Slack Notification Emojis
 
-## What needs to happen
+**Change**: Replace `🎉` (celebration) with `✅` (check mark) for approval notifications, and `⛔` (stop sign) with `❌` (cross mark) for rejection notifications.
 
-1. **Add two secrets** to the backend using the `add_secret` tool:
-   - `SLACK_BOT_TOKEN` — the Bot User OAuth Token (`xoxb-...`)
-   - `SLACK_SIGNING_SECRET` — the signing secret for verifying Slack requests
+### File: `supabase/functions/send-slack-notification/index.ts`
 
-2. **Deploy all four edge functions** that depend on these secrets:
-   - `send-slack-notification`
-   - `slack-approval-handler`
-   - `slack-events`
-   - `sync-google-calendar`
+| Notification | Current Emoji | New Emoji |
+|---|---|---|
+| `approval_notification` | 🎉 | ✅ |
+| `rejection_notification` | ⛔ | ❌ |
 
-3. **Test the Slack events endpoint** by calling it to confirm it responds correctly (this is the URL Slack will verify when you enable Event Subscriptions).
+All other notification emojis (📋, ⏰, 📨, etc.) remain unchanged.
 
-4. **Security recommendation**: After secrets are stored, rotate both the Bot Token and Signing Secret in your Slack app settings since they were shared in plain text in this chat.
-
-## After implementation
-
-- Slack notifications will fire when requests are submitted
-- Managers will receive interactive approval buttons in Slack DMs
-- The `slack-events` endpoint will respond to Slack's URL verification challenge
-
-## Still needed later
-- `GOOGLE_SERVICE_ACCOUNT_JSON` secret for Google Calendar sync
+Redeploy the `send-slack-notification` edge function after the update.
 
