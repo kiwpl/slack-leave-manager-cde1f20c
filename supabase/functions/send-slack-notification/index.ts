@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
           const reason = extra?.rejection_reason || request.rejection_reason || "No reason provided";
           messages.push({
             slackUserId: employee.slack_user_id,
-            text: `❌ Your ${typeLabel} request (${dateRange}) has been rejected. Reason: ${reason}`,
+            text: `❌ *Your ${typeLabel} Request Was Rejected*\nDate(s): ${dateRange}\nReason: ${reason}`,
             messageType: "rejection_notification",
           });
         }
