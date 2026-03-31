@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
         if (employee.slack_user_id) {
           messages.push({
             slackUserId: employee.slack_user_id,
-            text: `✅ Your ${typeLabel} request (${dateRange}) has been approved!`,
+            text: `✅ *Your ${typeLabel} Has Been Approved!*\nDate(s): ${dateRange}`,
             messageType: "approval_notification",
           });
         }
