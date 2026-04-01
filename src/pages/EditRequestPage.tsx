@@ -255,13 +255,14 @@ export default function EditRequestPage() {
               )}
 
               <div className="space-y-2">
-                <Label>Note</Label>
+                <Label>{isVacation ? "Reason" : "Note"}</Label>
                 <Textarea
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="Any additional details..."
+                  placeholder={isVacation ? "Please provide a reason for your request..." : "Any additional details..."}
                   rows={3}
                 />
+                {errors.note && <p className="text-sm text-destructive">{errors.note}</p>}
               </div>
 
               <div className="flex gap-3">
