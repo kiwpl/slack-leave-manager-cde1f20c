@@ -13,6 +13,7 @@ import DashboardPage from "@/pages/DashboardPage";
 import RequestDetailPage from "@/pages/RequestDetailPage";
 import EditRequestPage from "@/pages/EditRequestPage";
 import ManagerDashboardPage from "@/pages/ManagerDashboardPage";
+import ManagerSubmitRequestPage from "@/pages/ManagerSubmitRequestPage";
 import AdminSettingsPage from "@/pages/AdminSettingsPage";
 import UserManagementPage from "@/pages/UserManagementPage";
 import PolicyEditorPage from "@/pages/PolicyEditorPage";
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/requests/:id" element={<ProtectedRoute><RequestDetailPage /></ProtectedRoute>} />
             <Route path="/requests/:id/edit" element={<ProtectedRoute><EditRequestPage /></ProtectedRoute>} />
             <Route path="/manager" element={<ProtectedRoute requiredRoles={["manager", "office_manager", "admin", "superadmin"]}><ManagerDashboardPage /></ProtectedRoute>} />
+            <Route path="/manager/submit-for-staff" element={<ProtectedRoute requiredRoles={["manager", "office_manager", "admin", "superadmin"]}><ManagerSubmitRequestPage /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute requiredRoles={["admin", "superadmin"]}><AdminSettingsPage /></ProtectedRoute>} />
             <Route path="/admin/users" element={<ProtectedRoute requiredRoles={["admin", "superadmin", "office_manager"]}><UserManagementPage /></ProtectedRoute>} />
             <Route path="/admin/policy" element={<ProtectedRoute requiredRoles={["admin", "superadmin"]}><PolicyEditorPage /></ProtectedRoute>} />

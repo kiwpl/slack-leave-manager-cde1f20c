@@ -1,17 +1,20 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import StatusBadge from "@/components/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { UserPlus } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Request = Tables<"time_off_requests"> & { employee_name?: string };
 
 export default function ManagerDashboardPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("pending_approval");
@@ -55,8 +58,16 @@ export default function ManagerDashboardPage() {
     <AppLayout>
       <div className="max-w-5xl mx-auto space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Manager Dashboard</h1>
-          <p className="text-muted-foreground">Review team time off requests (approvals happen in Slack)</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Manager Dashboard</h1>
+              <p className="text-muted-foreground">Review team time off requests (approvals happen in Slack)</p>
+            </div>
+            <Button onClick={() => navigate("/manager/submit-for-staff")} className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              Submit for Staff
+            </Button>
+          </div>
         </div>
 
         <div className="flex gap-3">
