@@ -85,6 +85,7 @@ export default function EditRequestPage() {
       if (startDate && endDate && startDate > endDate) {
         newErrors.endDate = "End date must be on or after start date.";
       }
+      if (!note.trim()) newErrors.note = "Please provide a reason for your vacation request.";
     }
 
     if (request.request_type === "sick" && !isApprovedSickDay) {
