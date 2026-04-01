@@ -6,12 +6,15 @@ import AppLayout from "@/components/AppLayout";
 import StatusBadge from "@/components/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { UserPlus } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Request = Tables<"time_off_requests"> & { employee_name?: string };
 
 export default function ManagerDashboardPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("pending_approval");
