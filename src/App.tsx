@@ -13,6 +13,7 @@ import DashboardPage from "@/pages/DashboardPage";
 import RequestDetailPage from "@/pages/RequestDetailPage";
 import EditRequestPage from "@/pages/EditRequestPage";
 import ManagerDashboardPage from "@/pages/ManagerDashboardPage";
+import ManagerSubmitRequestPage from "@/pages/ManagerSubmitRequestPage";
 import AdminSettingsPage from "@/pages/AdminSettingsPage";
 import UserManagementPage from "@/pages/UserManagementPage";
 import PolicyEditorPage from "@/pages/PolicyEditorPage";
