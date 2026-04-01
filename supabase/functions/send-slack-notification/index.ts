@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
         if (employee.slack_user_id) {
           messages.push({
             slackUserId: employee.slack_user_id,
-            text: `✅ *Your ${typeLabel} Has Been Approved!*\nDate(s): ${dateRange}`,
+            text: `*Your ${typeLabel} Has Been Approved!* ✅\nDate(s): ${dateRange}`,
             messageType: "approval_notification",
           });
         }
@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
           const reason = extra?.rejection_reason || request.rejection_reason || "No reason provided";
           messages.push({
             slackUserId: employee.slack_user_id,
-            text: `❌ *Your ${typeLabel} Request Was Rejected*\nDate(s): ${dateRange}\nReason: ${reason}`,
+            text: `*Your ${typeLabel} Request Was Rejected* ❌\nDate(s): ${dateRange}\nReason: ${reason}`,
             messageType: "rejection_notification",
           });
         }
