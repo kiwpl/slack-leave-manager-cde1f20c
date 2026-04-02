@@ -348,6 +348,7 @@ export default function DashboardPage() {
                           {req.request_type === "vacation" ? "Vacation" : "Sick Day"}
                         </span>
                         <StatusBadge status={req.status} approvalSource={req.approval_source} />
+                        {(req as any).requires_special_approval && <SpecialApprovalBadge />}
                       </div>
                       <p className="text-xs text-muted-foreground">{formatRequestDates(req)}</p>
                     </div>
