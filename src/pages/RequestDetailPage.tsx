@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 import { ArrowLeft, Bell, Calendar, Edit, Trash2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import SpecialApprovalBadge from "@/components/SpecialApprovalBadge";
 
 type Request = Tables<"time_off_requests">;
 type AuditLog = Tables<"audit_logs">;
@@ -168,6 +169,7 @@ export default function RequestDetailPage() {
             </h1>
           </div>
           <StatusBadge status={request.status} approvalSource={request.approval_source} />
+          {(request as any).requires_special_approval && <SpecialApprovalBadge />}
         </div>
 
         {/* Request details */}

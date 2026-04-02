@@ -74,8 +74,9 @@ Deno.serve(async (req) => {
         : request.sick_date || "N/A";
 
     const typeLabel = request.request_type === "vacation" ? "🏖️ Vacation" : "🤒 Sick Day";
-
-    // Build message based on notification type
+    const specialApprovalNote = request.requires_special_approval
+      ? "\n⚠️ _(Requires special approval: within 30 days)_"
+      : "";
     let messages: Array<{
       slackUserId: string;
       text: string;
@@ -118,13 +119,13 @@ Deno.serve(async (req) => {
             if (!mgr.slack_user_id) continue;
             messages.push({
               slackUserId: mgr.slack_user_id,
-              text: `New ${typeLabel} request from ${employee.full_name}. Date(s): ${dateRange}`,
+              text: `New ${typeLabel} request from ${employee.full_name}. Date(s): ${dateRange}${request.requires_special_approval ? " (Requires special approval: within 30 days)" : ""}`,
               blocks: [
                 {
                   type: "section",
                   text: {
                     type: "mrkdwn",
-                    text: `*New ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${request.note ? `\n*Note:* ${request.note}` : ""}`,
+                    text: `*New ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${request.note ? `\n*Note:* ${request.note}` : ""}${specialApprovalNote}`,
                   },
                 },
                 {
@@ -159,7 +160,7 @@ Deno.serve(async (req) => {
         if (employee.slack_user_id) {
           messages.push({
             slackUserId: employee.slack_user_id,
-            text: `*Your ${typeLabel} Has Been Approved!* ✅\nDate(s): ${dateRange}`,
+            text: `*Your ${typeLabel} Has Been Approved!* ✅\nDate(s): ${dateRange}${request.requires_special_approval ? "\n_This request required special approval._" : ""}`,
             messageType: "approval_notification",
           });
         }
@@ -171,7 +172,7 @@ Deno.serve(async (req) => {
           const reason = extra?.rejection_reason || request.rejection_reason || "No reason provided";
           messages.push({
             slackUserId: employee.slack_user_id,
-            text: `*Your ${typeLabel} Request Was Rejected* ❌\nDate(s): ${dateRange}\nReason: ${reason}`,
+            text: `*Your ${typeLabel} Request Was Rejected* ❌\nDate(s): ${dateRange}\nReason: ${reason}${request.requires_special_approval ? "\n_This request required special approval._" : ""}`,
             messageType: "rejection_notification",
           });
         }
@@ -285,13 +286,13 @@ Deno.serve(async (req) => {
             if (!mgr.slack_user_id) continue;
             messages.push({
               slackUserId: mgr.slack_user_id,
-              text: `🔔 *Reminder:* ${employee.full_name}'s ${typeLabel} request (${dateRange}) is still pending your approval.`,
+              text: `🔔 *Reminder:* ${employee.full_name}'s ${typeLabel} request (${dateRange}) is still pending your approval.${request.requires_special_approval ? " (Requires special approval: within 30 days)" : ""}`,
               blocks: [
                 {
                   type: "section",
                   text: {
                     type: "mrkdwn",
-                    text: `🔔 *Reminder: Pending ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${request.note ? `\n*Note:* ${request.note}` : ""}`,
+                    text: `🔔 *Reminder: Pending ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${request.note ? `\n*Note:* ${request.note}` : ""}${specialApprovalNote}`,
                   },
                 },
                 {

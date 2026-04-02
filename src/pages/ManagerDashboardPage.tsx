@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { UserPlus } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import SpecialApprovalBadge from "@/components/SpecialApprovalBadge";
 
 type Request = Tables<"time_off_requests"> & { employee_name?: string };
 
@@ -108,6 +109,7 @@ export default function ManagerDashboardPage() {
                           · {req.request_type === "vacation" ? "Vacation" : "Sick Day"}
                         </span>
                         <StatusBadge status={req.status} approvalSource={req.approval_source} />
+                        {(req as any).requires_special_approval && <SpecialApprovalBadge />}
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {req.request_type === "vacation"

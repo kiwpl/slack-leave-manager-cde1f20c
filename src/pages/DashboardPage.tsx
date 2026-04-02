@@ -18,6 +18,8 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { AlertCircle, AlertTriangle, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { isWithin30Days } from "@/lib/specialApproval";
+import SpecialApprovalBadge from "@/components/SpecialApprovalBadge";
 
 type Request = Tables<"time_off_requests">;
 
@@ -108,6 +110,8 @@ export default function DashboardPage() {
     const startPortion = startHalfDay ? "pm" : "full";
     const effectiveEnd = endDate || startDate;
 
+    const requiresSpecialApproval = !isSickDay && isWithin30Days(startDate);
+
     const { data, error } = await supabase.from("time_off_requests").insert({
       employee_id: user.id,
       request_type: requestType as "vacation" | "sick",
@@ -121,6 +125,7 @@ export default function DashboardPage() {
       end_day_portion: "full" as any,
       approval_source: approvalSource,
       approved_at: isSickDay ? new Date().toISOString() : null,
+      requires_special_approval: requiresSpecialApproval,
     }).select().single();
 
     if (error) {
@@ -283,6 +288,15 @@ export default function DashboardPage() {
                         ) : null;
                       })()}
 
+                      {requestType === "vacation" && startDate && isWithin30Days(startDate) && (
+                        <Alert className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20">
+                          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                          <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                            This vacation is within the next 30 days and requires special approval. It may be declined if coverage is limited.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
                       {/* Note / Reason */}
                       <div className="space-y-2">
                         <Label>{requestType === "vacation" ? "Reason" : "Note (optional)"}</Label>
@@ -334,6 +348,7 @@ export default function DashboardPage() {
                           {req.request_type === "vacation" ? "Vacation" : "Sick Day"}
                         </span>
                         <StatusBadge status={req.status} approvalSource={req.approval_source} />
+                        {(req as any).requires_special_approval && <SpecialApprovalBadge />}
                       </div>
                       <p className="text-xs text-muted-foreground">{formatRequestDates(req)}</p>
                     </div>

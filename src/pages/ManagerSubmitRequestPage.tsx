@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { AlertTriangle } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { isWithin30Days } from "@/lib/specialApproval";
 
 type Profile = Tables<"profiles">;
 
@@ -69,6 +70,8 @@ export default function ManagerSubmitRequestPage() {
     const startPortion = startHalfDay ? "pm" : "full";
     const effectiveEnd = endDate || startDate;
 
+    const requiresSpecialApproval = !isSickDay && isWithin30Days(startDate);
+
     const { data, error } = await supabase.from("time_off_requests").insert({
       employee_id: selectedEmployeeId,
       request_type: requestType as "vacation" | "sick",
@@ -83,6 +86,7 @@ export default function ManagerSubmitRequestPage() {
       approval_source: "system_auto_approved" as any,
       approved_at: new Date().toISOString(),
       approved_by_user_id: user.id,
+      requires_special_approval: requiresSpecialApproval,
     }).select().single();
 
     if (error) {
@@ -204,6 +208,15 @@ export default function ManagerSubmitRequestPage() {
                       </Alert>
                     ) : null;
                   })()}
+
+                  {requestType === "vacation" && startDate && isWithin30Days(startDate) && (
+                    <Alert className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20">
+                      <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                      <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                        This vacation is within the next 30 days and requires special approval. It may be declined if coverage is limited.
+                      </AlertDescription>
+                    </Alert>
+                  )}
 
                   <div className="space-y-2">
                     <Label>{requestType === "vacation" ? "Reason" : "Note (optional)"}</Label>

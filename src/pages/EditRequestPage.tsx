@@ -12,6 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
+import { AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { isWithin30Days } from "@/lib/specialApproval";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Request = Tables<"time_off_requests">;
@@ -110,6 +113,7 @@ export default function EditRequestPage() {
       start_day_portion: startPortion,
       last_edited_at: new Date().toISOString(),
       last_edited_by_user_id: user.id,
+      requires_special_approval: isVacation ? isWithin30Days(startDate) : false,
     };
 
     if (isVacation) {
@@ -264,6 +268,15 @@ export default function EditRequestPage() {
                 />
                 {errors.note && <p className="text-sm text-destructive">{errors.note}</p>}
               </div>
+
+              {isVacation && startDate && isWithin30Days(startDate) && (
+                <Alert className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                    This vacation is within the next 30 days and requires special approval. It may be declined if coverage is limited.
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <div className="flex gap-3">
                 <Button type="submit" disabled={submitting}>

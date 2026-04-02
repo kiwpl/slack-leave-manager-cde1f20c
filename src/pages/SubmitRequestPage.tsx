@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { AlertCircle, AlertTriangle } from "lucide-react";
+import { isWithin30Days } from "@/lib/specialApproval";
 
 export default function SubmitRequestPage() {
   const { user, profile } = useAuth();
@@ -70,6 +71,8 @@ export default function SubmitRequestPage() {
     const startPortion = startHalfDay ? "pm" : "full";
     const effectiveEnd = endDate || startDate;
 
+    const requiresSpecialApproval = !isSickDay && isWithin30Days(startDate);
+
     const { data, error } = await supabase.from("time_off_requests").insert({
       employee_id: user.id,
       request_type: requestType as "vacation" | "sick",
@@ -83,6 +86,7 @@ export default function SubmitRequestPage() {
       end_day_portion: "full" as any,
       approval_source: approvalSource,
       approved_at: isSickDay ? new Date().toISOString() : null,
+      requires_special_approval: requiresSpecialApproval,
     }).select().single();
 
     if (error) {
@@ -222,6 +226,15 @@ export default function SubmitRequestPage() {
                       </Alert>
                     ) : null;
                   })()}
+
+                  {requestType === "vacation" && startDate && isWithin30Days(startDate) && (
+                    <Alert className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20">
+                      <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                      <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                        This vacation is within the next 30 days and requires special approval. It may be declined if coverage is limited.
+                      </AlertDescription>
+                    </Alert>
+                  )}
 
                   <div className="space-y-2">
                     <Label>{requestType === "vacation" ? "Reason" : "Note (optional)"}</Label>
