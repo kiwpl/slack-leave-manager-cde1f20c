@@ -286,13 +286,13 @@ Deno.serve(async (req) => {
             if (!mgr.slack_user_id) continue;
             messages.push({
               slackUserId: mgr.slack_user_id,
-              text: `🔔 *Reminder:* ${employee.full_name}'s ${typeLabel} request (${dateRange}) is still pending your approval.`,
+              text: `🔔 *Reminder:* ${employee.full_name}'s ${typeLabel} request (${dateRange}) is still pending your approval.${request.requires_special_approval ? " (Requires special approval: within 30 days)" : ""}`,
               blocks: [
                 {
                   type: "section",
                   text: {
                     type: "mrkdwn",
-                    text: `🔔 *Reminder: Pending ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${request.note ? `\n*Note:* ${request.note}` : ""}`,
+                    text: `🔔 *Reminder: Pending ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${request.note ? `\n*Note:* ${request.note}` : ""}${specialApprovalNote}`,
                   },
                 },
                 {
