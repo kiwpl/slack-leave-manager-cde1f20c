@@ -172,7 +172,7 @@ Deno.serve(async (req) => {
           const reason = extra?.rejection_reason || request.rejection_reason || "No reason provided";
           messages.push({
             slackUserId: employee.slack_user_id,
-            text: `*Your ${typeLabel} Request Was Rejected* ❌\nDate(s): ${dateRange}\nReason: ${reason}`,
+            text: `*Your ${typeLabel} Request Was Rejected* ❌\nDate(s): ${dateRange}\nReason: ${reason}${request.requires_special_approval ? "\n_This request required special approval._" : ""}`,
             messageType: "rejection_notification",
           });
         }
