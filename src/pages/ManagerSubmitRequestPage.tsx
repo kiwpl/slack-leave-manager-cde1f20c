@@ -70,6 +70,8 @@ export default function ManagerSubmitRequestPage() {
     const startPortion = startHalfDay ? "pm" : "full";
     const effectiveEnd = endDate || startDate;
 
+    const requiresSpecialApproval = !isSickDay && isWithin30Days(startDate);
+
     const { data, error } = await supabase.from("time_off_requests").insert({
       employee_id: selectedEmployeeId,
       request_type: requestType as "vacation" | "sick",
@@ -84,6 +86,7 @@ export default function ManagerSubmitRequestPage() {
       approval_source: "system_auto_approved" as any,
       approved_at: new Date().toISOString(),
       approved_by_user_id: user.id,
+      requires_special_approval: requiresSpecialApproval,
     }).select().single();
 
     if (error) {
