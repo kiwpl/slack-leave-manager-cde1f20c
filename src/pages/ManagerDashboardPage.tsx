@@ -109,6 +109,7 @@ export default function ManagerDashboardPage() {
                           · {req.request_type === "vacation" ? "Vacation" : "Sick Day"}
                         </span>
                         <StatusBadge status={req.status} approvalSource={req.approval_source} />
+                        {(req as any).requires_special_approval && <SpecialApprovalBadge />}
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {req.request_type === "vacation"

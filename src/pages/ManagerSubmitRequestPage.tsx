@@ -209,6 +209,15 @@ export default function ManagerSubmitRequestPage() {
                     ) : null;
                   })()}
 
+                  {requestType === "vacation" && startDate && isWithin30Days(startDate) && (
+                    <Alert className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20">
+                      <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                      <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                        This vacation is within the next 30 days and requires special approval. It may be declined if coverage is limited.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   <div className="space-y-2">
                     <Label>{requestType === "vacation" ? "Reason" : "Note (optional)"}</Label>
                     <Textarea

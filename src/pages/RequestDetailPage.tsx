@@ -169,6 +169,7 @@ export default function RequestDetailPage() {
             </h1>
           </div>
           <StatusBadge status={request.status} approvalSource={request.approval_source} />
+          {(request as any).requires_special_approval && <SpecialApprovalBadge />}
         </div>
 
         {/* Request details */}
