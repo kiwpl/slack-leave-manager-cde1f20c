@@ -74,8 +74,9 @@ Deno.serve(async (req) => {
         : request.sick_date || "N/A";
 
     const typeLabel = request.request_type === "vacation" ? "🏖️ Vacation" : "🤒 Sick Day";
-
-    // Build message based on notification type
+    const specialApprovalNote = request.requires_special_approval
+      ? "\n⚠️ _(Requires special approval: within 30 days)_"
+      : "";
     let messages: Array<{
       slackUserId: string;
       text: string;
