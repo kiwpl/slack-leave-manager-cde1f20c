@@ -113,6 +113,7 @@ export default function EditRequestPage() {
       start_day_portion: startPortion,
       last_edited_at: new Date().toISOString(),
       last_edited_by_user_id: user.id,
+      requires_special_approval: isVacation ? isWithin30Days(startDate) : false,
     };
 
     if (isVacation) {
