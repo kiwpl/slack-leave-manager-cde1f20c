@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { UserPlus } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import SpecialApprovalBadge from "@/components/SpecialApprovalBadge";
 
 type Request = Tables<"time_off_requests"> & { employee_name?: string };
 
