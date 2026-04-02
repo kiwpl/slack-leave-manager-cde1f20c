@@ -12,6 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
+import { AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { isWithin30Days } from "@/lib/specialApproval";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Request = Tables<"time_off_requests">;

@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { AlertTriangle } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { isWithin30Days } from "@/lib/specialApproval";
 
 type Profile = Tables<"profiles">;
 

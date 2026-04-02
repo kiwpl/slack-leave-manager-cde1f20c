@@ -18,6 +18,8 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { AlertCircle, AlertTriangle, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { isWithin30Days } from "@/lib/specialApproval";
+import SpecialApprovalBadge from "@/components/SpecialApprovalBadge";
 
 type Request = Tables<"time_off_requests">;
 

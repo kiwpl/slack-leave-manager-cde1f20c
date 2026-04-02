@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { AlertCircle, AlertTriangle } from "lucide-react";
+import { isWithin30Days } from "@/lib/specialApproval";
 
 export default function SubmitRequestPage() {
   const { user, profile } = useAuth();
