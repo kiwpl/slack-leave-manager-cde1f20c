@@ -207,6 +207,7 @@ export type Database = {
           rejected_by_user_id: string | null
           rejection_reason: string | null
           request_type: Database["public"]["Enums"]["request_type"]
+          requires_special_approval: boolean | null
           sick_date: string | null
           start_date: string | null
           start_day_portion: Database["public"]["Enums"]["day_portion"]
@@ -237,6 +238,7 @@ export type Database = {
           rejected_by_user_id?: string | null
           rejection_reason?: string | null
           request_type: Database["public"]["Enums"]["request_type"]
+          requires_special_approval?: boolean | null
           sick_date?: string | null
           start_date?: string | null
           start_day_portion?: Database["public"]["Enums"]["day_portion"]
@@ -267,6 +269,7 @@ export type Database = {
           rejected_by_user_id?: string | null
           rejection_reason?: string | null
           request_type?: Database["public"]["Enums"]["request_type"]
+          requires_special_approval?: boolean | null
           sick_date?: string | null
           start_date?: string | null
           start_day_portion?: Database["public"]["Enums"]["day_portion"]

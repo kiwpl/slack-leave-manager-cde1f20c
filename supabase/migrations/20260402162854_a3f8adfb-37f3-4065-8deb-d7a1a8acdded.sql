@@ -1,0 +1,1 @@
+ALTER TABLE public.time_off_requests ADD COLUMN requires_special_approval boolean DEFAULT false;
