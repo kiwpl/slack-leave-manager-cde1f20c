@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
                   type: "section",
                   text: {
                     type: "mrkdwn",
-                    text: `*New ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${request.note ? `\n*Note:* ${request.note}` : ""}`,
+                    text: `*New ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${request.note ? `\n*Note:* ${request.note}` : ""}${specialApprovalNote}`,
                   },
                 },
                 {
