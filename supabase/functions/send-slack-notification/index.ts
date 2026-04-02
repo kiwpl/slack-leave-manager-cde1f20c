@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
             if (!mgr.slack_user_id) continue;
             messages.push({
               slackUserId: mgr.slack_user_id,
-              text: `New ${typeLabel} request from ${employee.full_name}. Date(s): ${dateRange}`,
+              text: `New ${typeLabel} request from ${employee.full_name}. Date(s): ${dateRange}${request.requires_special_approval ? " (Requires special approval: within 30 days)" : ""}`,
               blocks: [
                 {
                   type: "section",
