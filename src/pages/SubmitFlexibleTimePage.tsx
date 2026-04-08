@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { AlertCircle, Plus, Trash2, Clock } from "lucide-react";
+import { AlertCircle, Info, Plus, Trash2, Clock } from "lucide-react";
 import { getPayPeriod, parseDateUTC, formatDateUTC, getWeekKey } from "@/lib/payPeriod";
 
 interface MakeupEntry {
@@ -107,7 +107,15 @@ export default function SubmitFlexibleTimePage() {
       newErrors.dateOff = "Date must be in the future. No retroactive requests allowed.";
 
     if (!startTime) newErrors.startTime = "Start time is required.";
+    else {
+      const mins = parseInt(startTime.split(":")[1] || "0", 10);
+      if (mins % 30 !== 0) newErrors.startTime = "Start time must be in 30-minute intervals (e.g. 9:00, 9:30).";
+    }
     if (!endTime) newErrors.endTime = "End time is required.";
+    else {
+      const mins = parseInt(endTime.split(":")[1] || "0", 10);
+      if (mins % 30 !== 0) newErrors.endTime = "End time must be in 30-minute intervals (e.g. 13:00, 13:30).";
+    }
     if (totalHoursOff <= 0) newErrors.endTime = "End time must be after start time.";
     if (totalHoursOff > 4) newErrors.endTime = "Maximum 4 hours per request.";
 
@@ -135,9 +143,22 @@ export default function SubmitFlexibleTimePage() {
       if (!entry.startTime) entryErrors.push(`Make-up entry ${i + 1}: start time is required.`);
       if (!entry.endTime) entryErrors.push(`Make-up entry ${i + 1}: end time is required.`);
 
+      // 30-min interval validation for makeup entries
+      if (entry.startTime) {
+        const sm = parseInt(entry.startTime.split(":")[1] || "0", 10);
+        if (sm % 30 !== 0) entryErrors.push(`Make-up entry ${i + 1}: start time must be in 30-minute intervals.`);
+      }
+      if (entry.endTime) {
+        const em = parseInt(entry.endTime.split(":")[1] || "0", 10);
+        if (em % 30 !== 0) entryErrors.push(`Make-up entry ${i + 1}: end time must be in 30-minute intervals.`);
+      }
+
       const entryHours = calcHours(entry.startTime, entry.endTime);
       if (entryHours <= 0 && entry.startTime && entry.endTime) {
         entryErrors.push(`Make-up entry ${i + 1}: end time must be after start time.`);
+      }
+      if (entryHours > 0 && entryHours < 0.5) {
+        entryErrors.push(`Make-up entry ${i + 1}: minimum duration is 30 minutes.`);
       }
 
       if (entry.date && payPeriod) {
@@ -260,7 +281,8 @@ export default function SubmitFlexibleTimePage() {
             Submit Flexible Time Request
           </h1>
           <p className="text-muted-foreground">
-            Request up to 4 hours off with a make-up plan
+            Request up to 4 hours off with a make-up plan.
+            <span className="block text-xs mt-1">Available for office and admin staff only.</span>
           </p>
         </div>
 
@@ -330,6 +352,7 @@ export default function SubmitFlexibleTimePage() {
                     <Label>Start Time</Label>
                     <Input
                       type="time"
+                      step="1800"
                       value={startTime}
                       onChange={(e) => setStartTime(e.target.value)}
                     />
@@ -343,6 +366,7 @@ export default function SubmitFlexibleTimePage() {
                     <Label>End Time</Label>
                     <Input
                       type="time"
+                      step="1800"
                       value={endTime}
                       onChange={(e) => setEndTime(e.target.value)}
                     />
@@ -397,6 +421,13 @@ export default function SubmitFlexibleTimePage() {
                     </Button>
                   </div>
 
+                  <Alert className="border-primary/30 bg-primary/5">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription className="text-sm">
+                      All make-up time must be completed within the same pay period as your time off. Times must be in 30-minute intervals.
+                    </AlertDescription>
+                  </Alert>
+
                   {dateOff && anchorDate && (() => {
                     const pp = getPayPeriod(parseDateUTC(dateOff), parseDateUTC(anchorDate));
                     return (
@@ -443,6 +474,7 @@ export default function SubmitFlexibleTimePage() {
                           <Label className="text-xs">Start</Label>
                           <Input
                             type="time"
+                            step="1800"
                             value={entry.startTime}
                             onChange={(e) =>
                               updateMakeupEntry(
@@ -457,6 +489,7 @@ export default function SubmitFlexibleTimePage() {
                           <Label className="text-xs">End</Label>
                           <Input
                             type="time"
+                            step="1800"
                             value={entry.endTime}
                             onChange={(e) =>
                               updateMakeupEntry(

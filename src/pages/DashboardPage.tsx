@@ -24,7 +24,7 @@ import SpecialApprovalBadge from "@/components/SpecialApprovalBadge";
 type Request = Tables<"time_off_requests">;
 
 export default function DashboardPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, hasAnyRole } = useAuth();
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -207,11 +207,13 @@ export default function DashboardPage() {
                 <Button onClick={() => setShowForm(!showForm)} variant={showForm ? "outline" : "default"} size="sm">
                   {showForm ? <>Cancel</> : <><Plus className="h-4 w-4 mr-1" /> New Request</>}
                 </Button>
-                <Button asChild variant="outline" size="sm">
-                  <a href="/submit-flexible-time">
-                    <Clock className="h-4 w-4 mr-1" /> Flexible Time
-                  </a>
-                </Button>
+                {hasAnyRole(["office_manager", "admin", "superadmin"]) && (
+                  <Button asChild variant="outline" size="sm">
+                    <a href="/submit-flexible-time">
+                      <Clock className="h-4 w-4 mr-1" /> Flexible Time
+                    </a>
+                  </Button>
+                )}
               </>
             )}
           </div>
