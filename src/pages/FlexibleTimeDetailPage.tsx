@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ArrowLeft, CheckCircle2, Info, XCircle } from "lucide-react";
 
 interface FlexRequest {
   id: string;
@@ -240,6 +241,14 @@ export default function FlexibleTimeDetailPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Pay-period reminder */}
+        <Alert className="border-primary/30 bg-primary/5">
+          <Info className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            All make-up time must be completed within the same pay period ({request.pay_period_start} → {request.pay_period_end}).
+          </AlertDescription>
+        </Alert>
 
         {/* Make-up entries */}
         <Card>
