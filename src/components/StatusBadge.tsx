@@ -19,10 +19,18 @@ const statusConfig: Record<string, { label: string; className: string }> = {
     label: "Cancelled",
     className: "bg-muted text-muted-foreground border-border",
   },
+  completed: {
+    label: "Completed",
+    className: "bg-success/15 text-success border-success/30",
+  },
+  incomplete: {
+    label: "Incomplete",
+    className: "bg-destructive/15 text-destructive border-destructive/30",
+  },
 };
 
 interface StatusBadgeProps {
-  status: Enums<"request_status">;
+  status: Enums<"request_status"> | string;
   approvalSource?: Enums<"approval_source"> | null;
 }
 

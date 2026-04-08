@@ -18,6 +18,8 @@ import AdminSettingsPage from "@/pages/AdminSettingsPage";
 import UserManagementPage from "@/pages/UserManagementPage";
 import PolicyEditorPage from "@/pages/PolicyEditorPage";
 import AuditLogPage from "@/pages/AuditLogPage";
+import SubmitFlexibleTimePage from "@/pages/SubmitFlexibleTimePage";
+import FlexibleTimeDetailPage from "@/pages/FlexibleTimeDetailPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +45,8 @@ const App = () => (
             <Route path="/admin/users" element={<ProtectedRoute requiredRoles={["admin", "superadmin", "office_manager"]}><UserManagementPage /></ProtectedRoute>} />
             <Route path="/admin/policy" element={<ProtectedRoute requiredRoles={["admin", "superadmin"]}><PolicyEditorPage /></ProtectedRoute>} />
             <Route path="/admin/audit-log" element={<ProtectedRoute requiredRoles={["admin", "superadmin"]}><AuditLogPage /></ProtectedRoute>} />
+            <Route path="/submit-flexible-time" element={<ProtectedRoute><SubmitFlexibleTimePage /></ProtectedRoute>} />
+            <Route path="/flexible-time/:id" element={<ProtectedRoute><FlexibleTimeDetailPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

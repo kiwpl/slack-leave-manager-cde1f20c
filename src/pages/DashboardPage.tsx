@@ -16,7 +16,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { AlertCircle, AlertTriangle, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { AlertCircle, AlertTriangle, Plus, ChevronDown, ChevronUp, Clock } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { isWithin30Days } from "@/lib/specialApproval";
 import SpecialApprovalBadge from "@/components/SpecialApprovalBadge";
@@ -201,11 +201,20 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-foreground">Time Off</h1>
-          {hasSlackId && (
-            <Button onClick={() => setShowForm(!showForm)} variant={showForm ? "outline" : "default"} size="sm">
-              {showForm ? <>Cancel</> : <><Plus className="h-4 w-4 mr-1" /> New Request</>}
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {hasSlackId && (
+              <>
+                <Button onClick={() => setShowForm(!showForm)} variant={showForm ? "outline" : "default"} size="sm">
+                  {showForm ? <>Cancel</> : <><Plus className="h-4 w-4 mr-1" /> New Request</>}
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                  <a href="/submit-flexible-time">
+                    <Clock className="h-4 w-4 mr-1" /> Flexible Time
+                  </a>
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Submit form */}
