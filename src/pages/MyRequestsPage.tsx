@@ -28,16 +28,16 @@ export default function MyRequestsPage() {
 
     const fetchAll = async () => {
       // Regular requests
-      if (typeFilter === "all" || typeFilter === "vacation" || typeFilter === "sick") {
+      if (typeFilter !== "flexible") {
         let query = supabase
           .from("time_off_requests")
           .select("*")
           .eq("employee_id", user.id)
           .order("submitted_at", { ascending: false });
-        if (typeFilter !== "all" && typeFilter !== "flexible") query = query.eq("request_type", typeFilter as any);
+        if (typeFilter !== "all") query = query.eq("request_type", typeFilter as any);
         if (statusFilter !== "all") query = query.eq("status", statusFilter as any);
         const { data } = await query;
-        setRequests(typeFilter === "flexible" ? [] : data || []);
+        setRequests(data || []);
       } else {
         setRequests([]);
       }
