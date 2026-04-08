@@ -108,6 +108,116 @@ export type Database = {
           },
         ]
       }
+      flexible_time_makeup_entries: {
+        Row: {
+          completed: boolean
+          created_at: string
+          end_time: string
+          google_calendar_event_id: string | null
+          hours: number
+          id: string
+          makeup_date: string
+          request_id: string
+          start_time: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          end_time: string
+          google_calendar_event_id?: string | null
+          hours: number
+          id?: string
+          makeup_date: string
+          request_id: string
+          start_time: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          end_time?: string
+          google_calendar_event_id?: string | null
+          hours?: number
+          id?: string
+          makeup_date?: string
+          request_id?: string
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flexible_time_makeup_entries_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "flexible_time_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flexible_time_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by_user_id: string | null
+          created_at: string
+          date_off: string
+          employee_id: string
+          end_time: string
+          google_calendar_event_id: string | null
+          id: string
+          makeup_plan: string
+          pay_period_end: string
+          pay_period_start: string
+          rejected_at: string | null
+          rejected_by_user_id: string | null
+          rejection_reason: string | null
+          start_time: string
+          status: string
+          submitted_at: string
+          total_hours: number
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          created_at?: string
+          date_off: string
+          employee_id: string
+          end_time: string
+          google_calendar_event_id?: string | null
+          id?: string
+          makeup_plan: string
+          pay_period_end: string
+          pay_period_start: string
+          rejected_at?: string | null
+          rejected_by_user_id?: string | null
+          rejection_reason?: string | null
+          start_time: string
+          status?: string
+          submitted_at?: string
+          total_hours: number
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          created_at?: string
+          date_off?: string
+          employee_id?: string
+          end_time?: string
+          google_calendar_event_id?: string | null
+          id?: string
+          makeup_plan?: string
+          pay_period_end?: string
+          pay_period_start?: string
+          rejected_at?: string | null
+          rejected_by_user_id?: string | null
+          rejection_reason?: string | null
+          start_time?: string
+          status?: string
+          submitted_at?: string
+          total_hours?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
