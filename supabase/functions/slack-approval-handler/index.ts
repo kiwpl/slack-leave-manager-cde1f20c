@@ -241,6 +241,14 @@ Deno.serve(async (req) => {
 
     const statusText = isApproval ? "Approved" : "Rejected";
 
+    // Update ALL active approval messages for this request to "handled"
+    const { data: activeMessages } = await supabase
+      .from("slack_message_tracking")
+      .select("*")
+      .eq("request_id", requestId)
+      .eq("message_type", "approval_request")
+      .eq("current_state", "active");
+
     for (const msg of activeMessages || []) {
       if (msg.slack_message_ts && msg.slack_channel_or_dm_id) {
         await fetch("https://slack.com/api/chat.update", {
