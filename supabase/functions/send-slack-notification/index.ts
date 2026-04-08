@@ -16,8 +16,14 @@ interface NotificationPayload {
     | "edit_notification"
     | "cancellation_notification"
     | "auto_approved_notification"
-    | "approval_reminder";
+    | "approval_reminder"
+    | "flexible_time_request"
+    | "flexible_time_approved"
+    | "flexible_time_rejected"
+    | "flexible_time_incomplete"
+    | "flexible_time_reminder";
   extra?: Record<string, string>;
+  flexible_time?: boolean;
 }
 
 Deno.serve(async (req) => {
@@ -39,7 +45,7 @@ Deno.serve(async (req) => {
 
   try {
     const payload: NotificationPayload = await req.json();
-    const { request_id, notification_type, extra } = payload;
+    const { request_id, notification_type, extra, flexible_time } = payload;
 
     // Check test mode
     const { data: testModeSetting } = await supabase
@@ -49,34 +55,49 @@ Deno.serve(async (req) => {
       .single();
     const testMode = testModeSetting?.value === "true";
 
-    // Fetch request with employee profile
-    const { data: request, error: reqError } = await supabase
-      .from("time_off_requests")
-      .select("*")
-      .eq("id", request_id)
-      .single();
+    // Fetch request - either time_off or flexible_time
+    let request: any = null;
+    let employee: any = null;
+    let dateRange = "";
+    let typeLabel = "";
+    let specialApprovalNote = "";
 
-    if (reqError || !request) {
-      throw new Error(`Request not found: ${request_id}`);
-    }
+    if (flexible_time) {
+      const { data: flexReq, error: flexError } = await supabase
+        .from("flexible_time_requests")
+        .select("*")
+        .eq("id", request_id)
+        .single();
+      if (flexError || !flexReq) throw new Error(`Flexible request not found: ${request_id}`);
+      request = flexReq;
 
-    const { data: employee } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", request.employee_id)
-      .single();
+      const { data: emp } = await supabase.from("profiles").select("*").eq("id", request.employee_id).single();
+      if (!emp) throw new Error("Employee profile not found");
+      employee = emp;
 
-    if (!employee) throw new Error("Employee profile not found");
+      dateRange = `${request.date_off} ${request.start_time?.slice(0, 5)} – ${request.end_time?.slice(0, 5)} (${request.total_hours}h)`;
+      typeLabel = "⏰ Flexible Time";
+    } else {
+      const { data: reqData, error: reqError } = await supabase
+        .from("time_off_requests")
+        .select("*")
+        .eq("id", request_id)
+        .single();
+      if (reqError || !reqData) throw new Error(`Request not found: ${request_id}`);
+      request = reqData;
 
-    const dateRange =
-      request.request_type === "vacation"
+      const { data: emp } = await supabase.from("profiles").select("*").eq("id", request.employee_id).single();
+      if (!emp) throw new Error("Employee profile not found");
+      employee = emp;
+
+      dateRange = request.request_type === "vacation"
         ? `${request.start_date} → ${request.end_date}`
         : request.sick_date || "N/A";
-
-    const typeLabel = request.request_type === "vacation" ? "🏖️ Vacation" : "🤒 Sick Day";
-    const specialApprovalNote = request.requires_special_approval
-      ? "\n⚠️ _(Requires special approval: within 30 days)_"
-      : "";
+      typeLabel = request.request_type === "vacation" ? "🏖️ Vacation" : "🤒 Sick Day";
+      specialApprovalNote = request.requires_special_approval
+        ? "\n⚠️ _(Requires special approval: within 30 days)_"
+        : "";
+    }
     let messages: Array<{
       slackUserId: string;
       text: string;
@@ -317,6 +338,103 @@ Deno.serve(async (req) => {
                 },
               ],
               messageType: "approval_request",
+            });
+          }
+        }
+        break;
+      }
+
+      case "flexible_time_request": {
+        const { data: managerRoles } = await supabase
+          .from("user_roles").select("user_id").in("role", ["manager", "admin", "superadmin"]);
+        if (managerRoles) {
+          const managerIds = [...new Set(managerRoles.map((r) => r.user_id))];
+          const { data: managers } = await supabase
+            .from("profiles").select("id, slack_user_id").in("id", managerIds).eq("status", "active");
+          for (const mgr of managers || []) {
+            if (!mgr.slack_user_id) continue;
+            messages.push({
+              slackUserId: mgr.slack_user_id,
+              text: `New ${typeLabel} request from ${employee.full_name}. ${dateRange}`,
+              blocks: [
+                {
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text: `*📋 Action Required: ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Time Off:* ${dateRange}\n*Make-up Plan:* ${request.makeup_plan || "N/A"}`,
+                  },
+                },
+                {
+                  type: "actions",
+                  block_id: `flex_approval_${request_id}`,
+                  elements: [
+                    { type: "button", text: { type: "plain_text", text: "✅ Approve" }, style: "primary", action_id: "approve_flex_request", value: request_id },
+                    { type: "button", text: { type: "plain_text", text: "❌ Reject" }, style: "danger", action_id: "reject_flex_request", value: request_id },
+                  ],
+                },
+              ],
+              messageType: "approval_request",
+            });
+          }
+        }
+        break;
+      }
+
+      case "flexible_time_approved": {
+        if (employee.slack_user_id) {
+          messages.push({
+            slackUserId: employee.slack_user_id,
+            text: `✅ Your ${typeLabel} request (${dateRange}) has been approved!`,
+            messageType: "approval_notification",
+          });
+        }
+        break;
+      }
+
+      case "flexible_time_rejected": {
+        if (employee.slack_user_id) {
+          const reason = extra?.rejection_reason || request.rejection_reason || "No reason provided";
+          messages.push({
+            slackUserId: employee.slack_user_id,
+            text: `❌ Your ${typeLabel} request (${dateRange}) was rejected. Reason: ${reason}`,
+            messageType: "rejection_notification",
+          });
+        }
+        break;
+      }
+
+      case "flexible_time_incomplete": {
+        const { data: managerRoles } = await supabase
+          .from("user_roles").select("user_id").in("role", ["manager", "admin", "superadmin"]);
+        if (managerRoles) {
+          const mgrIds = [...new Set(managerRoles.map((r) => r.user_id))];
+          const { data: managers } = await supabase
+            .from("profiles").select("id, slack_user_id").in("id", mgrIds).eq("status", "active");
+          for (const mgr of managers || []) {
+            if (!mgr.slack_user_id) continue;
+            messages.push({
+              slackUserId: mgr.slack_user_id,
+              text: `⚠️ *Incomplete Make-Up Time:* ${employee.full_name}'s flexible time request (${dateRange}) has incomplete make-up hours. Payroll adjustment may be needed.`,
+              messageType: "cancellation_notification",
+            });
+          }
+        }
+        break;
+      }
+
+      case "flexible_time_reminder": {
+        const { data: managerRoles } = await supabase
+          .from("user_roles").select("user_id").in("role", ["manager", "admin", "superadmin"]);
+        if (managerRoles) {
+          const mgrIds = [...new Set(managerRoles.map((r) => r.user_id))];
+          const { data: managers } = await supabase
+            .from("profiles").select("id, slack_user_id").in("id", mgrIds).eq("status", "active");
+          for (const mgr of managers || []) {
+            if (!mgr.slack_user_id) continue;
+            messages.push({
+              slackUserId: mgr.slack_user_id,
+              text: `🔔 *Reminder:* ${employee.full_name} has pending make-up hours for their flexible time request (${dateRange}). Pay period ends ${request.pay_period_end}.`,
+              messageType: "edit_notification",
             });
           }
         }

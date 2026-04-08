@@ -14,6 +14,7 @@ export default function AdminSettingsPage() {
   const [googleCalendarId, setGoogleCalendarId] = useState("");
   const [slackTestMode, setSlackTestMode] = useState(false);
   const [calendarTestMode, setCalendarTestMode] = useState(false);
+  const [payPeriodAnchor, setPayPeriodAnchor] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,6 +27,7 @@ export default function AdminSettingsPage() {
             if (s.key === "google_calendar_id") setGoogleCalendarId(s.value);
             if (s.key === "slack_test_mode") setSlackTestMode(s.value === "true");
             if (s.key === "calendar_test_mode") setCalendarTestMode(s.value === "true");
+            if (s.key === "pay_period_anchor_date") setPayPeriodAnchor(s.value);
           });
         }
         setLoading(false);
@@ -88,6 +90,33 @@ export default function AdminSettingsPage() {
                       saveSetting("calendar_test_mode", String(checked));
                     }}
                   />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Pay Period */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Pay Period</CardTitle>
+                <CardDescription>Configure bi-weekly pay period anchor for flexible time requests</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Anchor Date (start of any known pay period)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="date"
+                      value={payPeriodAnchor}
+                      onChange={(e) => setPayPeriodAnchor(e.target.value)}
+                      placeholder="YYYY-MM-DD"
+                    />
+                    <Button onClick={() => saveSetting("pay_period_anchor_date", payPeriodAnchor)}>
+                      Save
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Example: 2025-01-06. The system calculates all 2-week pay periods from this anchor date.
+                  </p>
                 </div>
               </CardContent>
             </Card>

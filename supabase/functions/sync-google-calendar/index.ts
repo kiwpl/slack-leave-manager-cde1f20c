@@ -7,8 +7,9 @@ const corsHeaders = {
 };
 
 interface SyncPayload {
-  request_id: string;
-  action: "create" | "delete";
+  request_id?: string;
+  flexible_time_request_id?: string;
+  action: "create" | "delete" | "update_incomplete";
 }
 
 async function getAccessToken(serviceAccountJson: string): Promise<string> {
@@ -88,7 +89,17 @@ Deno.serve(async (req) => {
 
   try {
     const payload: SyncPayload = await req.json();
-    const { request_id, action } = payload;
+    const { request_id, flexible_time_request_id, action } = payload;
+
+    // Handle flexible time requests separately
+    if (flexible_time_request_id) {
+      return await handleFlexibleTimeCalendar(supabase, flexible_time_request_id, action, corsHeaders);
+    }
+
+    if (!request_id) {
+      return new Response(JSON.stringify({ error: "No request_id provided" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     // Check test mode
     const { data: testModeSetting } = await supabase
@@ -282,4 +293,143 @@ async function logSync(
     error_message: errorMessage || null,
     status: status || (errorMessage ? "error" : "success"),
   });
+}
+
+async function handleFlexibleTimeCalendar(
+  supabase: any,
+  flexRequestId: string,
+  action: string,
+  corsHeaders: Record<string, string>
+): Promise<Response> {
+  try {
+    const { data: testModeSetting } = await supabase
+      .from("app_settings").select("value").eq("key", "calendar_test_mode").single();
+    const testMode = testModeSetting?.value === "true";
+
+    const { data: calIdSetting } = await supabase
+      .from("app_settings").select("value").eq("key", "google_calendar_id").single();
+    const calendarId = calIdSetting?.value;
+    if (!calendarId) {
+      return new Response(JSON.stringify({ error: "Google Calendar ID not configured" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const { data: flexReq } = await supabase
+      .from("flexible_time_requests").select("*").eq("id", flexRequestId).single();
+    if (!flexReq) throw new Error("Flexible time request not found");
+
+    const { data: employee } = await supabase
+      .from("profiles").select("full_name").eq("id", flexReq.employee_id).single();
+    const name = employee?.full_name || "Unknown";
+
+    const GOOGLE_SERVICE_ACCOUNT_JSON = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
+    if (!GOOGLE_SERVICE_ACCOUNT_JSON) {
+      return new Response(JSON.stringify({ error: "Google service account not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (testMode) {
+      console.log(`[TEST MODE] Flex calendar ${action} for ${flexRequestId}`);
+      return new Response(JSON.stringify({ success: true, testMode: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const accessToken = await getAccessToken(GOOGLE_SERVICE_ACCOUNT_JSON);
+    const calendarApiBase = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}`;
+
+    if (action === "create") {
+      // Create time-off event
+      const offEvent = {
+        summary: `Flexible Time Off – ${name}`,
+        description: flexReq.makeup_plan || undefined,
+        start: { dateTime: `${flexReq.date_off}T${flexReq.start_time}`, timeZone: "UTC" },
+        end: { dateTime: `${flexReq.date_off}T${flexReq.end_time}`, timeZone: "UTC" },
+      };
+
+      const offRes = await fetch(`${calendarApiBase}/events`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify(offEvent),
+      });
+      const offData = await offRes.json();
+      if (offRes.ok) {
+        await supabase.from("flexible_time_requests")
+          .update({ google_calendar_event_id: offData.id }).eq("id", flexRequestId);
+      }
+
+      // Create make-up events
+      const { data: entries } = await supabase
+        .from("flexible_time_makeup_entries").select("*").eq("request_id", flexRequestId);
+      for (const entry of entries || []) {
+        const muEvent = {
+          summary: `Make-Up Time – ${name}`,
+          start: { dateTime: `${entry.makeup_date}T${entry.start_time}`, timeZone: "UTC" },
+          end: { dateTime: `${entry.makeup_date}T${entry.end_time}`, timeZone: "UTC" },
+        };
+        const muRes = await fetch(`${calendarApiBase}/events`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify(muEvent),
+        });
+        const muData = await muRes.json();
+        if (muRes.ok) {
+          await supabase.from("flexible_time_makeup_entries")
+            .update({ google_calendar_event_id: muData.id }).eq("id", entry.id);
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (action === "delete") {
+      // Delete main event
+      if (flexReq.google_calendar_event_id) {
+        await fetch(`${calendarApiBase}/events/${encodeURIComponent(flexReq.google_calendar_event_id)}`, {
+          method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        await supabase.from("flexible_time_requests")
+          .update({ google_calendar_event_id: null }).eq("id", flexRequestId);
+      }
+      // Delete make-up events
+      const { data: entries } = await supabase
+        .from("flexible_time_makeup_entries").select("*").eq("request_id", flexRequestId);
+      for (const entry of entries || []) {
+        if (entry.google_calendar_event_id) {
+          await fetch(`${calendarApiBase}/events/${encodeURIComponent(entry.google_calendar_event_id)}`, {
+            method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          await supabase.from("flexible_time_makeup_entries")
+            .update({ google_calendar_event_id: null }).eq("id", entry.id);
+        }
+      }
+      return new Response(JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (action === "update_incomplete") {
+      // Update make-up event titles to "Incomplete"
+      const { data: entries } = await supabase
+        .from("flexible_time_makeup_entries").select("*").eq("request_id", flexRequestId).eq("completed", false);
+      for (const entry of entries || []) {
+        if (entry.google_calendar_event_id) {
+          await fetch(`${calendarApiBase}/events/${encodeURIComponent(entry.google_calendar_event_id)}`, {
+            method: "PATCH",
+            headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ summary: `Incomplete Make-Up Time – ${name}` }),
+          });
+        }
+      }
+      return new Response(JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    return new Response(JSON.stringify({ error: "Invalid action" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  } catch (error) {
+    console.error("Flex calendar sync error:", error);
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
 }

@@ -81,7 +81,9 @@ Deno.serve(async (req) => {
     }
 
     const requestId = action.value;
-    const actionId = action.action_id; // "approve_request" or "reject_request"
+    const actionId = action.action_id; // "approve_request", "reject_request", "approve_flex_request", "reject_flex_request"
+    const isFlexible = actionId === "approve_flex_request" || actionId === "reject_flex_request";
+    const isApproval = actionId === "approve_request" || actionId === "approve_flex_request";
     const slackUserId = payload.user?.id;
     const messageTs = payload.message?.ts;
     const channelId = payload.channel?.id;
@@ -126,77 +128,71 @@ Deno.serve(async (req) => {
     }
 
     // Fetch the request — first-action-wins check
-    const { data: request } = await supabase
-      .from("time_off_requests")
-      .select("*")
-      .eq("id", requestId)
-      .single();
+    let request: any = null;
+    let employee: any = null;
+    let dateRange = "";
+    let typeLabel = "";
 
-    if (!request) {
-      return new Response(
-        JSON.stringify({
-          response_type: "ephemeral",
-          text: "⚠️ Request not found.",
-        }),
-        { headers: { "Content-Type": "application/json" } }
-      );
+    if (isFlexible) {
+      const { data: flexReq } = await supabase
+        .from("flexible_time_requests").select("*").eq("id", requestId).single();
+      if (!flexReq) {
+        return new Response(JSON.stringify({ response_type: "ephemeral", text: "⚠️ Request not found." }),
+          { headers: { "Content-Type": "application/json" } });
+      }
+      if (flexReq.status !== "pending_approval") {
+        return new Response(JSON.stringify({ response_type: "ephemeral", text: `⚠️ This request has already been ${flexReq.status}. No action taken.` }),
+          { headers: { "Content-Type": "application/json" } });
+      }
+      request = flexReq;
+      const { data: emp } = await supabase.from("profiles").select("full_name, slack_user_id").eq("id", request.employee_id).single();
+      employee = emp;
+      dateRange = `${request.date_off} ${request.start_time?.slice(0, 5)} – ${request.end_time?.slice(0, 5)} (${request.total_hours}h)`;
+      typeLabel = "⏰ Flexible Time";
+    } else {
+      const { data: reqData } = await supabase
+        .from("time_off_requests").select("*").eq("id", requestId).single();
+      if (!reqData) {
+        return new Response(JSON.stringify({ response_type: "ephemeral", text: "⚠️ Request not found." }),
+          { headers: { "Content-Type": "application/json" } });
+      }
+      if (reqData.status !== "pending_approval") {
+        return new Response(JSON.stringify({ response_type: "ephemeral", text: `⚠️ This request has already been ${reqData.status}. No action taken.` }),
+          { headers: { "Content-Type": "application/json" } });
+      }
+      request = reqData;
+      const { data: emp } = await supabase.from("profiles").select("full_name, slack_user_id").eq("id", request.employee_id).single();
+      employee = emp;
+      dateRange = request.request_type === "vacation" ? `${request.start_date} → ${request.end_date}` : request.sick_date || "N/A";
+      typeLabel = request.request_type === "vacation" ? "🏖️ Vacation" : "🤒 Sick Day";
     }
-
-    if (request.status !== "pending_approval") {
-      // Already handled — update this message
-      return new Response(
-        JSON.stringify({
-          response_type: "ephemeral",
-          text: `⚠️ This request has already been ${request.status}. No action taken.`,
-        }),
-        { headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    // Get employee info
-    const { data: employee } = await supabase
-      .from("profiles")
-      .select("full_name, slack_user_id")
-      .eq("id", request.employee_id)
-      .single();
-
-    const dateRange =
-      request.request_type === "vacation"
-        ? `${request.start_date} → ${request.end_date}`
-        : request.sick_date || "N/A";
-    const typeLabel = request.request_type === "vacation" ? "🏖️ Vacation" : "🤒 Sick Day";
 
     const now = new Date().toISOString();
 
-    if (actionId === "approve_request") {
+    if (isApproval) {
       // Approve
-      await supabase
-        .from("time_off_requests")
-        .update({
-          status: "approved",
-          approved_by_user_id: manager.id,
-          approved_at: now,
-          approval_source: "manager",
-        })
-        .eq("id", requestId);
+      const table = isFlexible ? "flexible_time_requests" : "time_off_requests";
+      const updateData: any = {
+        status: "approved",
+        approved_by_user_id: manager.id,
+        approved_at: now,
+      };
+      if (!isFlexible) updateData.approval_source = "manager";
 
-      // Audit log
+      await supabase.from(table).update(updateData).eq("id", requestId);
+
       await supabase.from("audit_logs").insert({
         request_id: requestId,
-        action_type: "approved",
+        action_type: isFlexible ? "flexible_time_approved" : "approved",
         actor_type: "manager",
         actor_id: manager.id,
         details: { via: "slack", approver_name: manager.full_name },
       });
 
-      // Notify employee
       if (employee?.slack_user_id) {
         await fetch("https://slack.com/api/chat.postMessage", {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${SLACK_BOT_TOKEN}`,
-            "Content-Type": "application/json",
-          },
+          headers: { Authorization: `Bearer ${SLACK_BOT_TOKEN}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             channel: employee.slack_user_id,
             text: `✅ Your ${typeLabel} request (${dateRange}) has been approved by ${manager.full_name}!`,
@@ -204,43 +200,37 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Trigger calendar sync
+      // Calendar sync
       try {
-        await supabase.functions.invoke("sync-google-calendar", {
-          body: { request_id: requestId, action: "create" },
-        });
+        const calBody = isFlexible
+          ? { flexible_time_request_id: requestId, action: "create" }
+          : { request_id: requestId, action: "create" };
+        await supabase.functions.invoke("sync-google-calendar", { body: calBody });
       } catch (e) {
         console.error("Calendar sync failed:", e);
       }
-    } else if (actionId === "reject_request") {
+    } else {
       // Reject
-      await supabase
-        .from("time_off_requests")
-        .update({
-          status: "rejected",
-          rejected_by_user_id: manager.id,
-          rejected_at: now,
-          rejection_reason: `Rejected by ${manager.full_name} via Slack`,
-        })
-        .eq("id", requestId);
+      const table = isFlexible ? "flexible_time_requests" : "time_off_requests";
+      await supabase.from(table).update({
+        status: "rejected",
+        rejected_by_user_id: manager.id,
+        rejected_at: now,
+        rejection_reason: `Rejected by ${manager.full_name} via Slack`,
+      }).eq("id", requestId);
 
-      // Audit log
       await supabase.from("audit_logs").insert({
         request_id: requestId,
-        action_type: "rejected",
+        action_type: isFlexible ? "flexible_time_rejected" : "rejected",
         actor_type: "manager",
         actor_id: manager.id,
         details: { via: "slack", rejector_name: manager.full_name },
       });
 
-      // Notify employee
       if (employee?.slack_user_id) {
         await fetch("https://slack.com/api/chat.postMessage", {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${SLACK_BOT_TOKEN}`,
-            "Content-Type": "application/json",
-          },
+          headers: { Authorization: `Bearer ${SLACK_BOT_TOKEN}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             channel: employee.slack_user_id,
             text: `❌ Your ${typeLabel} request (${dateRange}) has been rejected by ${manager.full_name}.`,
@@ -249,6 +239,8 @@ Deno.serve(async (req) => {
       }
     }
 
+    const statusText = isApproval ? "Approved" : "Rejected";
+
     // Update ALL active approval messages for this request to "handled"
     const { data: activeMessages } = await supabase
       .from("slack_message_tracking")
@@ -256,8 +248,6 @@ Deno.serve(async (req) => {
       .eq("request_id", requestId)
       .eq("message_type", "approval_request")
       .eq("current_state", "active");
-
-    const statusText = actionId === "approve_request" ? "Approved" : "Rejected";
 
     for (const msg of activeMessages || []) {
       if (msg.slack_message_ts && msg.slack_channel_or_dm_id) {

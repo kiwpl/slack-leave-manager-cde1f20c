@@ -12,11 +12,13 @@ import type { Tables } from "@/integrations/supabase/types";
 import SpecialApprovalBadge from "@/components/SpecialApprovalBadge";
 
 type Request = Tables<"time_off_requests"> & { employee_name?: string };
+type FlexRequest = { id: string; employee_id: string; date_off: string; start_time: string; end_time: string; total_hours: number; status: string; submitted_at: string; employee_name?: string };
 
 export default function ManagerDashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [requests, setRequests] = useState<Request[]>([]);
+  const [flexRequests, setFlexRequests] = useState<FlexRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("pending_approval");
 
@@ -48,6 +50,27 @@ export default function ManagerDashboardPage() {
     setRequests(
       (data || []).map((r) => ({ ...r, employee_name: nameMap.get(r.employee_id) || "Unknown" }))
     );
+
+    // Flexible time requests
+    let fQuery = supabase
+      .from("flexible_time_requests")
+      .select("*")
+      .order("submitted_at", { ascending: false });
+    if (statusFilter !== "all") fQuery = fQuery.eq("status", statusFilter);
+    const { data: fData } = await fQuery;
+
+    if (fData && fData.length > 0) {
+      const fEmployeeIds = [...new Set(fData.map((r: any) => r.employee_id))];
+      const { data: fProfiles } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", fEmployeeIds);
+      const fNameMap = new Map((fProfiles || []).map((p) => [p.id, p.full_name]));
+      setFlexRequests(fData.map((r: any) => ({ ...r, employee_name: fNameMap.get(r.employee_id) || "Unknown" })));
+    } else {
+      setFlexRequests([]);
+    }
+
     setLoading(false);
   };
 
@@ -81,6 +104,8 @@ export default function ManagerDashboardPage() {
               <SelectItem value="approved">Approved</SelectItem>
               <SelectItem value="rejected">Rejected</SelectItem>
               <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="incomplete">Incomplete</SelectItem>
               <SelectItem value="all">All Statuses</SelectItem>
             </SelectContent>
           </Select>
@@ -90,7 +115,7 @@ export default function ManagerDashboardPage() {
           <CardContent className="pt-6">
             {loading ? (
               <p className="text-sm text-muted-foreground">Loading...</p>
-            ) : requests.length === 0 ? (
+            ) : requests.length === 0 && flexRequests.length === 0 ? (
               <p className="text-sm text-muted-foreground">No requests found.</p>
             ) : (
               <div className="space-y-2">
@@ -115,6 +140,31 @@ export default function ManagerDashboardPage() {
                         {req.request_type === "vacation"
                           ? `${req.start_date} → ${req.end_date}`
                           : req.sick_date}
+                      </p>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(req.submitted_at).toLocaleDateString()}
+                    </span>
+                  </Link>
+                ))}
+                {flexRequests.map((req) => (
+                  <Link
+                    key={req.id}
+                    to={`/flexible-time/${req.id}`}
+                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-foreground">
+                          {req.employee_name || "Unknown"}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          · Flexible Time
+                        </span>
+                        <StatusBadge status={req.status as any} />
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {req.date_off} · {req.start_time?.slice(0, 5)} – {req.end_time?.slice(0, 5)} · {req.total_hours}h
                       </p>
                     </div>
                     <span className="text-xs text-muted-foreground">
