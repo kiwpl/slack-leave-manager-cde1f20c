@@ -23,9 +23,24 @@ import SpecialApprovalBadge from "@/components/SpecialApprovalBadge";
 
 type Request = Tables<"time_off_requests">;
 
+interface FlexRequest {
+  id: string;
+  date_off: string;
+  start_time: string;
+  end_time: string;
+  total_hours: number;
+  status: string;
+  submitted_at: string;
+}
+
+type DisplayItem = 
+  | { kind: "time_off"; data: Request }
+  | { kind: "flexible"; data: FlexRequest };
+
 export default function DashboardPage() {
   const { user, profile, hasAnyRole } = useAuth();
   const [requests, setRequests] = useState<Request[]>([]);
+  const [flexRequests, setFlexRequests] = useState<FlexRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -45,15 +60,22 @@ export default function DashboardPage() {
 
   const fetchRequests = () => {
     if (!user) return;
-    supabase
-      .from("time_off_requests")
-      .select("*")
-      .eq("employee_id", user.id)
-      .order("submitted_at", { ascending: false })
-      .then(({ data }) => {
-        setRequests(data || []);
-        setLoading(false);
-      });
+    Promise.all([
+      supabase
+        .from("time_off_requests")
+        .select("*")
+        .eq("employee_id", user.id)
+        .order("submitted_at", { ascending: false }),
+      supabase
+        .from("flexible_time_requests")
+        .select("id, date_off, start_time, end_time, total_hours, status, submitted_at")
+        .eq("employee_id", user.id)
+        .order("submitted_at", { ascending: false }),
+    ]).then(([timeOffRes, flexRes]) => {
+      setRequests(timeOffRes.data || []);
+      setFlexRequests((flexRes.data || []) as FlexRequest[]);
+      setLoading(false);
+    });
   };
 
   useEffect(() => { fetchRequests(); }, [user]);
@@ -165,7 +187,18 @@ export default function DashboardPage() {
   };
 
   const startDayPortion = startHalfDay ? "pm" : "full";
-  const displayedRequests = showAll ? requests : requests.slice(0, 5);
+
+  // Merge time-off and flexible requests into a single sorted list
+  const allItems: DisplayItem[] = [
+    ...requests.map((r): DisplayItem => ({ kind: "time_off", data: r })),
+    ...flexRequests.map((r): DisplayItem => ({ kind: "flexible", data: r })),
+  ].sort((a, b) => {
+    const aDate = a.kind === "time_off" ? a.data.submitted_at : a.data.submitted_at;
+    const bDate = b.kind === "time_off" ? b.data.submitted_at : b.data.submitted_at;
+    return new Date(bDate).getTime() - new Date(aDate).getTime();
+  });
+
+  const displayedItems = showAll ? allItems : allItems.slice(0, 5);
 
   const formatRequestDates = (req: Request) => {
     const startP = (req as any).start_day_portion || "full";
@@ -183,6 +216,12 @@ export default function DashboardPage() {
     }
     if (startP === "pm") return `Afternoon · ${req.sick_date || req.start_date}`;
     return req.sick_date || req.start_date;
+  };
+
+  const formatFlexDates = (req: FlexRequest) => {
+    const st = req.start_time.replace(/:\d{2}$/, "");
+    const et = req.end_time.replace(/:\d{2}$/, "");
+    return `${req.date_off} · ${st}–${et} (${req.total_hours}h)`;
   };
 
   return (
@@ -343,34 +382,61 @@ export default function DashboardPage() {
           <CardContent>
             {loading ? (
               <p className="text-sm text-muted-foreground">Loading...</p>
-            ) : requests.length === 0 ? (
+            ) : allItems.length === 0 ? (
               <p className="text-sm text-muted-foreground">No requests yet.</p>
             ) : (
               <div className="space-y-2">
-                {displayedRequests.map((req) => (
-                  <Link
-                    key={req.id}
-                    to={`/requests/${req.id}`}
-                    className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="font-medium text-sm text-foreground capitalize">
-                          {req.request_type === "vacation" ? "Vacation" : "Sick Day"}
+                {displayedItems.map((item) => {
+                  if (item.kind === "flexible") {
+                    const req = item.data;
+                    return (
+                      <Link
+                        key={req.id}
+                        to={`/flexible-time/${req.id}`}
+                        className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                      >
+                        <div>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="font-medium text-sm text-foreground">
+                              <Clock className="h-3.5 w-3.5 inline mr-1" />
+                              Flexible Time
+                            </span>
+                            <StatusBadge status={req.status} />
+                          </div>
+                          <p className="text-xs text-muted-foreground">{formatFlexDates(req)}</p>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(req.submitted_at).toLocaleDateString()}
                         </span>
-                        <StatusBadge status={req.status} approvalSource={req.approval_source} />
-                        {(req as any).requires_special_approval && <SpecialApprovalBadge />}
+                      </Link>
+                    );
+                  }
+                  const req = item.data;
+                  return (
+                    <Link
+                      key={req.id}
+                      to={`/requests/${req.id}`}
+                      className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                    >
+                      <div>
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="font-medium text-sm text-foreground capitalize">
+                            {req.request_type === "vacation" ? "Vacation" : "Sick Day"}
+                          </span>
+                          <StatusBadge status={req.status} approvalSource={req.approval_source} />
+                          {(req as any).requires_special_approval && <SpecialApprovalBadge />}
+                        </div>
+                        <p className="text-xs text-muted-foreground">{formatRequestDates(req)}</p>
                       </div>
-                      <p className="text-xs text-muted-foreground">{formatRequestDates(req)}</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(req.submitted_at).toLocaleDateString()}
-                    </span>
-                  </Link>
-                ))}
-                {requests.length > 5 && (
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(req.submitted_at).toLocaleDateString()}
+                      </span>
+                    </Link>
+                  );
+                })}
+                {allItems.length > 5 && (
                   <Button variant="ghost" size="sm" className="w-full" onClick={() => setShowAll(!showAll)}>
-                    {showAll ? <><ChevronUp className="h-4 w-4 mr-1" /> Show less</> : <><ChevronDown className="h-4 w-4 mr-1" /> Show all {requests.length} requests</>}
+                    {showAll ? <><ChevronUp className="h-4 w-4 mr-1" /> Show less</> : <><ChevronDown className="h-4 w-4 mr-1" /> Show all {allItems.length} requests</>}
                   </Button>
                 )}
               </div>
