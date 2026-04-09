@@ -378,15 +378,32 @@ export default function SubmitFlexibleTimePage() {
                   </div>
                 </div>
 
-                {/* Auto-calculated hours */}
-                {totalHoursOff > 0 && (
-                  <div className="p-3 rounded-lg border border-border bg-muted/50 text-sm">
-                    <span className="font-medium">Total hours off:</span>{" "}
-                    {totalHoursOff}h
-                    {totalHoursOff > 4 && (
-                      <span className="text-destructive ml-2">
-                        (exceeds 4-hour maximum)
+                {/* Natural language recap */}
+                {dateOff && startTime && endTime && totalHoursOff > 0 && (
+                  <div className="p-3 rounded-lg border border-primary/30 bg-primary/5 text-sm space-y-1">
+                    <p>
+                      You are requesting{" "}
+                      <span className="font-semibold">{totalHoursOff} hour{totalHoursOff !== 1 ? "s" : ""}</span>{" "}
+                      off on{" "}
+                      <span className="font-semibold">
+                        {format(parseDateUTC(dateOff), "EEEE, MMMM d, yyyy")}
                       </span>
+                      , from{" "}
+                      <span className="font-semibold">{startTime}</span> to{" "}
+                      <span className="font-semibold">{endTime}</span>.
+                    </p>
+                    {totalMakeupHours > 0 && (
+                      <p>
+                        You plan to make up{" "}
+                        <span className="font-semibold">{totalMakeupHours} hour{totalMakeupHours !== 1 ? "s" : ""}</span>{" "}
+                        across{" "}
+                        <span className="font-semibold">{makeupEntries.filter(e => e.date && e.startTime && e.endTime).length} session{makeupEntries.filter(e => e.date && e.startTime && e.endTime).length !== 1 ? "s" : ""}</span>.
+                      </p>
+                    )}
+                    {totalHoursOff > 4 && (
+                      <p className="text-destructive font-medium">
+                        ⚠ This exceeds the 4-hour maximum.
+                      </p>
                     )}
                   </div>
                 )}
@@ -541,6 +558,13 @@ export default function SubmitFlexibleTimePage() {
                     <AlertDescription>{errors.anchor}</AlertDescription>
                   </Alert>
                 )}
+
+                <Alert className="border-muted-foreground/20 bg-muted/50">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="text-xs text-muted-foreground">
+                    This request will not take effect until it has been reviewed and approved by a manager.
+                  </AlertDescription>
+                </Alert>
 
                 <Button
                   type="submit"
