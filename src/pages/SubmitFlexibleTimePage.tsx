@@ -6,13 +6,13 @@ import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { AlertCircle, Info, Plus, Trash2, Clock } from "lucide-react";
 import { getPayPeriod, parseDateUTC, formatDateUTC, getWeekKey } from "@/lib/payPeriod";
+import TimeSelect from "@/components/TimeSelect";
 
 interface MakeupEntry {
   id: string;
@@ -36,7 +36,6 @@ export default function SubmitFlexibleTimePage() {
   const [dateOff, setDateOff] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [makeupPlan, setMakeupPlan] = useState("");
   const [makeupEntries, setMakeupEntries] = useState<MakeupEntry[]>([
     { id: crypto.randomUUID(), date: "", startTime: "", endTime: "" },
   ]);
@@ -107,19 +106,9 @@ export default function SubmitFlexibleTimePage() {
       newErrors.dateOff = "Date must be in the future. No retroactive requests allowed.";
 
     if (!startTime) newErrors.startTime = "Start time is required.";
-    else {
-      const mins = parseInt(startTime.split(":")[1] || "0", 10);
-      if (mins % 30 !== 0) newErrors.startTime = "Start time must be in 30-minute intervals (e.g. 9:00, 9:30).";
-    }
     if (!endTime) newErrors.endTime = "End time is required.";
-    else {
-      const mins = parseInt(endTime.split(":")[1] || "0", 10);
-      if (mins % 30 !== 0) newErrors.endTime = "End time must be in 30-minute intervals (e.g. 13:00, 13:30).";
-    }
-    if (totalHoursOff <= 0) newErrors.endTime = "End time must be after start time.";
+    if (startTime && endTime && totalHoursOff <= 0) newErrors.endTime = "End time must be after start time.";
     if (totalHoursOff > 4) newErrors.endTime = "Maximum 4 hours per request.";
-
-    if (!makeupPlan.trim()) newErrors.makeupPlan = "Make-up plan is required.";
 
     if (usedThisMonth) {
       newErrors.eligibility = "You have already used your flexible time request this month.";
@@ -142,16 +131,6 @@ export default function SubmitFlexibleTimePage() {
       if (!entry.date) entryErrors.push(`Make-up entry ${i + 1}: date is required.`);
       if (!entry.startTime) entryErrors.push(`Make-up entry ${i + 1}: start time is required.`);
       if (!entry.endTime) entryErrors.push(`Make-up entry ${i + 1}: end time is required.`);
-
-      // 30-min interval validation for makeup entries
-      if (entry.startTime) {
-        const sm = parseInt(entry.startTime.split(":")[1] || "0", 10);
-        if (sm % 30 !== 0) entryErrors.push(`Make-up entry ${i + 1}: start time must be in 30-minute intervals.`);
-      }
-      if (entry.endTime) {
-        const em = parseInt(entry.endTime.split(":")[1] || "0", 10);
-        if (em % 30 !== 0) entryErrors.push(`Make-up entry ${i + 1}: end time must be in 30-minute intervals.`);
-      }
 
       const entryHours = calcHours(entry.startTime, entry.endTime);
       if (entryHours <= 0 && entry.startTime && entry.endTime) {
@@ -209,6 +188,11 @@ export default function SubmitFlexibleTimePage() {
     setSubmitting(true);
     const payPeriod = getPayPeriod(parseDateUTC(dateOff), parseDateUTC(anchorDate));
 
+    // Build a makeup plan summary from entries
+    const makeupPlanSummary = makeupEntries
+      .map((e, i) => `Entry ${i + 1}: ${e.date} ${e.startTime}-${e.endTime} (${calcHours(e.startTime, e.endTime)}h)`)
+      .join("; ");
+
     const { data, error } = await supabase
       .from("flexible_time_requests")
       .insert({
@@ -217,7 +201,7 @@ export default function SubmitFlexibleTimePage() {
         start_time: startTime,
         end_time: endTime,
         total_hours: totalHoursOff,
-        makeup_plan: makeupPlan,
+        makeup_plan: makeupPlanSummary,
         status: "pending_approval",
         pay_period_start: formatDateUTC(payPeriod.start),
         pay_period_end: formatDateUTC(payPeriod.end),
@@ -272,6 +256,8 @@ export default function SubmitFlexibleTimePage() {
     navigate(`/flexible-time/${data.id}`);
     setSubmitting(false);
   };
+
+  const completedSessions = makeupEntries.filter(e => e.date && e.startTime && e.endTime).length;
 
   return (
     <AppLayout>
@@ -346,15 +332,14 @@ export default function SubmitFlexibleTimePage() {
                   )}
                 </div>
 
-                {/* Time range */}
+                {/* Time range - 30min interval selects */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label>Start Time</Label>
-                    <Input
-                      type="time"
-                      step="1800"
+                    <TimeSelect
                       value={startTime}
-                      onChange={(e) => setStartTime(e.target.value)}
+                      onChange={setStartTime}
+                      placeholder="Start time"
                     />
                     {errors.startTime && (
                       <p className="text-sm text-destructive">
@@ -364,11 +349,10 @@ export default function SubmitFlexibleTimePage() {
                   </div>
                   <div className="space-y-2">
                     <Label>End Time</Label>
-                    <Input
-                      type="time"
-                      step="1800"
+                    <TimeSelect
                       value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
+                      onChange={setEndTime}
+                      placeholder="End time"
                     />
                     {errors.endTime && (
                       <p className="text-sm text-destructive">
@@ -397,7 +381,7 @@ export default function SubmitFlexibleTimePage() {
                         You plan to make up{" "}
                         <span className="font-semibold">{totalMakeupHours} hour{totalMakeupHours !== 1 ? "s" : ""}</span>{" "}
                         across{" "}
-                        <span className="font-semibold">{makeupEntries.filter(e => e.date && e.startTime && e.endTime).length} session{makeupEntries.filter(e => e.date && e.startTime && e.endTime).length !== 1 ? "s" : ""}</span>.
+                        <span className="font-semibold">{completedSessions} session{completedSessions !== 1 ? "s" : ""}</span>.
                       </p>
                     )}
                     {totalHoursOff > 4 && (
@@ -407,22 +391,6 @@ export default function SubmitFlexibleTimePage() {
                     )}
                   </div>
                 )}
-
-                {/* Make-up plan */}
-                <div className="space-y-2">
-                  <Label>Make-Up Plan</Label>
-                  <Textarea
-                    value={makeupPlan}
-                    onChange={(e) => setMakeupPlan(e.target.value)}
-                    placeholder="Describe how you plan to make up the time..."
-                    rows={3}
-                  />
-                  {errors.makeupPlan && (
-                    <p className="text-sm text-destructive">
-                      {errors.makeupPlan}
-                    </p>
-                  )}
-                </div>
 
                 {/* Make-up entries */}
                 <div className="space-y-3">
@@ -449,7 +417,7 @@ export default function SubmitFlexibleTimePage() {
                     const pp = getPayPeriod(parseDateUTC(dateOff), parseDateUTC(anchorDate));
                     return (
                       <p className="text-xs text-muted-foreground">
-                        Pay period: {formatDateUTC(pp.start)} to {formatDateUTC(pp.end)}. 
+                        Pay period: {formatDateUTC(pp.start)} to {formatDateUTC(pp.end)}.
                         Make-up dates must fall within this period.
                       </p>
                     );
@@ -489,32 +457,18 @@ export default function SubmitFlexibleTimePage() {
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs">Start</Label>
-                          <Input
-                            type="time"
-                            step="1800"
+                          <TimeSelect
                             value={entry.startTime}
-                            onChange={(e) =>
-                              updateMakeupEntry(
-                                entry.id,
-                                "startTime",
-                                e.target.value
-                              )
-                            }
+                            onChange={(v) => updateMakeupEntry(entry.id, "startTime", v)}
+                            placeholder="Start"
                           />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs">End</Label>
-                          <Input
-                            type="time"
-                            step="1800"
+                          <TimeSelect
                             value={entry.endTime}
-                            onChange={(e) =>
-                              updateMakeupEntry(
-                                entry.id,
-                                "endTime",
-                                e.target.value
-                              )
-                            }
+                            onChange={(v) => updateMakeupEntry(entry.id, "endTime", v)}
+                            placeholder="End"
                           />
                         </div>
                       </div>
