@@ -60,15 +60,22 @@ export default function DashboardPage() {
 
   const fetchRequests = () => {
     if (!user) return;
-    supabase
-      .from("time_off_requests")
-      .select("*")
-      .eq("employee_id", user.id)
-      .order("submitted_at", { ascending: false })
-      .then(({ data }) => {
-        setRequests(data || []);
-        setLoading(false);
-      });
+    Promise.all([
+      supabase
+        .from("time_off_requests")
+        .select("*")
+        .eq("employee_id", user.id)
+        .order("submitted_at", { ascending: false }),
+      supabase
+        .from("flexible_time_requests")
+        .select("id, date_off, start_time, end_time, total_hours, status, submitted_at")
+        .eq("employee_id", user.id)
+        .order("submitted_at", { ascending: false }),
+    ]).then(([timeOffRes, flexRes]) => {
+      setRequests(timeOffRes.data || []);
+      setFlexRequests((flexRes.data || []) as FlexRequest[]);
+      setLoading(false);
+    });
   };
 
   useEffect(() => { fetchRequests(); }, [user]);
