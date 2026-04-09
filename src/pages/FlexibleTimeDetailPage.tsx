@@ -57,6 +57,7 @@ export default function FlexibleTimeDetailPage() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [processing, setProcessing] = useState(false);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [cancelOpen, setCancelOpen] = useState(false);
 
   const fetchData = async () => {
     if (!id) return;
