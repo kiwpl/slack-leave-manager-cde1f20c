@@ -350,6 +350,39 @@ export default function FlexibleTimeDetailPage() {
           </div>
         )}
 
+        {/* Employee cancel */}
+        {canCancel && (
+          <Button
+            variant="destructive"
+            onClick={() => setCancelOpen(true)}
+            disabled={processing}
+          >
+            <XCircle className="h-4 w-4 mr-1" /> Cancel Request
+          </Button>
+        )}
+
+        {/* Cancel confirmation dialog */}
+        <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Cancel flexible time request?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to cancel this flexible time request? This can't be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Keep Request</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleCancel}
+                disabled={processing}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Cancel Request
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {/* Audit log */}
         {auditLogs.length > 0 && (
           <Card>
