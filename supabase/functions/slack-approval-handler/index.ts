@@ -240,6 +240,37 @@ Deno.serve(async (req) => {
     }
 
     const statusText = isApproval ? "Approved" : "Rejected";
+    const statusEmoji = isApproval ? "✅" : "❌";
+    const actionTimestamp = new Date().toLocaleString("en-US", { timeZone: "America/New_York" });
+
+    // Build rich status blocks (no action buttons)
+    const updatedBlocks = [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `*${typeLabel} Request — ${employee?.full_name}*`,
+        },
+      },
+      {
+        type: "section",
+        fields: [
+          { type: "mrkdwn", text: `*Date/Time:*\n${dateRange}` },
+          { type: "mrkdwn", text: `*Status:*\n${statusEmoji} *${statusText}*` },
+          { type: "mrkdwn", text: `*${isApproval ? "Approved" : "Rejected"} by:*\n${manager.full_name}` },
+          { type: "mrkdwn", text: `*${isApproval ? "Approved" : "Rejected"} at:*\n${actionTimestamp}` },
+        ],
+      },
+      { type: "divider" },
+      {
+        type: "context",
+        elements: [
+          { type: "mrkdwn", text: `${statusEmoji} This request has been ${statusText.toLowerCase()}. No further action needed.` },
+        ],
+      },
+    ];
+
+    const updatedText = `${employee?.full_name}'s ${typeLabel} request (${dateRange}) — ${statusEmoji} ${statusText} by ${manager.full_name}`;
 
     // Update ALL active approval messages for this request to "handled"
     const { data: activeMessages } = await supabase
@@ -251,19 +282,23 @@ Deno.serve(async (req) => {
 
     for (const msg of activeMessages || []) {
       if (msg.slack_message_ts && msg.slack_channel_or_dm_id) {
-        await fetch("https://slack.com/api/chat.update", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${SLACK_BOT_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            channel: msg.slack_channel_or_dm_id,
-            ts: msg.slack_message_ts,
-            text: `${employee?.full_name}'s ${typeLabel} request (${dateRange}) — *${statusText}* by ${manager.full_name}`,
-            blocks: [],
-          }),
-        });
+        try {
+          await fetch("https://slack.com/api/chat.update", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${SLACK_BOT_TOKEN}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              channel: msg.slack_channel_or_dm_id,
+              ts: msg.slack_message_ts,
+              text: updatedText,
+              blocks: updatedBlocks,
+            }),
+          });
+        } catch (e) {
+          console.error("Failed to update Slack message:", msg.id, e);
+        }
 
         await supabase
           .from("slack_message_tracking")
@@ -272,11 +307,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Return updated message to the current interaction
+    // Return updated message to the current interaction (replaces in-place)
     return new Response(
       JSON.stringify({
         replace_original: true,
-        text: `${employee?.full_name}'s ${typeLabel} request (${dateRange}) — *${statusText}* by ${manager.full_name}`,
+        text: updatedText,
+        blocks: updatedBlocks,
       }),
       { headers: { "Content-Type": "application/json" } }
     );
