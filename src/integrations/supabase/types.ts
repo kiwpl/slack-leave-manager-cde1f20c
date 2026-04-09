@@ -156,6 +156,8 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by_user_id: string | null
+          cancelled_at: string | null
+          cancelled_by_user_id: string | null
           created_at: string
           date_off: string
           employee_id: string
@@ -177,6 +179,8 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           approved_by_user_id?: string | null
+          cancelled_at?: string | null
+          cancelled_by_user_id?: string | null
           created_at?: string
           date_off: string
           employee_id: string
@@ -198,6 +202,8 @@ export type Database = {
         Update: {
           approved_at?: string | null
           approved_by_user_id?: string | null
+          cancelled_at?: string | null
+          cancelled_by_user_id?: string | null
           created_at?: string
           date_off?: string
           employee_id?: string

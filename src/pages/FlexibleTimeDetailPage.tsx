@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -57,6 +58,7 @@ export default function FlexibleTimeDetailPage() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [processing, setProcessing] = useState(false);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [cancelOpen, setCancelOpen] = useState(false);
 
   const fetchData = async () => {
     if (!id) return;
@@ -83,6 +85,47 @@ export default function FlexibleTimeDetailPage() {
   useEffect(() => { fetchData(); }, [id]);
 
   const canApprove = (isManager || isAdmin) && request?.status === "pending_approval";
+  const canCancel = request?.status === "pending_approval" && request?.employee_id === user?.id;
+
+  const handleCancel = async () => {
+    if (!request || !user) return;
+    setProcessing(true);
+
+    await supabase
+      .from("flexible_time_requests")
+      .update({
+        status: "cancelled",
+        cancelled_at: new Date().toISOString(),
+        cancelled_by_user_id: user.id,
+      } as any)
+      .eq("id", request.id);
+
+    await supabase.from("audit_logs").insert({
+      request_id: request.id,
+      action_type: "flexible_time_cancelled",
+      actor_type: "staff",
+      actor_id: user.id,
+    });
+
+    // Calendar cleanup
+    supabase.functions.invoke("sync-google-calendar", {
+      body: { flexible_time_request_id: request.id, action: "delete" },
+    });
+
+    // Notify managers
+    supabase.functions.invoke("send-slack-notification", {
+      body: {
+        request_id: request.id,
+        notification_type: "flexible_time_cancelled",
+        flexible_time: true,
+      },
+    });
+
+    toast.success("Flexible time request canceled.");
+    setCancelOpen(false);
+    fetchData();
+    setProcessing(false);
+  };
 
   const handleApprove = async () => {
     if (!request || !user) return;
@@ -306,6 +349,39 @@ export default function FlexibleTimeDetailPage() {
             </Button>
           </div>
         )}
+
+        {/* Employee cancel */}
+        {canCancel && (
+          <Button
+            variant="destructive"
+            onClick={() => setCancelOpen(true)}
+            disabled={processing}
+          >
+            <XCircle className="h-4 w-4 mr-1" /> Cancel Request
+          </Button>
+        )}
+
+        {/* Cancel confirmation dialog */}
+        <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Cancel flexible time request?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to cancel this flexible time request? This can't be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Keep Request</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleCancel}
+                disabled={processing}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Cancel Request
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Audit log */}
         {auditLogs.length > 0 && (
