@@ -23,9 +23,24 @@ import SpecialApprovalBadge from "@/components/SpecialApprovalBadge";
 
 type Request = Tables<"time_off_requests">;
 
+interface FlexRequest {
+  id: string;
+  date_off: string;
+  start_time: string;
+  end_time: string;
+  total_hours: number;
+  status: string;
+  submitted_at: string;
+}
+
+type DisplayItem = 
+  | { kind: "time_off"; data: Request }
+  | { kind: "flexible"; data: FlexRequest };
+
 export default function DashboardPage() {
   const { user, profile, hasAnyRole } = useAuth();
   const [requests, setRequests] = useState<Request[]>([]);
+  const [flexRequests, setFlexRequests] = useState<FlexRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showAll, setShowAll] = useState(false);
