@@ -84,6 +84,47 @@ export default function FlexibleTimeDetailPage() {
   useEffect(() => { fetchData(); }, [id]);
 
   const canApprove = (isManager || isAdmin) && request?.status === "pending_approval";
+  const canCancel = request?.status === "pending_approval" && request?.employee_id === user?.id;
+
+  const handleCancel = async () => {
+    if (!request || !user) return;
+    setProcessing(true);
+
+    await supabase
+      .from("flexible_time_requests")
+      .update({
+        status: "cancelled",
+        cancelled_at: new Date().toISOString(),
+        cancelled_by_user_id: user.id,
+      } as any)
+      .eq("id", request.id);
+
+    await supabase.from("audit_logs").insert({
+      request_id: request.id,
+      action_type: "flexible_time_cancelled",
+      actor_type: "staff",
+      actor_id: user.id,
+    });
+
+    // Calendar cleanup
+    supabase.functions.invoke("sync-google-calendar", {
+      body: { flexible_time_request_id: request.id, action: "delete" },
+    });
+
+    // Notify managers
+    supabase.functions.invoke("send-slack-notification", {
+      body: {
+        request_id: request.id,
+        notification_type: "flexible_time_cancelled",
+        flexible_time: true,
+      },
+    });
+
+    toast.success("Flexible time request canceled.");
+    setCancelOpen(false);
+    fetchData();
+    setProcessing(false);
+  };
 
   const handleApprove = async () => {
     if (!request || !user) return;
