@@ -86,7 +86,11 @@ export default function FlexibleTimeDetailPage() {
   useEffect(() => { fetchData(); }, [id]);
 
   const canApprove = (isManager || isAdmin) && request?.status === "pending_approval";
-  const canCancel = request?.status === "pending_approval" && request?.employee_id === user?.id;
+  const canCancel =
+    request?.employee_id === user?.id &&
+    (request?.status === "pending_approval" || request?.status === "approved") &&
+    request?.date_off != null &&
+    parseDateUTC(request.date_off) > new Date();
 
   const handleCancel = async () => {
     if (!request || !user) return;
