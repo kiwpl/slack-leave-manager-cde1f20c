@@ -45,7 +45,7 @@ const App = () => (
             <Route path="/admin/users" element={<ProtectedRoute requiredRoles={["admin", "superadmin", "office_manager"]}><UserManagementPage /></ProtectedRoute>} />
             <Route path="/admin/policy" element={<ProtectedRoute requiredRoles={["admin", "superadmin"]}><PolicyEditorPage /></ProtectedRoute>} />
             <Route path="/admin/audit-log" element={<ProtectedRoute requiredRoles={["admin", "superadmin"]}><AuditLogPage /></ProtectedRoute>} />
-            <Route path="/submit-flexible-time" element={<ProtectedRoute requiredRoles={["office_manager", "admin", "superadmin"]}><SubmitFlexibleTimePage /></ProtectedRoute>} />
+            <Route path="/submit-flexible-time" element={<ProtectedRoute><SubmitFlexibleTimePage /></ProtectedRoute>} />
             <Route path="/flexible-time/:id" element={<ProtectedRoute><FlexibleTimeDetailPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
