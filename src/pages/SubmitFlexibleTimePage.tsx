@@ -495,12 +495,9 @@ export default function SubmitFlexibleTimePage() {
                         Total make-up hours:
                       </span>{" "}
                       {totalMakeupHours}h
-                      {totalHoursOff > 0 &&
-                        Math.abs(totalMakeupHours - totalHoursOff) > 0.01 && (
-                          <span className="text-destructive ml-2">
-                            (must equal {totalHoursOff}h off)
-                          </span>
-                        )}
+                      <span className="text-muted-foreground ml-2">
+                        (must be 1–4h in 30-min increments)
+                      </span>
                     </div>
                   )}
                 </div>
