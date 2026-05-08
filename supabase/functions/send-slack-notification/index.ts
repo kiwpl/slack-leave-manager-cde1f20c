@@ -1,3 +1,4 @@
+// v2 – include half-day (start_day_portion) in all notification messages
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
