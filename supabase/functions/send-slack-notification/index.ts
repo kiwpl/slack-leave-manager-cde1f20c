@@ -62,6 +62,7 @@ Deno.serve(async (req) => {
     let dateRange = "";
     let typeLabel = "";
     let specialApprovalNote = "";
+    let isHalfDayPm = false;
 
     if (flexible_time) {
       const { data: flexReq, error: flexError } = await supabase
@@ -91,7 +92,7 @@ Deno.serve(async (req) => {
       if (!emp) throw new Error("Employee profile not found");
       employee = emp;
 
-      const isHalfDayPm = request.start_day_portion === "pm";
+      isHalfDayPm = request.start_day_portion === "pm";
       const halfDaySuffix = isHalfDayPm ? " (Afternoon off - Half Day)" : "";
       dateRange = request.request_type === "vacation"
         ? `${request.start_date} → ${request.end_date}${halfDaySuffix}`
