@@ -148,8 +148,9 @@ export default function AdminSettingsPage() {
                 </p>
               </CardContent>
             </Card>
-          </>
-        )}
+        </>
+      )}
+        </div>
       </div>
     </AppLayout>
   );
