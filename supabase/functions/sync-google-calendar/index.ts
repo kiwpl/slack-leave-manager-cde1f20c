@@ -1,3 +1,4 @@
+// v2 – create timed calendar event (12:00–17:00) for half-day (start_day_portion === 'pm')
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
