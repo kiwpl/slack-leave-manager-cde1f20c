@@ -90,9 +90,11 @@ Deno.serve(async (req) => {
       if (!emp) throw new Error("Employee profile not found");
       employee = emp;
 
+      const isHalfDayPm = request.start_day_portion === "pm";
+      const halfDaySuffix = isHalfDayPm ? " (Afternoon off - Half Day)" : "";
       dateRange = request.request_type === "vacation"
-        ? `${request.start_date} → ${request.end_date}`
-        : request.sick_date || "N/A";
+        ? `${request.start_date} → ${request.end_date}${halfDaySuffix}`
+        : (request.sick_date || "N/A") + halfDaySuffix;
       typeLabel = request.request_type === "vacation" ? "🏖️ Vacation" : "🤒 Sick Day";
       specialApprovalNote = request.requires_special_approval
         ? "\n⚠️ _(Requires special approval: within 30 days)_"
@@ -146,7 +148,7 @@ Deno.serve(async (req) => {
                   type: "section",
                   text: {
                     type: "mrkdwn",
-                    text: `*New ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${request.note ? `\n*Note:* ${request.note}` : ""}${specialApprovalNote}`,
+                    text: `*New ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${isHalfDayPm ? `\n*Half Day:* Afternoon off` : ""}${request.note ? `\n*Note:* ${request.note}` : ""}${specialApprovalNote}`,
                   },
                 },
                 {
@@ -313,7 +315,7 @@ Deno.serve(async (req) => {
                   type: "section",
                   text: {
                     type: "mrkdwn",
-                    text: `🔔 *Reminder: Pending ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${request.note ? `\n*Note:* ${request.note}` : ""}${specialApprovalNote}`,
+                    text: `🔔 *Reminder: Pending ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${isHalfDayPm ? `\n*Half Day:* Afternoon off` : ""}${request.note ? `\n*Note:* ${request.note}` : ""}${specialApprovalNote}`,
                   },
                 },
                 {

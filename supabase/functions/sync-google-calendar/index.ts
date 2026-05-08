@@ -173,10 +173,16 @@ Deno.serve(async (req) => {
         );
       }
 
+      const isHalfDayPm = request.start_day_portion === "pm";
+
       const summary =
         request.request_type === "vacation"
-          ? `${employee?.full_name} - Vacation`
-          : `${employee?.full_name} - Sick Day`;
+          ? isHalfDayPm
+            ? `${employee?.full_name} - Vacation (Half Day - Afternoon Off)`
+            : `${employee?.full_name} - Vacation`
+          : isHalfDayPm
+            ? `${employee?.full_name} - Sick Day (Half Day - Afternoon Off)`
+            : `${employee?.full_name} - Sick Day`;
 
       let startDate: string, endDate: string;
       if (request.request_type === "vacation") {
@@ -192,12 +198,24 @@ Deno.serve(async (req) => {
         endDate = end.toISOString().split("T")[0];
       }
 
-      const event = {
-        summary,
-        description: request.note || undefined,
-        start: { date: startDate },
-        end: { date: endDate },
-      };
+      const description = [
+        request.note,
+        isHalfDayPm ? "Half day – afternoon off (12:00 PM – 5:00 PM)" : null,
+      ].filter(Boolean).join("\n") || undefined;
+
+      const event = isHalfDayPm
+        ? {
+            summary,
+            description,
+            start: { dateTime: `${startDate}T12:00:00` },
+            end: { dateTime: `${startDate}T17:00:00` },
+          }
+        : {
+            summary,
+            description,
+            start: { date: startDate },
+            end: { date: endDate },
+          };
 
       const res = await fetch(`${calendarApiBase}/events`, {
         method: "POST",
