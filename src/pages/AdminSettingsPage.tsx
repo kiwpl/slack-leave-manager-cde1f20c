@@ -48,12 +48,11 @@ export default function AdminSettingsPage() {
 
   return (
     <AppLayout>
-      <div className="min-h-full bg-[#F5F5DC] -m-4 md:-m-8 p-4 md:p-8">
-        <div className="max-w-3xl mx-auto space-y-6">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Admin Settings</h1>
-            <p className="text-muted-foreground">Configure integrations and app behavior</p>
-          </div>
+      <div className="max-w-3xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Admin Settings</h1>
+          <p className="text-muted-foreground">Configure integrations and app behavior</p>
+        </div>
 
         {loading ? (
           <p className="text-sm text-muted-foreground">Loading...</p>
@@ -148,9 +147,8 @@ export default function AdminSettingsPage() {
                 </p>
               </CardContent>
             </Card>
-        </>
-      )}
-        </div>
+          </>
+        )}
       </div>
     </AppLayout>
   );
