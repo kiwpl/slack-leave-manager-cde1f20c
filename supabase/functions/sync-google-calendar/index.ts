@@ -144,6 +144,9 @@ Deno.serve(async (req) => {
       .eq("id", request.employee_id)
       .single();
 
+    // Declared at outer scope to avoid TS scope errors
+    const isHalfDayPm = request.start_day_portion === "pm";
+
     const GOOGLE_SERVICE_ACCOUNT_JSON = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
     if (!GOOGLE_SERVICE_ACCOUNT_JSON) {
       await logSync(supabase, request_id, "failed", null, "Google service account not configured");
@@ -174,15 +177,13 @@ Deno.serve(async (req) => {
         );
       }
 
-      const isHalfDayPm = request.start_day_portion === "pm";
-
       const summary =
         request.request_type === "vacation"
           ? isHalfDayPm
-            ? `${employee?.full_name} - Vacation (Half Day - Afternoon Off)`
+            ? `${employee?.full_name} - Vacation - Half Day (Afternoon Off)`
             : `${employee?.full_name} - Vacation`
           : isHalfDayPm
-            ? `${employee?.full_name} - Sick Day (Half Day - Afternoon Off)`
+            ? `${employee?.full_name} - Sick Day - Half Day (Afternoon Off)`
             : `${employee?.full_name} - Sick Day`;
 
       let startDate: string, endDate: string;
