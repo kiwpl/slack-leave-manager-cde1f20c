@@ -209,8 +209,8 @@ Deno.serve(async (req) => {
         ? {
             summary,
             description,
-            start: { dateTime: `${startDate}T12:00:00` },
-            end: { dateTime: `${startDate}T17:00:00` },
+            start: { dateTime: `${startDate}T12:00:00`, timeZone: "America/New_York" },
+            end: { dateTime: `${startDate}T17:00:00`, timeZone: "America/New_York" },
           }
         : {
             summary,
