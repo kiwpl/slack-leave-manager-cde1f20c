@@ -30,6 +30,8 @@ interface FlexRequest {
   rejected_at: string | null;
   rejected_by_user_id: string | null;
   rejection_reason: string | null;
+  cancellation_reason: string | null;
+  previous_status: string | null;
   submitted_at: string;
   pay_period_start: string;
   pay_period_end: string;
@@ -57,6 +59,7 @@ export default function FlexibleTimeDetailPage() {
   const [loading, setLoading] = useState(true);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [cancellationReason, setCancellationReason] = useState("");
   const [processing, setProcessing] = useState(false);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -91,6 +94,7 @@ export default function FlexibleTimeDetailPage() {
     (request?.status === "pending_approval" || request?.status === "approved") &&
     request?.date_off != null &&
     parseDateUTC(request.date_off) > new Date();
+  const isCancelRequested = request?.status === "cancel_requested" && request.employee_id === user?.id;
 
   const handleCancel = async () => {
     if (!request || !user) return;
@@ -99,34 +103,32 @@ export default function FlexibleTimeDetailPage() {
     await supabase
       .from("flexible_time_requests")
       .update({
-        status: "cancelled",
-        cancelled_at: new Date().toISOString(),
+        status: "cancel_requested",
+        previous_status: request.status,
         cancelled_by_user_id: user.id,
+        cancellation_reason: cancellationReason || null,
       } as any)
       .eq("id", request.id);
 
     await supabase.from("audit_logs").insert({
       request_id: request.id,
-      action_type: "flexible_time_cancelled",
+      action_type: "cancellation_requested",
       actor_type: "staff",
       actor_id: user.id,
+      details: { reason: cancellationReason || null },
     });
 
-    // Calendar cleanup
-    supabase.functions.invoke("sync-google-calendar", {
-      body: { flexible_time_request_id: request.id, action: "delete" },
-    });
-
-    // Notify managers
+    // Notify managers via Slack — they must approve or deny
     supabase.functions.invoke("send-slack-notification", {
       body: {
         request_id: request.id,
-        notification_type: "flexible_time_cancelled",
+        notification_type: "cancel_request_notification",
         flexible_time: true,
+        extra: { cancellation_reason: cancellationReason || "" },
       },
     });
 
-    toast.success("Flexible time request canceled.");
+    toast.success("Cancellation request submitted. Your manager will be notified.");
     setCancelOpen(false);
     fetchData();
     setProcessing(false);
@@ -356,6 +358,11 @@ export default function FlexibleTimeDetailPage() {
         )}
 
         {/* Employee cancel */}
+        {isCancelRequested && (
+          <Button variant="outline" disabled className="opacity-60 cursor-not-allowed">
+            <XCircle className="h-4 w-4 mr-1" /> Cancellation Requested
+          </Button>
+        )}
         {canCancel && (
           <Button
             variant="destructive"
@@ -370,11 +377,20 @@ export default function FlexibleTimeDetailPage() {
         <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Cancel flexible time request?</AlertDialogTitle>
+              <AlertDialogTitle>Request Cancellation?</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to cancel this flexible time request? This can't be undone.
+                Your manager will be notified and must approve or deny the cancellation.
               </AlertDialogDescription>
             </AlertDialogHeader>
+            <div className="space-y-2 py-2">
+              <Label>Reason for cancellation (optional)</Label>
+              <Textarea
+                value={cancellationReason}
+                onChange={(e) => setCancellationReason(e.target.value)}
+                placeholder="Let your manager know why you're cancelling..."
+                rows={3}
+              />
+            </div>
             <AlertDialogFooter>
               <AlertDialogCancel>Keep Request</AlertDialogCancel>
               <AlertDialogAction
@@ -382,7 +398,7 @@ export default function FlexibleTimeDetailPage() {
                 disabled={processing}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                Cancel Request
+                {processing ? "Submitting..." : "Request Cancellation"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

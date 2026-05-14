@@ -81,9 +81,10 @@ Deno.serve(async (req) => {
     }
 
     const requestId = action.value;
-    const actionId = action.action_id; // "approve_request", "reject_request", "approve_flex_request", "reject_flex_request"
+    const actionId = action.action_id; // "approve_request", "reject_request", "approve_flex_request", "reject_flex_request", "approve_cancellation", "deny_cancellation", "approve_flex_cancellation", "deny_flex_cancellation"
     const isFlexible = actionId === "approve_flex_request" || actionId === "reject_flex_request";
     const isApproval = actionId === "approve_request" || actionId === "approve_flex_request";
+    const isCancellationAction = ["approve_cancellation", "deny_cancellation", "approve_flex_cancellation", "deny_flex_cancellation"].includes(actionId);
     const slackUserId = payload.user?.id;
     const messageTs = payload.message?.ts;
     const channelId = payload.channel?.id;
@@ -126,6 +127,174 @@ Deno.serve(async (req) => {
         { headers: { "Content-Type": "application/json" } }
       );
     }
+
+    // ── Cancellation approve/deny branch ──────────────────────────────────────
+    if (isCancellationAction) {
+      const isCancelFlex = actionId === "approve_flex_cancellation" || actionId === "deny_flex_cancellation";
+      const isCancelApproval = actionId === "approve_cancellation" || actionId === "approve_flex_cancellation";
+      const cancelTable = isCancelFlex ? "flexible_time_requests" : "time_off_requests";
+
+      const { data: cancelReq } = await supabase.from(cancelTable).select("*").eq("id", requestId).single();
+      if (!cancelReq) {
+        return new Response(JSON.stringify({ response_type: "ephemeral", text: "⚠️ Request not found." }),
+          { headers: { "Content-Type": "application/json" } });
+      }
+      if (cancelReq.status !== "cancel_requested") {
+        return new Response(JSON.stringify({ response_type: "ephemeral", text: `⚠️ This cancellation request has already been handled. Current status: ${cancelReq.status}.` }),
+          { headers: { "Content-Type": "application/json" } });
+      }
+
+      const { data: empProfile } = await supabase.from("profiles")
+        .select("full_name, slack_user_id").eq("id", cancelReq.employee_id).single();
+
+      const cancelTypeLabel = isCancelFlex
+        ? "⏰ Flexible Time"
+        : cancelReq.request_type === "vacation" ? "🏖️ Vacation" : "🤒 Sick Day";
+      const cancelDateRange = isCancelFlex
+        ? `${cancelReq.date_off} ${cancelReq.start_time?.slice(0, 5)} – ${cancelReq.end_time?.slice(0, 5)}`
+        : cancelReq.request_type === "vacation"
+          ? `${cancelReq.start_date} → ${cancelReq.end_date}`
+          : cancelReq.sick_date || "N/A";
+
+      const nowIso = new Date().toISOString();
+      const actionTimestamp = new Date().toLocaleString("en-US", { timeZone: "America/New_York" });
+
+      if (isCancelApproval) {
+        // Approve: set status to cancelled, delete calendar events, DM employee
+        await supabase.from(cancelTable).update({
+          status: "cancelled",
+          cancelled_at: nowIso,
+          previous_status: null,
+        }).eq("id", requestId);
+
+        await supabase.from("audit_logs").insert({
+          request_id: requestId,
+          action_type: "cancellation_approved",
+          actor_type: "manager",
+          actor_id: manager.id,
+          details: { approver_name: manager.full_name, via: "slack" },
+        });
+
+        // Delete calendar event(s) if present
+        if (cancelReq.google_calendar_event_id) {
+          try {
+            const calBody = isCancelFlex
+              ? { flexible_time_request_id: requestId, action: "delete" }
+              : { request_id: requestId, action: "delete" };
+            await supabase.functions.invoke("sync-google-calendar", { body: calBody });
+          } catch (e) {
+            console.error("Calendar delete failed:", e);
+          }
+        }
+
+        if (empProfile?.slack_user_id) {
+          await fetch("https://slack.com/api/chat.postMessage", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${SLACK_BOT_TOKEN}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              channel: empProfile.slack_user_id,
+              text: `✅ Your cancellation request for your ${cancelTypeLabel} (${cancelDateRange}) has been approved by ${manager.full_name}. The request has been cancelled.`,
+            }),
+          });
+        }
+
+        const approvedBlocks = [
+          { type: "section", text: { type: "mrkdwn", text: `*🚫 Cancellation Request — ${empProfile?.full_name}*` } },
+          {
+            type: "section",
+            fields: [
+              { type: "mrkdwn", text: `*Type:*\n${cancelTypeLabel}` },
+              { type: "mrkdwn", text: `*Dates:*\n${cancelDateRange}` },
+              { type: "mrkdwn", text: `*Status:*\n✅ *Cancellation Approved*` },
+              { type: "mrkdwn", text: `*Approved by:*\n${manager.full_name}` },
+              { type: "mrkdwn", text: `*Approved at:*\n${actionTimestamp}` },
+            ],
+          },
+          { type: "divider" },
+          { type: "context", elements: [{ type: "mrkdwn", text: "✅ Cancellation approved — the request has been cancelled." }] },
+        ];
+
+        const { data: activeCancelMsgs } = await supabase.from("slack_message_tracking").select("*")
+          .eq("request_id", requestId).eq("message_type", "cancellation_request" as any).eq("current_state", "active");
+        for (const msg of activeCancelMsgs || []) {
+          if (msg.slack_message_ts && msg.slack_channel_or_dm_id) {
+            try {
+              await fetch("https://slack.com/api/chat.update", {
+                method: "POST",
+                headers: { Authorization: `Bearer ${SLACK_BOT_TOKEN}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ channel: msg.slack_channel_or_dm_id, ts: msg.slack_message_ts, text: `${empProfile?.full_name}'s ${cancelTypeLabel} cancellation — ✅ Approved by ${manager.full_name}`, blocks: approvedBlocks }),
+              });
+            } catch (e) { console.error("Failed to update Slack message:", e); }
+            await supabase.from("slack_message_tracking").update({ current_state: "handled" }).eq("id", msg.id);
+          }
+        }
+
+        return new Response(JSON.stringify({ replace_original: true, text: `${empProfile?.full_name}'s ${cancelTypeLabel} cancellation — ✅ Approved by ${manager.full_name}`, blocks: approvedBlocks }),
+          { headers: { "Content-Type": "application/json" } });
+
+      } else {
+        // Deny: revert to previous_status, DM employee
+        const previousStatus = cancelReq.previous_status || "approved";
+        await supabase.from(cancelTable).update({
+          status: previousStatus,
+          previous_status: null,
+        }).eq("id", requestId);
+
+        await supabase.from("audit_logs").insert({
+          request_id: requestId,
+          action_type: "cancellation_denied",
+          actor_type: "manager",
+          actor_id: manager.id,
+          details: { denier_name: manager.full_name, reverted_to: previousStatus, via: "slack" },
+        });
+
+        if (empProfile?.slack_user_id) {
+          await fetch("https://slack.com/api/chat.postMessage", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${SLACK_BOT_TOKEN}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              channel: empProfile.slack_user_id,
+              text: `❌ Your cancellation request for your ${cancelTypeLabel} (${cancelDateRange}) has been denied by ${manager.full_name}. The request remains active.`,
+            }),
+          });
+        }
+
+        const deniedBlocks = [
+          { type: "section", text: { type: "mrkdwn", text: `*🚫 Cancellation Request — ${empProfile?.full_name}*` } },
+          {
+            type: "section",
+            fields: [
+              { type: "mrkdwn", text: `*Type:*\n${cancelTypeLabel}` },
+              { type: "mrkdwn", text: `*Dates:*\n${cancelDateRange}` },
+              { type: "mrkdwn", text: `*Status:*\n❌ *Cancellation Denied*` },
+              { type: "mrkdwn", text: `*Denied by:*\n${manager.full_name}` },
+              { type: "mrkdwn", text: `*Denied at:*\n${actionTimestamp}` },
+            ],
+          },
+          { type: "divider" },
+          { type: "context", elements: [{ type: "mrkdwn", text: "❌ Cancellation denied — the request has been restored to its previous status." }] },
+        ];
+
+        const { data: activeCancelMsgs } = await supabase.from("slack_message_tracking").select("*")
+          .eq("request_id", requestId).eq("message_type", "cancellation_request" as any).eq("current_state", "active");
+        for (const msg of activeCancelMsgs || []) {
+          if (msg.slack_message_ts && msg.slack_channel_or_dm_id) {
+            try {
+              await fetch("https://slack.com/api/chat.update", {
+                method: "POST",
+                headers: { Authorization: `Bearer ${SLACK_BOT_TOKEN}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ channel: msg.slack_channel_or_dm_id, ts: msg.slack_message_ts, text: `${empProfile?.full_name}'s ${cancelTypeLabel} cancellation — ❌ Denied by ${manager.full_name}`, blocks: deniedBlocks }),
+              });
+            } catch (e) { console.error("Failed to update Slack message:", e); }
+            await supabase.from("slack_message_tracking").update({ current_state: "handled" }).eq("id", msg.id);
+          }
+        }
+
+        return new Response(JSON.stringify({ replace_original: true, text: `${empProfile?.full_name}'s ${cancelTypeLabel} cancellation — ❌ Denied by ${manager.full_name}`, blocks: deniedBlocks }),
+          { headers: { "Content-Type": "application/json" } });
+      }
+    }
+    // ── End cancellation branch ────────────────────────────────────────────────
 
     // Fetch the request — first-action-wins check
     let request: any = null;
