@@ -86,11 +86,11 @@ export default function RequestDetailPage() {
     if (!request || !user || !id) return;
     setCancelling(true);
 
-    const { error } = await supabase
-      .from("time_off_requests")
+    const { error } = await (supabase
+      .from("time_off_requests") as any)
       .update({
-        status: "cancel_requested" as any,
-        previous_status: request.status as any,
+        status: "cancel_requested",
+        previous_status: request.status,
         cancelled_by_user_id: user.id,
         cancellation_reason: cancellationReason || null,
       })
