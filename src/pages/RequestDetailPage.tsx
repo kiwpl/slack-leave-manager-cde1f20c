@@ -90,7 +90,7 @@ export default function RequestDetailPage() {
       .from("time_off_requests")
       .update({
         status: "cancel_requested" as any,
-        previous_status: request.status,
+        previous_status: request.status as any,
         cancelled_by_user_id: user.id,
         cancellation_reason: cancellationReason || null,
       })
