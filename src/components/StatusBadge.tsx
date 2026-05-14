@@ -15,6 +15,10 @@ const statusConfig: Record<string, { label: string; className: string }> = {
     label: "Rejected",
     className: "bg-destructive/15 text-destructive border-destructive/30",
   },
+  cancel_requested: {
+    label: "⏳ Cancellation Pending",
+    className: "bg-warning/15 text-warning border-warning/30",
+  },
   cancelled: {
     label: "Cancelled",
     className: "bg-muted text-muted-foreground border-border",

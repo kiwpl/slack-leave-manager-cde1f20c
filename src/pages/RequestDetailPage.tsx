@@ -54,9 +54,9 @@ export default function RequestDetailPage() {
     request.status === "pending_approval" || request.status === "approved"
   );
 
-  const canRemind = request && user && request.employee_id === user.id && request.status === "pending_approval";
+  const isCancelRequested = request?.status === "cancel_requested" && request.employee_id === user?.id;
 
-  const needsCancelReason = request?.status === "approved" && request?.request_type === "vacation";
+  const canRemind = request && user && request.employee_id === user.id && request.status === "pending_approval";
 
   const handleReminder = async () => {
     if (!request || !user || !id) return;
@@ -84,50 +84,42 @@ export default function RequestDetailPage() {
 
   const handleCancel = async () => {
     if (!request || !user || !id) return;
-    if (needsCancelReason && !cancellationReason.trim()) {
-      toast.error("Please provide a cancellation reason.");
-      return;
-    }
-
     setCancelling(true);
 
     const { error } = await supabase
       .from("time_off_requests")
       .update({
-        status: "cancelled",
-        cancelled_at: new Date().toISOString(),
+        status: "cancel_requested" as any,
+        previous_status: request.status,
         cancelled_by_user_id: user.id,
         cancellation_reason: cancellationReason || null,
       })
       .eq("id", id);
 
     if (error) {
-      toast.error("Failed to cancel: " + error.message);
+      toast.error("Failed to submit cancellation request: " + error.message);
       setCancelling(false);
       return;
     }
 
     await supabase.from("audit_logs").insert({
       request_id: id,
-      action_type: "request_cancelled",
+      action_type: "cancellation_requested",
       actor_type: "staff",
       actor_id: user.id,
-      details: { reason: cancellationReason || "No reason provided" },
+      details: { reason: cancellationReason || null },
     });
 
-    // Delete calendar event if it was approved
-    if (request.status === "approved" && request.google_calendar_event_id) {
-      supabase.functions.invoke("sync-google-calendar", {
-        body: { request_id: id, action: "delete" },
-      });
-    }
-
-    // Notify via Slack
+    // Notify managers via Slack — they must approve or deny
     supabase.functions.invoke("send-slack-notification", {
-      body: { request_id: id, notification_type: "cancellation_notification" },
+      body: {
+        request_id: id,
+        notification_type: "cancel_request_notification",
+        extra: { cancellation_reason: cancellationReason || "" },
+      },
     });
 
-    toast.success("Request cancelled.");
+    toast.success("Cancellation request submitted. Your manager will be notified.");
     setCancelDialogOpen(false);
     fetchData();
     setCancelling(false);
@@ -237,8 +229,8 @@ export default function RequestDetailPage() {
         </Card>
 
         {/* Actions */}
-        {(canEdit || canCancel || canRemind) && (
-          <div className="flex gap-3">
+        {(canEdit || canCancel || canRemind || isCancelRequested) && (
+          <div className="flex gap-3 flex-wrap">
             {canRemind && (
               <Button variant="outline" onClick={handleReminder} disabled={sendingReminder}>
                 <Bell className="h-4 w-4 mr-2" />
@@ -253,6 +245,12 @@ export default function RequestDetailPage() {
                 </Link>
               </Button>
             )}
+            {isCancelRequested && (
+              <Button variant="outline" disabled className="opacity-60 cursor-not-allowed">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Cancellation Requested
+              </Button>
+            )}
             {canCancel && (
               <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
                 <DialogTrigger asChild>
@@ -263,28 +261,26 @@ export default function RequestDetailPage() {
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Cancel Request</DialogTitle>
+                    <DialogTitle>Request Cancellation</DialogTitle>
                     <DialogDescription>
-                      Are you sure you want to cancel this {request.request_type} request?
-                      {request.status === "approved" && " This will remove it from the shared calendar."}
+                      Are you sure you want to request cancellation of this {request.request_type} request?
+                      Your manager will be notified and must approve or deny the cancellation.
                     </DialogDescription>
                   </DialogHeader>
-                  {needsCancelReason && (
-                    <div className="space-y-2">
-                      <Label>Cancellation Reason (required)</Label>
-                      <Textarea
-                        value={cancellationReason}
-                        onChange={(e) => setCancellationReason(e.target.value)}
-                        placeholder="Please explain why you're cancelling..."
-                      />
-                    </div>
-                  )}
+                  <div className="space-y-2">
+                    <Label>Reason for cancellation (optional)</Label>
+                    <Textarea
+                      value={cancellationReason}
+                      onChange={(e) => setCancellationReason(e.target.value)}
+                      placeholder="Let your manager know why you're cancelling..."
+                    />
+                  </div>
                   <DialogFooter>
                     <Button variant="ghost" onClick={() => setCancelDialogOpen(false)}>
                       Keep Request
                     </Button>
                     <Button variant="destructive" onClick={handleCancel} disabled={cancelling}>
-                      {cancelling ? "Cancelling..." : "Confirm Cancellation"}
+                      {cancelling ? "Submitting..." : "Request Cancellation"}
                     </Button>
                   </DialogFooter>
                 </DialogContent>

@@ -334,6 +334,10 @@ async function handleFlexibleTimeCalendar(
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    const { data: tzSetting } = await supabase
+      .from("app_settings").select("value").eq("key", "company_timezone").single();
+    const companyTimezone = tzSetting?.value || "America/New_York";
+
     const { data: flexReq } = await supabase
       .from("flexible_time_requests").select("*").eq("id", flexRequestId).single();
     if (!flexReq) throw new Error("Flexible time request not found");
@@ -362,8 +366,8 @@ async function handleFlexibleTimeCalendar(
       const offEvent = {
         summary: `Flexible Time Off – ${name}`,
         description: flexReq.makeup_plan || undefined,
-        start: { dateTime: `${flexReq.date_off}T${flexReq.start_time}`, timeZone: "UTC" },
-        end: { dateTime: `${flexReq.date_off}T${flexReq.end_time}`, timeZone: "UTC" },
+        start: { dateTime: `${flexReq.date_off}T${flexReq.start_time}`, timeZone: companyTimezone },
+        end: { dateTime: `${flexReq.date_off}T${flexReq.end_time}`, timeZone: companyTimezone },
       };
 
       const offRes = await fetch(`${calendarApiBase}/events`, {
@@ -383,8 +387,8 @@ async function handleFlexibleTimeCalendar(
       for (const entry of entries || []) {
         const muEvent = {
           summary: `Make-Up Time – ${name}`,
-          start: { dateTime: `${entry.makeup_date}T${entry.start_time}`, timeZone: "UTC" },
-          end: { dateTime: `${entry.makeup_date}T${entry.end_time}`, timeZone: "UTC" },
+          start: { dateTime: `${entry.makeup_date}T${entry.start_time}`, timeZone: companyTimezone },
+          end: { dateTime: `${entry.makeup_date}T${entry.end_time}`, timeZone: companyTimezone },
         };
         const muRes = await fetch(`${calendarApiBase}/events`, {
           method: "POST",

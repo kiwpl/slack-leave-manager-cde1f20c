@@ -16,6 +16,7 @@ interface NotificationPayload {
     | "rejection_notification"
     | "edit_notification"
     | "cancellation_notification"
+    | "cancel_request_notification"
     | "auto_approved_notification"
     | "approval_reminder"
     | "flexible_time_request"
@@ -439,6 +440,76 @@ Deno.serve(async (req) => {
               slackUserId: mgr.slack_user_id,
               text: `🔔 *Reminder:* ${employee.full_name} has pending make-up hours for their flexible time request (${dateRange}). Pay period ends ${request.pay_period_end}.`,
               messageType: "edit_notification",
+            });
+          }
+        }
+        break;
+      }
+
+      case "cancel_request_notification": {
+        // Notify all managers — they must approve or deny the cancellation via Slack buttons
+        const { data: managerRoles } = await supabase
+          .from("user_roles").select("user_id").in("role", ["manager", "admin", "superadmin"]);
+
+        if (managerRoles) {
+          const managerIds = [...new Set(managerRoles.map((r) => r.user_id))];
+          const { data: managers } = await supabase
+            .from("profiles").select("id, slack_user_id").in("id", managerIds).eq("status", "active");
+
+          // Look up approver name if request was previously approved
+          let approvalLine = "";
+          if (request.approved_by_user_id && request.approved_at) {
+            const { data: approver } = await supabase
+              .from("profiles").select("full_name").eq("id", request.approved_by_user_id).single();
+            if (approver) {
+              const approvedDate = new Date(request.approved_at).toLocaleDateString("en-US", {
+                month: "short", day: "numeric", year: "numeric",
+              });
+              approvalLine = `\n*Original Approval:* Approved by ${approver.full_name} on ${approvedDate}`;
+            }
+          }
+
+          const cancelReason = extra?.cancellation_reason || request.cancellation_reason || "";
+          const reasonLine = cancelReason ? `\n*Reason:* ${cancelReason}` : "";
+
+          const approveActionId = flexible_time ? "approve_flex_cancellation" : "approve_cancellation";
+          const denyActionId = flexible_time ? "deny_flex_cancellation" : "deny_cancellation";
+
+          for (const mgr of managers || []) {
+            if (!mgr.slack_user_id) continue;
+            messages.push({
+              slackUserId: mgr.slack_user_id,
+              text: `📋 Action Required: 🚫 Cancellation Request — ${employee.full_name} wants to cancel their ${typeLabel} (${dateRange})`,
+              blocks: [
+                {
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text: `*📋 Action Required: 🚫 Cancellation Request*\n*From:* ${employee.full_name}\n*Type:* ${typeLabel}\n*Dates:* ${dateRange}${approvalLine}${reasonLine}`,
+                  },
+                },
+                {
+                  type: "actions",
+                  block_id: `cancel_${request_id}`,
+                  elements: [
+                    {
+                      type: "button",
+                      text: { type: "plain_text", text: "✅ Approve Cancellation" },
+                      style: "primary",
+                      action_id: approveActionId,
+                      value: request_id,
+                    },
+                    {
+                      type: "button",
+                      text: { type: "plain_text", text: "❌ Deny Cancellation" },
+                      style: "danger",
+                      action_id: denyActionId,
+                      value: request_id,
+                    },
+                  ],
+                },
+              ],
+              messageType: "cancellation_request",
             });
           }
         }
