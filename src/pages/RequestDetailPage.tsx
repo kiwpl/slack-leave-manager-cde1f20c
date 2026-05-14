@@ -54,7 +54,7 @@ export default function RequestDetailPage() {
     request.status === "pending_approval" || request.status === "approved"
   );
 
-  const isCancelRequested = request?.status === "cancel_requested" && request.employee_id === user?.id;
+  const isCancelRequested = (request?.status as string) === "cancel_requested" && request?.employee_id === user?.id;
 
   const canRemind = request && user && request.employee_id === user.id && request.status === "pending_approval";
 
