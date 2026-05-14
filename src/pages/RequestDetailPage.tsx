@@ -54,7 +54,7 @@ export default function RequestDetailPage() {
     request.status === "pending_approval" || request.status === "approved"
   );
 
-  const isCancelRequested = request?.status === "cancel_requested" && request.employee_id === user?.id;
+  const isCancelRequested = (request?.status as string) === "cancel_requested" && request?.employee_id === user?.id;
 
   const canRemind = request && user && request.employee_id === user.id && request.status === "pending_approval";
 
@@ -86,10 +86,10 @@ export default function RequestDetailPage() {
     if (!request || !user || !id) return;
     setCancelling(true);
 
-    const { error } = await supabase
-      .from("time_off_requests")
+    const { error } = await (supabase
+      .from("time_off_requests") as any)
       .update({
-        status: "cancel_requested" as any,
+        status: "cancel_requested",
         previous_status: request.status,
         cancelled_by_user_id: user.id,
         cancellation_reason: cancellationReason || null,
