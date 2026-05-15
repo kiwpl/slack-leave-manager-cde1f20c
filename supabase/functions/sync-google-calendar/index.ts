@@ -1,4 +1,4 @@
-// v2 – create timed calendar event (12:00–17:00) for half-day (start_day_portion === 'pm')
+// v3 – fix timezone handling for Flexible Time Requests + retroactive correction
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -10,7 +10,22 @@ const corsHeaders = {
 interface SyncPayload {
   request_id?: string;
   flexible_time_request_id?: string;
-  action: "create" | "delete" | "update_incomplete";
+  action: "create" | "delete" | "update_incomplete" | "retroactive_fix";
+}
+
+// Strip any timezone offset or microseconds from a Supabase time column value.
+// PostgreSQL `time without time zone` should come back as "HH:MM:SS", but
+// in some environments it may include "+00" or ".000000". An embedded offset
+// would override the timeZone field in the Google Calendar API, causing events
+// to land in UTC instead of the company's local timezone.
+function normalizeTime(t: string): string {
+  const m = (t || "").match(/^(\d{2}:\d{2}:\d{2})/);
+  return m ? m[1] : t;
+}
+
+// Ensure date strings are always "YYYY-MM-DD" (10 chars).
+function normalizeDate(d: string): string {
+  return (d || "").substring(0, 10);
 }
 
 async function getAccessToken(serviceAccountJson: string): Promise<string> {
@@ -79,6 +94,164 @@ async function getAccessToken(serviceAccountJson: string): Promise<string> {
   return tokenData.access_token;
 }
 
+// Retroactive fix: patch all Flexible Time Request calendar events whose
+// times were stored with incorrect UTC offsets. Reads correct times from
+// the database and updates Google Calendar to match.
+async function runRetroactiveFix(
+  supabase: any,
+  calendarApiBase: string,
+  accessToken: string,
+  companyTimezone: string
+): Promise<unknown[]> {
+  const corrections: unknown[] = [];
+
+  const { data: allFlexReqs } = await supabase
+    .from("flexible_time_requests")
+    .select("*")
+    .not("google_calendar_event_id", "is", null);
+
+  for (const req of allFlexReqs || []) {
+    const { data: employee } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", req.employee_id)
+      .single();
+    const name = employee?.full_name || "Unknown";
+
+    const correctStart = `${normalizeDate(req.date_off)}T${normalizeTime(req.start_time)}`;
+    const correctEnd = `${normalizeDate(req.date_off)}T${normalizeTime(req.end_time)}`;
+
+    // Check whether the main time-off event still exists in Google Calendar
+    const checkRes = await fetch(
+      `${calendarApiBase}/events/${encodeURIComponent(req.google_calendar_event_id)}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    if (!checkRes.ok) {
+      corrections.push({
+        requestId: req.id,
+        type: "time_off_skipped",
+        eventId: req.google_calendar_event_id,
+        reason: checkRes.status === 404 || checkRes.status === 410
+          ? "event_deleted"
+          : `http_${checkRes.status}`,
+      });
+    } else {
+      const existing = await checkRes.json();
+      const oldStart = existing.start?.dateTime ?? existing.start?.date ?? "unknown";
+
+      const patchRes = await fetch(
+        `${calendarApiBase}/events/${encodeURIComponent(req.google_calendar_event_id)}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            summary: `Flexible Time Off – ${name}`,
+            start: { dateTime: correctStart, timeZone: companyTimezone },
+            end: { dateTime: correctEnd, timeZone: companyTimezone },
+          }),
+        }
+      );
+
+      if (patchRes.ok) {
+        corrections.push({
+          requestId: req.id,
+          type: "time_off_patched",
+          eventId: req.google_calendar_event_id,
+          oldStart,
+          newStart: correctStart,
+        });
+      } else {
+        const err = await patchRes.text();
+        corrections.push({
+          requestId: req.id,
+          type: "time_off_patch_failed",
+          eventId: req.google_calendar_event_id,
+          error: err,
+        });
+      }
+    }
+
+    // Patch each makeup entry event
+    const { data: entries } = await supabase
+      .from("flexible_time_makeup_entries")
+      .select("*")
+      .eq("request_id", req.id)
+      .not("google_calendar_event_id", "is", null);
+
+    for (const entry of entries || []) {
+      const muStart = `${normalizeDate(entry.makeup_date)}T${normalizeTime(entry.start_time)}`;
+      const muEnd = `${normalizeDate(entry.makeup_date)}T${normalizeTime(entry.end_time)}`;
+
+      const muCheck = await fetch(
+        `${calendarApiBase}/events/${encodeURIComponent(entry.google_calendar_event_id)}`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+
+      if (!muCheck.ok) {
+        corrections.push({
+          requestId: req.id,
+          entryId: entry.id,
+          type: "makeup_skipped",
+          eventId: entry.google_calendar_event_id,
+          reason: muCheck.status === 404 || muCheck.status === 410
+            ? "event_deleted"
+            : `http_${muCheck.status}`,
+        });
+        continue;
+      }
+
+      const existingMu = await muCheck.json();
+      const muOldStart = existingMu.start?.dateTime ?? existingMu.start?.date ?? "unknown";
+
+      const muPatch = await fetch(
+        `${calendarApiBase}/events/${encodeURIComponent(entry.google_calendar_event_id)}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            summary: `Make-Up Time – ${name}`,
+            start: { dateTime: muStart, timeZone: companyTimezone },
+            end: { dateTime: muEnd, timeZone: companyTimezone },
+          }),
+        }
+      );
+
+      if (muPatch.ok) {
+        corrections.push({
+          requestId: req.id,
+          entryId: entry.id,
+          type: "makeup_patched",
+          eventId: entry.google_calendar_event_id,
+          oldStart: muOldStart,
+          newStart: muStart,
+        });
+      } else {
+        const err = await muPatch.text();
+        corrections.push({
+          requestId: req.id,
+          entryId: entry.id,
+          type: "makeup_patch_failed",
+          eventId: entry.google_calendar_event_id,
+          error: err,
+        });
+      }
+    }
+  }
+
+  console.log(
+    `[retroactive-calendar-fix] Complete. ${corrections.length} operations logged:`,
+    JSON.stringify(corrections)
+  );
+  return corrections;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -93,8 +266,13 @@ Deno.serve(async (req) => {
     const { request_id, flexible_time_request_id, action } = payload;
 
     // Handle flexible time requests separately
-    if (flexible_time_request_id) {
-      return await handleFlexibleTimeCalendar(supabase, flexible_time_request_id, action, corsHeaders);
+    if (flexible_time_request_id || action === "retroactive_fix") {
+      return await handleFlexibleTimeCalendar(
+        supabase,
+        flexible_time_request_id ?? null,
+        action,
+        corsHeaders
+      );
     }
 
     if (!request_id) {
@@ -317,7 +495,7 @@ async function logSync(
 
 async function handleFlexibleTimeCalendar(
   supabase: any,
-  flexRequestId: string,
+  flexRequestId: string | null,
   action: string,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
@@ -338,14 +516,6 @@ async function handleFlexibleTimeCalendar(
       .from("app_settings").select("value").eq("key", "company_timezone").single();
     const companyTimezone = tzSetting?.value || "America/New_York";
 
-    const { data: flexReq } = await supabase
-      .from("flexible_time_requests").select("*").eq("id", flexRequestId).single();
-    if (!flexReq) throw new Error("Flexible time request not found");
-
-    const { data: employee } = await supabase
-      .from("profiles").select("full_name").eq("id", flexReq.employee_id).single();
-    const name = employee?.full_name || "Unknown";
-
     const GOOGLE_SERVICE_ACCOUNT_JSON = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
     if (!GOOGLE_SERVICE_ACCOUNT_JSON) {
       return new Response(JSON.stringify({ error: "Google service account not configured" }),
@@ -361,13 +531,62 @@ async function handleFlexibleTimeCalendar(
     const accessToken = await getAccessToken(GOOGLE_SERVICE_ACCOUNT_JSON);
     const calendarApiBase = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}`;
 
+    // On the first invocation after deployment the migration sets this flag to
+    // "true". We run the retroactive fix here (once) then clear the flag so
+    // subsequent calls are not affected.
+    if (action !== "retroactive_fix") {
+      const { data: fixFlag } = await supabase
+        .from("app_settings").select("value").eq("key", "retroactive_calendar_fix_needed").single();
+
+      if (fixFlag?.value === "true") {
+        console.log("[retroactive-calendar-fix] Auto-running retroactive fix...");
+        await runRetroactiveFix(supabase, calendarApiBase, accessToken, companyTimezone);
+        await supabase
+          .from("app_settings")
+          .upsert({ key: "retroactive_calendar_fix_needed", value: "false" });
+      }
+    }
+
+    // Manual / explicit retroactive fix action
+    if (action === "retroactive_fix") {
+      const corrections = await runRetroactiveFix(supabase, calendarApiBase, accessToken, companyTimezone);
+      // Clear the flag in case it was still pending
+      await supabase
+        .from("app_settings")
+        .upsert({ key: "retroactive_calendar_fix_needed", value: "false" });
+      return new Response(
+        JSON.stringify({ success: true, corrections }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!flexRequestId) {
+      return new Response(JSON.stringify({ error: "No flexible_time_request_id provided" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const { data: flexReq } = await supabase
+      .from("flexible_time_requests").select("*").eq("id", flexRequestId).single();
+    if (!flexReq) throw new Error("Flexible time request not found");
+
+    const { data: employee } = await supabase
+      .from("profiles").select("full_name").eq("id", flexReq.employee_id).single();
+    const name = employee?.full_name || "Unknown";
+
     if (action === "create") {
-      // Create time-off event
+      // Build dateTime strings using normalized values to prevent embedded UTC
+      // offsets from overriding the timeZone field in the Google Calendar API.
       const offEvent = {
         summary: `Flexible Time Off – ${name}`,
         description: flexReq.makeup_plan || undefined,
-        start: { dateTime: `${flexReq.date_off}T${flexReq.start_time}`, timeZone: companyTimezone },
-        end: { dateTime: `${flexReq.date_off}T${flexReq.end_time}`, timeZone: companyTimezone },
+        start: {
+          dateTime: `${normalizeDate(flexReq.date_off)}T${normalizeTime(flexReq.start_time)}`,
+          timeZone: companyTimezone,
+        },
+        end: {
+          dateTime: `${normalizeDate(flexReq.date_off)}T${normalizeTime(flexReq.end_time)}`,
+          timeZone: companyTimezone,
+        },
       };
 
       const offRes = await fetch(`${calendarApiBase}/events`, {
@@ -387,8 +606,14 @@ async function handleFlexibleTimeCalendar(
       for (const entry of entries || []) {
         const muEvent = {
           summary: `Make-Up Time – ${name}`,
-          start: { dateTime: `${entry.makeup_date}T${entry.start_time}`, timeZone: companyTimezone },
-          end: { dateTime: `${entry.makeup_date}T${entry.end_time}`, timeZone: companyTimezone },
+          start: {
+            dateTime: `${normalizeDate(entry.makeup_date)}T${normalizeTime(entry.start_time)}`,
+            timeZone: companyTimezone,
+          },
+          end: {
+            dateTime: `${normalizeDate(entry.makeup_date)}T${normalizeTime(entry.end_time)}`,
+            timeZone: companyTimezone,
+          },
         };
         const muRes = await fetch(`${calendarApiBase}/events`, {
           method: "POST",
