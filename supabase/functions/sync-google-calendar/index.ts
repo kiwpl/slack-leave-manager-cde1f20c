@@ -561,6 +561,22 @@ async function handleFlexibleTimeCalendar(
     const name = employee?.full_name || "Unknown";
 
     if (action === "create") {
+      // Guard: only create calendar events for approved requests.
+      // If a request is still pending (or any non-approved state), bail out immediately.
+      // This prevents calendar events from being created at submission time.
+      if (flexReq.status !== "approved") {
+        console.warn(
+          `[flex-calendar] Skipping create for ${flexRequestId}: status is "${flexReq.status}", not "approved". Calendar events are only created on approval.`
+        );
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: `Request status is "${flexReq.status}". Calendar events are only created on approval.`,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       // Use plain local-time strings — Google Calendar interprets them using the
       // timeZone field below. Never append Z or apply UTC conversion.
       const offDateStr = normalizeDate(flexReq.date_off);
