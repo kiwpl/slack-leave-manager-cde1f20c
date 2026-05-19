@@ -35,6 +35,14 @@ export function parseDateUTC(s: string): Date {
   return new Date(Date.UTC(y, m - 1, d));
 }
 
+/** Parse YYYY-MM-DD to Date in the local timezone (for display with date-fns format).
+ * Unlike parseDateUTC, this avoids a UTC-to-local shift that rolls the displayed
+ * date back by one day for users west of UTC. */
+export function parseLocalDate(s: string): Date {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
 /** Get ISO week number for a date */
 export function getISOWeek(date: Date): number {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));

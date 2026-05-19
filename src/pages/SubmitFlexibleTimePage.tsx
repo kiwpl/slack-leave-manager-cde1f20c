@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { AlertCircle, Info, Plus, Trash2, Clock } from "lucide-react";
-import { getPayPeriod, parseDateUTC, formatDateUTC, getWeekKey } from "@/lib/payPeriod";
+import { getPayPeriod, parseDateUTC, parseLocalDate, formatDateUTC, getWeekKey } from "@/lib/payPeriod";
 import TimeSelect from "@/components/TimeSelect";
 
 interface MakeupEntry {
@@ -378,7 +378,7 @@ export default function SubmitFlexibleTimePage() {
                       <span className="font-semibold">{totalHoursOff} hour{totalHoursOff !== 1 ? "s" : ""}</span>{" "}
                       off on{" "}
                       <span className="font-semibold">
-                        {format(parseDateUTC(dateOff), "EEEE, MMMM d, yyyy")}
+                        {format(parseLocalDate(dateOff), "EEEE, MMMM d, yyyy")}
                       </span>
                       , from{" "}
                       <span className="font-semibold">{startTime}</span> to{" "}
