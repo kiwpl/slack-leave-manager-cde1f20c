@@ -1,4 +1,4 @@
-// v3 – fix timezone handling for Flexible Time Requests + retroactive correction
+// v4 – bulletproof UTC conversion via Intl.DateTimeFormat for Flexible Time calendar events
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -26,6 +26,50 @@ function normalizeTime(t: string): string {
 // Ensure date strings are always "YYYY-MM-DD" (10 chars).
 function normalizeDate(d: string): string {
   return (d || "").substring(0, 10);
+}
+
+/**
+ * Convert a local date+time in the given timezone to an explicit UTC ISO string
+ * (ending in "Z"). This is the bulletproof way to tell Google Calendar exactly
+ * when an event occurs: the UTC instant is unambiguous regardless of any
+ * `timeZone` field behaviour.
+ *
+ * Algorithm:
+ *  1. Treat the local time as UTC to get a rough candidate timestamp.
+ *  2. Ask Intl.DateTimeFormat what local time that UTC instant corresponds to.
+ *  3. Compute the gap between that local reading and the desired local time.
+ *  4. Subtract the gap from the candidate to get the real UTC instant.
+ */
+function localTimeToUTC(dateStr: string, timeStr: string, timezone: string): string {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const timeParts = timeStr.split(":").map(Number);
+  const hour = timeParts[0], minute = timeParts[1], second = timeParts[2] || 0;
+
+  // Rough candidate: pretend local time is UTC
+  const candidate = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+
+  // What does the candidate UTC instant look like in the target timezone?
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(candidate);
+  const localHour = parseInt(parts.find((p) => p.type === "hour")!.value) % 24; // "24" → 0 at midnight
+  const localMin  = parseInt(parts.find((p) => p.type === "minute")!.value);
+  const localSec  = parseInt(parts.find((p) => p.type === "second")!.value);
+
+  // Offset in seconds: how far the candidate's local reading is from the desired time
+  let offsetSec = (localHour * 3600 + localMin * 60 + localSec)
+                - (hour       * 3600 + minute  * 60 + second);
+
+  // Correct for midnight crossings (timezone offsets are at most ±14 h)
+  if (offsetSec >  43200) offsetSec -= 86400;
+  if (offsetSec < -43200) offsetSec += 86400;
+
+  // Shift the candidate back/forward to land on the real UTC instant
+  const actualUtc = new Date(candidate.getTime() - offsetSec * 1000);
+  return actualUtc.toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
 async function getAccessToken(serviceAccountJson: string): Promise<string> {
@@ -118,8 +162,8 @@ async function runRetroactiveFix(
       .single();
     const name = employee?.full_name || "Unknown";
 
-    const correctStart = `${normalizeDate(req.date_off)}T${normalizeTime(req.start_time)}`;
-    const correctEnd = `${normalizeDate(req.date_off)}T${normalizeTime(req.end_time)}`;
+    const correctStart = localTimeToUTC(normalizeDate(req.date_off), normalizeTime(req.start_time), companyTimezone);
+    const correctEnd   = localTimeToUTC(normalizeDate(req.date_off), normalizeTime(req.end_time),   companyTimezone);
 
     // Check whether the main time-off event still exists in Google Calendar
     const checkRes = await fetch(
@@ -183,8 +227,8 @@ async function runRetroactiveFix(
       .not("google_calendar_event_id", "is", null);
 
     for (const entry of entries || []) {
-      const muStart = `${normalizeDate(entry.makeup_date)}T${normalizeTime(entry.start_time)}`;
-      const muEnd = `${normalizeDate(entry.makeup_date)}T${normalizeTime(entry.end_time)}`;
+      const muStart = localTimeToUTC(normalizeDate(entry.makeup_date), normalizeTime(entry.start_time), companyTimezone);
+      const muEnd   = localTimeToUTC(normalizeDate(entry.makeup_date), normalizeTime(entry.end_time),   companyTimezone);
 
       const muCheck = await fetch(
         `${calendarApiBase}/events/${encodeURIComponent(entry.google_calendar_event_id)}`,
@@ -574,17 +618,18 @@ async function handleFlexibleTimeCalendar(
     const name = employee?.full_name || "Unknown";
 
     if (action === "create") {
-      // Build dateTime strings using normalized values to prevent embedded UTC
-      // offsets from overriding the timeZone field in the Google Calendar API.
+      // Build UTC dateTime strings so the event lands at the correct local time
+      // regardless of how Google Calendar or the DB handles the timeZone field.
+      const offDateStr = normalizeDate(flexReq.date_off);
       const offEvent = {
         summary: `Flexible Time Off – ${name}`,
         description: flexReq.makeup_plan || undefined,
         start: {
-          dateTime: `${normalizeDate(flexReq.date_off)}T${normalizeTime(flexReq.start_time)}`,
+          dateTime: localTimeToUTC(offDateStr, normalizeTime(flexReq.start_time), companyTimezone),
           timeZone: companyTimezone,
         },
         end: {
-          dateTime: `${normalizeDate(flexReq.date_off)}T${normalizeTime(flexReq.end_time)}`,
+          dateTime: localTimeToUTC(offDateStr, normalizeTime(flexReq.end_time), companyTimezone),
           timeZone: companyTimezone,
         },
       };
@@ -604,14 +649,15 @@ async function handleFlexibleTimeCalendar(
       const { data: entries } = await supabase
         .from("flexible_time_makeup_entries").select("*").eq("request_id", flexRequestId);
       for (const entry of entries || []) {
+        const muDateStr = normalizeDate(entry.makeup_date);
         const muEvent = {
           summary: `Make-Up Time – ${name}`,
           start: {
-            dateTime: `${normalizeDate(entry.makeup_date)}T${normalizeTime(entry.start_time)}`,
+            dateTime: localTimeToUTC(muDateStr, normalizeTime(entry.start_time), companyTimezone),
             timeZone: companyTimezone,
           },
           end: {
-            dateTime: `${normalizeDate(entry.makeup_date)}T${normalizeTime(entry.end_time)}`,
+            dateTime: localTimeToUTC(muDateStr, normalizeTime(entry.end_time), companyTimezone),
             timeZone: companyTimezone,
           },
         };
