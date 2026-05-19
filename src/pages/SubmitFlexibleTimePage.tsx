@@ -164,19 +164,27 @@ export default function SubmitFlexibleTimePage() {
       }
     }
 
-    // Total makeup must be 1-4 hours in 30-min increments
+    // Total makeup must be 0.5-4 hours in 30-min increments AND exactly equal time off
     if (totalMakeupHours > 0) {
-      if (totalMakeupHours < 1) {
-        entryErrors.push(
-          `Total make-up hours (${totalMakeupHours}h) must be at least 1 hour.`
-        );
-      } else if (totalMakeupHours > 4) {
+      if (totalMakeupHours > 4) {
         entryErrors.push(
           `Total make-up hours (${totalMakeupHours}h) cannot exceed 4 hours.`
         );
       } else if (Math.abs((totalMakeupHours * 2) - Math.round(totalMakeupHours * 2)) > 0.01) {
         entryErrors.push(
           `Total make-up hours (${totalMakeupHours}h) must be in 30-minute increments.`
+        );
+      }
+    }
+
+    if (totalHoursOff > 0 && Math.abs(totalMakeupHours - totalHoursOff) > 0.01) {
+      if (totalMakeupHours < totalHoursOff) {
+        entryErrors.push(
+          `Your make-up time (${totalMakeupHours}h) must equal your time off (${totalHoursOff}h). Please adjust your make-up entries.`
+        );
+      } else {
+        entryErrors.push(
+          `Your make-up time (${totalMakeupHours}h) exceeds your time off (${totalHoursOff}h). Please reduce your make-up entries.`
         );
       }
     }
