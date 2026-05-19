@@ -448,13 +448,28 @@ Deno.serve(async (req) => {
 
       case "cancel_request_notification": {
         // Notify all managers — they must approve or deny the cancellation via Slack buttons
-        const { data: managerRoles } = await supabase
+        console.log(`[cancel-notify] Starting cancel_request_notification for request ${request_id} flexible=${flexible_time}`);
+
+        const { data: managerRoles, error: rolesError } = await supabase
           .from("user_roles").select("user_id").in("role", ["manager", "admin", "superadmin"]);
 
+        if (rolesError) {
+          console.error("[cancel-notify] Error fetching manager roles:", rolesError);
+        }
+
         if (managerRoles) {
-          const managerIds = [...new Set(managerRoles.map((r) => r.user_id))];
+          const managerIds = [...new Set(managerRoles.map((r: any) => r.user_id))];
+          console.log(`[cancel-notify] Found ${managerIds.length} manager(s)`);
+
           const { data: managers } = await supabase
-            .from("profiles").select("id, slack_user_id").in("id", managerIds).eq("status", "active");
+            .from("profiles").select("id, slack_user_id, full_name").in("id", managerIds).eq("status", "active");
+
+          const managersWithSlack = (managers || []).filter((m: any) => m.slack_user_id);
+          console.log(`[cancel-notify] Managers with Slack IDs: ${managersWithSlack.length} / ${(managers || []).length}`);
+
+          if (managersWithSlack.length === 0) {
+            console.warn("[cancel-notify] WARNING: No active managers have a Slack user ID configured. Notification cannot be sent.");
+          }
 
           // Look up approver name if request was previously approved
           let approvalLine = "";
@@ -473,10 +488,11 @@ Deno.serve(async (req) => {
           const reasonLine = cancelReason ? `\n*Reason:* ${cancelReason}` : "";
 
           const approveActionId = flexible_time ? "approve_flex_cancellation" : "approve_cancellation";
-          const denyActionId = flexible_time ? "deny_flex_cancellation" : "deny_cancellation";
+          const denyActionId    = flexible_time ? "deny_flex_cancellation"    : "deny_cancellation";
 
-          for (const mgr of managers || []) {
-            if (!mgr.slack_user_id) continue;
+          console.log(`[cancel-notify] Using action IDs: approve=${approveActionId} deny=${denyActionId}`);
+
+          for (const mgr of managersWithSlack) {
             messages.push({
               slackUserId: mgr.slack_user_id,
               text: `📋 Action Required: 🚫 Cancellation Request — ${employee.full_name} wants to cancel their ${typeLabel} (${dateRange})`,
@@ -494,14 +510,14 @@ Deno.serve(async (req) => {
                   elements: [
                     {
                       type: "button",
-                      text: { type: "plain_text", text: "✅ Approve Cancellation" },
+                      text: { type: "plain_text", text: "✅ Approve Cancellation", emoji: true },
                       style: "primary",
                       action_id: approveActionId,
                       value: request_id,
                     },
                     {
                       type: "button",
-                      text: { type: "plain_text", text: "❌ Deny Cancellation" },
+                      text: { type: "plain_text", text: "❌ Deny Cancellation", emoji: true },
                       style: "danger",
                       action_id: denyActionId,
                       value: request_id,
@@ -512,6 +528,7 @@ Deno.serve(async (req) => {
               messageType: "cancellation_request",
             });
           }
+          console.log(`[cancel-notify] Queued ${messages.length} message(s) to send`);
         }
         break;
       }
@@ -545,17 +562,29 @@ Deno.serve(async (req) => {
 
       const slackData = await slackRes.json();
 
-      // Track the message
-      await supabase.from("slack_message_tracking").insert({
-        request_id,
-        message_type: msg.messageType as any,
-        slack_message_ts: slackData.ts || null,
-        slack_channel_or_dm_id: slackData.channel || msg.slackUserId,
-        slack_recipient_user_id: msg.slackUserId,
-        current_state: "active",
-      });
+      if (!slackData.ok) {
+        console.error(
+          `[slack-notify] Slack API returned error for ${msg.slackUserId}:`,
+          slackData.error,
+          JSON.stringify(slackData)
+        );
+      } else {
+        console.log(`[slack-notify] Message sent to ${msg.slackUserId} ts=${slackData.ts}`);
+      }
 
-      results.push({ slackUserId: msg.slackUserId, ok: slackData.ok });
+      // Track the message (only when Slack accepted it — state must be 'active' or 'handled')
+      if (slackData.ok) {
+        await supabase.from("slack_message_tracking").insert({
+          request_id,
+          message_type: msg.messageType as any,
+          slack_message_ts: slackData.ts || null,
+          slack_channel_or_dm_id: slackData.channel || msg.slackUserId,
+          slack_recipient_user_id: msg.slackUserId,
+          current_state: "active",
+        });
+      }
+
+      results.push({ slackUserId: msg.slackUserId, ok: slackData.ok, error: slackData.error || null });
     }
 
     return new Response(JSON.stringify({ success: true, results }), {
