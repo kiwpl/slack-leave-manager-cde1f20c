@@ -118,17 +118,32 @@ export default function FlexibleTimeDetailPage() {
       details: { reason: cancellationReason || null },
     });
 
-    // Notify managers via Slack — they must approve or deny
-    supabase.functions.invoke("send-slack-notification", {
-      body: {
-        request_id: request.id,
-        notification_type: "cancel_request_notification",
-        flexible_time: true,
-        extra: { cancellation_reason: cancellationReason || "" },
-      },
-    });
+    // Notify managers via Slack — they must approve or deny the cancellation
+    try {
+      console.log("[cancel] Sending cancel_request_notification to Slack...");
+      const { error: slackError } = await supabase.functions.invoke(
+        "send-slack-notification",
+        {
+          body: {
+            request_id: request.id,
+            notification_type: "cancel_request_notification",
+            flexible_time: true,
+            extra: { cancellation_reason: cancellationReason || "" },
+          },
+        }
+      );
+      if (slackError) {
+        console.error("[cancel] Slack notification error:", slackError);
+        toast.error("Cancellation logged, but manager notification failed. Please inform your manager directly.");
+      } else {
+        console.log("[cancel] Slack notification sent successfully.");
+        toast.success("Cancellation request submitted. Your manager will be notified via Slack.");
+      }
+    } catch (err) {
+      console.error("[cancel] Slack notification threw:", err);
+      toast.error("Cancellation logged, but manager notification failed. Please inform your manager directly.");
+    }
 
-    toast.success("Cancellation request submitted. Your manager will be notified.");
     setCancelOpen(false);
     fetchData();
     setProcessing(false);
