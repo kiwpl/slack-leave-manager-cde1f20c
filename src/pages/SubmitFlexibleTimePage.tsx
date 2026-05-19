@@ -392,12 +392,15 @@ export default function SubmitFlexibleTimePage() {
                       <span className="font-semibold">{startTime}</span> to{" "}
                       <span className="font-semibold">{endTime}</span>.
                     </p>
-                    {totalMakeupHours > 0 && (
+                    {totalHoursOff > 0 && (
                       <p>
-                        You plan to make up{" "}
-                        <span className="font-semibold">{totalMakeupHours} hour{totalMakeupHours !== 1 ? "s" : ""}</span>{" "}
-                        across{" "}
-                        <span className="font-semibold">{completedSessions} session{completedSessions !== 1 ? "s" : ""}</span>.
+                        You must make up exactly{" "}
+                        <span className="font-semibold">{totalHoursOff} hour{totalHoursOff !== 1 ? "s" : ""}</span>{" "}
+                        across your entries. Current make-up total:{" "}
+                        <span className={`font-semibold ${Math.abs(totalMakeupHours - totalHoursOff) > 0.01 ? "text-destructive" : "text-primary"}`}>
+                          {totalMakeupHours}h
+                        </span>
+                        {" "}({completedSessions} session{completedSessions !== 1 ? "s" : ""}).
                       </p>
                     )}
                     {totalHoursOff > 4 && (
