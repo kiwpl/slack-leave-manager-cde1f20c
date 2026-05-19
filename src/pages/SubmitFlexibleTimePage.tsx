@@ -539,7 +539,12 @@ export default function SubmitFlexibleTimePage() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={submitting || usedThisMonth}
+                  disabled={
+                    submitting ||
+                    usedThisMonth ||
+                    totalHoursOff <= 0 ||
+                    Math.abs(totalMakeupHours - totalHoursOff) > 0.01
+                  }
                 >
                   {submitting ? "Submitting..." : "Submit Request"}
                 </Button>
