@@ -67,7 +67,7 @@ export default function SubmitFlexibleTimePage() {
         .eq("employee_id", user.id)
         .gte("submitted_at", monthStart)
         .lt("submitted_at", monthEnd)
-        .neq("status", "rejected"),
+        .not("status", "in", "(cancelled,rejected)"),
       supabase
         .from("app_settings")
         .select("value")
@@ -164,19 +164,27 @@ export default function SubmitFlexibleTimePage() {
       }
     }
 
-    // Total makeup must be 1-4 hours in 30-min increments
+    // Total makeup must be 0.5-4 hours in 30-min increments AND exactly equal time off
     if (totalMakeupHours > 0) {
-      if (totalMakeupHours < 1) {
-        entryErrors.push(
-          `Total make-up hours (${totalMakeupHours}h) must be at least 1 hour.`
-        );
-      } else if (totalMakeupHours > 4) {
+      if (totalMakeupHours > 4) {
         entryErrors.push(
           `Total make-up hours (${totalMakeupHours}h) cannot exceed 4 hours.`
         );
       } else if (Math.abs((totalMakeupHours * 2) - Math.round(totalMakeupHours * 2)) > 0.01) {
         entryErrors.push(
           `Total make-up hours (${totalMakeupHours}h) must be in 30-minute increments.`
+        );
+      }
+    }
+
+    if (totalHoursOff > 0 && Math.abs(totalMakeupHours - totalHoursOff) > 0.01) {
+      if (totalMakeupHours < totalHoursOff) {
+        entryErrors.push(
+          `Your make-up time (${totalMakeupHours}h) must equal your time off (${totalHoursOff}h). Please adjust your make-up entries.`
+        );
+      } else {
+        entryErrors.push(
+          `Your make-up time (${totalMakeupHours}h) exceeds your time off (${totalHoursOff}h). Please reduce your make-up entries.`
         );
       }
     }
@@ -384,12 +392,15 @@ export default function SubmitFlexibleTimePage() {
                       <span className="font-semibold">{startTime}</span> to{" "}
                       <span className="font-semibold">{endTime}</span>.
                     </p>
-                    {totalMakeupHours > 0 && (
+                    {totalHoursOff > 0 && (
                       <p>
-                        You plan to make up{" "}
-                        <span className="font-semibold">{totalMakeupHours} hour{totalMakeupHours !== 1 ? "s" : ""}</span>{" "}
-                        across{" "}
-                        <span className="font-semibold">{completedSessions} session{completedSessions !== 1 ? "s" : ""}</span>.
+                        You must make up exactly{" "}
+                        <span className="font-semibold">{totalHoursOff} hour{totalHoursOff !== 1 ? "s" : ""}</span>{" "}
+                        across your entries. Current make-up total:{" "}
+                        <span className={`font-semibold ${Math.abs(totalMakeupHours - totalHoursOff) > 0.01 ? "text-destructive" : "text-primary"}`}>
+                          {totalMakeupHours}h
+                        </span>
+                        {" "}({completedSessions} session{completedSessions !== 1 ? "s" : ""}).
                       </p>
                     )}
                     {totalHoursOff > 4 && (
@@ -496,7 +507,7 @@ export default function SubmitFlexibleTimePage() {
                       </span>{" "}
                       {totalMakeupHours}h
                       <span className="text-muted-foreground ml-2">
-                        (must be 1–4h in 30-min increments)
+                        (must exactly equal time off in 30-min increments)
                       </span>
                     </div>
                   )}
@@ -528,7 +539,12 @@ export default function SubmitFlexibleTimePage() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={submitting || usedThisMonth}
+                  disabled={
+                    submitting ||
+                    usedThisMonth ||
+                    totalHoursOff <= 0 ||
+                    Math.abs(totalMakeupHours - totalHoursOff) > 0.01
+                  }
                 >
                   {submitting ? "Submitting..." : "Submit Request"}
                 </Button>
