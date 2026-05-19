@@ -507,7 +507,7 @@ export default function SubmitFlexibleTimePage() {
                       </span>{" "}
                       {totalMakeupHours}h
                       <span className="text-muted-foreground ml-2">
-                        (must be 1–4h in 30-min increments)
+                        (must exactly equal time off in 30-min increments)
                       </span>
                     </div>
                   )}
