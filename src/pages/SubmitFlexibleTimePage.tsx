@@ -67,7 +67,7 @@ export default function SubmitFlexibleTimePage() {
         .eq("employee_id", user.id)
         .gte("submitted_at", monthStart)
         .lt("submitted_at", monthEnd)
-        .neq("status", "rejected"),
+        .not("status", "in", "(cancelled,rejected)"),
       supabase
         .from("app_settings")
         .select("value")
