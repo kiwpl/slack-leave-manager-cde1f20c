@@ -156,6 +156,7 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by_user_id: string | null
+          cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by_user_id: string | null
           created_at: string
@@ -167,6 +168,7 @@ export type Database = {
           makeup_plan: string
           pay_period_end: string
           pay_period_start: string
+          previous_status: string | null
           rejected_at: string | null
           rejected_by_user_id: string | null
           rejection_reason: string | null
@@ -179,6 +181,7 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           approved_by_user_id?: string | null
+          cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by_user_id?: string | null
           created_at?: string
@@ -190,6 +193,7 @@ export type Database = {
           makeup_plan: string
           pay_period_end: string
           pay_period_start: string
+          previous_status?: string | null
           rejected_at?: string | null
           rejected_by_user_id?: string | null
           rejection_reason?: string | null
@@ -202,6 +206,7 @@ export type Database = {
         Update: {
           approved_at?: string | null
           approved_by_user_id?: string | null
+          cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by_user_id?: string | null
           created_at?: string
@@ -213,6 +218,7 @@ export type Database = {
           makeup_plan?: string
           pay_period_end?: string
           pay_period_start?: string
+          previous_status?: string | null
           rejected_at?: string | null
           rejected_by_user_id?: string | null
           rejection_reason?: string | null
@@ -319,6 +325,7 @@ export type Database = {
           last_edited_at: string | null
           last_edited_by_user_id: string | null
           note: string | null
+          previous_status: string | null
           rejected_at: string | null
           rejected_by_user_id: string | null
           rejection_reason: string | null
@@ -350,6 +357,7 @@ export type Database = {
           last_edited_at?: string | null
           last_edited_by_user_id?: string | null
           note?: string | null
+          previous_status?: string | null
           rejected_at?: string | null
           rejected_by_user_id?: string | null
           rejection_reason?: string | null
@@ -381,6 +389,7 @@ export type Database = {
           last_edited_at?: string | null
           last_edited_by_user_id?: string | null
           note?: string | null
+          previous_status?: string | null
           rejected_at?: string | null
           rejected_by_user_id?: string | null
           rejection_reason?: string | null
@@ -472,7 +481,12 @@ export type Database = {
       approval_source: "manager" | "system_auto_approved"
       calendar_action_type: "create" | "update" | "delete" | "failed"
       day_portion: "full" | "am" | "pm"
-      request_status: "pending_approval" | "approved" | "rejected" | "cancelled"
+      request_status:
+        | "pending_approval"
+        | "approved"
+        | "rejected"
+        | "cancelled"
+        | "cancel_requested"
       request_type: "vacation" | "sick"
       slack_message_state: "active" | "handled" | "cancelled"
       slack_message_type:
@@ -483,6 +497,7 @@ export type Database = {
         | "edit_notification"
         | "cancellation_notification"
         | "auto_approved_notification"
+        | "cancellation_request"
       user_status: "active" | "inactive"
     }
     CompositeTypes: {
@@ -616,7 +631,13 @@ export const Constants = {
       approval_source: ["manager", "system_auto_approved"],
       calendar_action_type: ["create", "update", "delete", "failed"],
       day_portion: ["full", "am", "pm"],
-      request_status: ["pending_approval", "approved", "rejected", "cancelled"],
+      request_status: [
+        "pending_approval",
+        "approved",
+        "rejected",
+        "cancelled",
+        "cancel_requested",
+      ],
       request_type: ["vacation", "sick"],
       slack_message_state: ["active", "handled", "cancelled"],
       slack_message_type: [
@@ -627,6 +648,7 @@ export const Constants = {
         "edit_notification",
         "cancellation_notification",
         "auto_approved_notification",
+        "cancellation_request",
       ],
       user_status: ["active", "inactive"],
     },

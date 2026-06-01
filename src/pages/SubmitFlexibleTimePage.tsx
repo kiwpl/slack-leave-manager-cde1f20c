@@ -21,12 +21,39 @@ interface MakeupEntry {
   endTime: string;
 }
 
+function parseTimeToMinutes(timeStr: string): number {
+  const [hours, minutes] = timeStr.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
 function calcHours(start: string, end: string): number {
   if (!start || !end) return 0;
-  const [sh, sm] = start.split(":").map(Number);
-  const [eh, em] = end.split(":").map(Number);
-  const diff = (eh * 60 + em - (sh * 60 + sm)) / 60;
+  const diff = (parseTimeToMinutes(end) - parseTimeToMinutes(start)) / 60;
   return Math.max(0, Math.round(diff * 100) / 100);
+}
+
+const LUNCH_START = 12 * 60; // 720 minutes
+const LUNCH_END = 13 * 60;   // 780 minutes
+
+function calculateWorkingHours(start: string, end: string): number {
+  if (!start || !end) return 0;
+  const startMin = parseTimeToMinutes(start);
+  const endMin = parseTimeToMinutes(end);
+  const rawMinutes = endMin - startMin;
+  if (rawMinutes <= 0) return 0;
+  const overlapStart = Math.max(startMin, LUNCH_START);
+  const overlapEnd = Math.min(endMin, LUNCH_END);
+  const lunchOverlap = Math.max(0, overlapEnd - overlapStart);
+  return Math.round((rawMinutes - lunchOverlap) / 60 * 100) / 100;
+}
+
+function getLunchOverlapHours(start: string, end: string): number {
+  if (!start || !end) return 0;
+  const startMin = parseTimeToMinutes(start);
+  const endMin = parseTimeToMinutes(end);
+  const overlapStart = Math.max(startMin, LUNCH_START);
+  const overlapEnd = Math.min(endMin, LUNCH_END);
+  return Math.max(0, overlapEnd - overlapStart) / 60;
 }
 
 export default function SubmitFlexibleTimePage() {
@@ -46,7 +73,9 @@ export default function SubmitFlexibleTimePage() {
   const [anchorDate, setAnchorDate] = useState<string | null>(null);
 
   const today = format(new Date(), "yyyy-MM-dd");
-  const totalHoursOff = calcHours(startTime, endTime);
+  const totalHoursOff = calculateWorkingHours(startTime, endTime);
+  const lunchOverlapHours = getLunchOverlapHours(startTime, endTime);
+  const endTimeBeforeStart = !!(startTime && endTime && parseTimeToMinutes(endTime) <= parseTimeToMinutes(startTime));
   const totalMakeupHours = makeupEntries.reduce(
     (sum, e) => sum + calcHours(e.startTime, e.endTime),
     0
@@ -67,7 +96,7 @@ export default function SubmitFlexibleTimePage() {
         .eq("employee_id", user.id)
         .gte("submitted_at", monthStart)
         .lt("submitted_at", monthEnd)
-        .neq("status", "rejected"),
+        .not("status", "in", "(cancelled,rejected)"),
       supabase
         .from("app_settings")
         .select("value")
@@ -107,8 +136,9 @@ export default function SubmitFlexibleTimePage() {
 
     if (!startTime) newErrors.startTime = "Start time is required.";
     if (!endTime) newErrors.endTime = "End time is required.";
-    if (startTime && endTime && totalHoursOff <= 0) newErrors.endTime = "End time must be after start time.";
-    if (totalHoursOff > 4) newErrors.endTime = "Maximum 4 hours per request.";
+    if (endTimeBeforeStart) newErrors.endTime = "End time must be after start time.";
+    else if (startTime && endTime && totalHoursOff <= 0) newErrors.endTime = "End time must be after start time.";
+    if (totalHoursOff > 4) newErrors.endTime = "Maximum 4 working hours per request.";
 
     if (usedThisMonth) {
       newErrors.eligibility = "You have already used your flexible time request this month.";
@@ -164,19 +194,27 @@ export default function SubmitFlexibleTimePage() {
       }
     }
 
-    // Total makeup must be 1-4 hours in 30-min increments
+    // Total makeup must be 0.5-4 hours in 30-min increments AND exactly equal time off
     if (totalMakeupHours > 0) {
-      if (totalMakeupHours < 1) {
-        entryErrors.push(
-          `Total make-up hours (${totalMakeupHours}h) must be at least 1 hour.`
-        );
-      } else if (totalMakeupHours > 4) {
+      if (totalMakeupHours > 4) {
         entryErrors.push(
           `Total make-up hours (${totalMakeupHours}h) cannot exceed 4 hours.`
         );
       } else if (Math.abs((totalMakeupHours * 2) - Math.round(totalMakeupHours * 2)) > 0.01) {
         entryErrors.push(
           `Total make-up hours (${totalMakeupHours}h) must be in 30-minute increments.`
+        );
+      }
+    }
+
+    if (totalHoursOff > 0 && Math.abs(totalMakeupHours - totalHoursOff) > 0.01) {
+      if (totalMakeupHours < totalHoursOff) {
+        entryErrors.push(
+          `Your make-up time (${totalMakeupHours}h) must equal your time off (${totalHoursOff}h). Please adjust your make-up entries.`
+        );
+      } else {
+        entryErrors.push(
+          `Your make-up time (${totalMakeupHours}h) exceeds your time off (${totalHoursOff}h). Please reduce your make-up entries.`
         );
       }
     }
@@ -370,12 +408,17 @@ export default function SubmitFlexibleTimePage() {
                   </div>
                 </div>
 
+                {/* Real-time end time error */}
+                {endTimeBeforeStart && (
+                  <p className="text-sm text-destructive">End time must be after start time.</p>
+                )}
+
                 {/* Natural language recap */}
                 {dateOff && startTime && endTime && totalHoursOff > 0 && (
                   <div className="p-3 rounded-lg border border-primary/30 bg-primary/5 text-sm space-y-1">
                     <p>
                       You are requesting{" "}
-                      <span className="font-semibold">{totalHoursOff} hour{totalHoursOff !== 1 ? "s" : ""}</span>{" "}
+                      <span className="font-semibold">{totalHoursOff} working hour{totalHoursOff !== 1 ? "s" : ""}</span>{" "}
                       off on{" "}
                       <span className="font-semibold">
                         {format(parseLocalDate(dateOff), "EEEE, MMMM d, yyyy")}
@@ -383,13 +426,21 @@ export default function SubmitFlexibleTimePage() {
                       , from{" "}
                       <span className="font-semibold">{startTime}</span> to{" "}
                       <span className="font-semibold">{endTime}</span>.
+                      {lunchOverlapHours > 0 && (
+                        <span className="text-muted-foreground">
+                          {" "}(excludes {lunchOverlapHours}h lunch break 12:00–13:00)
+                        </span>
+                      )}
                     </p>
-                    {totalMakeupHours > 0 && (
+                    {totalHoursOff > 0 && (
                       <p>
-                        You plan to make up{" "}
-                        <span className="font-semibold">{totalMakeupHours} hour{totalMakeupHours !== 1 ? "s" : ""}</span>{" "}
-                        across{" "}
-                        <span className="font-semibold">{completedSessions} session{completedSessions !== 1 ? "s" : ""}</span>.
+                        You must make up exactly{" "}
+                        <span className="font-semibold">{totalHoursOff}h</span>{" "}
+                        across your entries. Current make-up total:{" "}
+                        <span className={`font-semibold ${Math.abs(totalMakeupHours - totalHoursOff) > 0.01 ? "text-destructive" : "text-primary"}`}>
+                          {totalMakeupHours}h
+                        </span>
+                        {" "}({completedSessions} session{completedSessions !== 1 ? "s" : ""}).
                       </p>
                     )}
                     {totalHoursOff > 4 && (
@@ -496,7 +547,7 @@ export default function SubmitFlexibleTimePage() {
                       </span>{" "}
                       {totalMakeupHours}h
                       <span className="text-muted-foreground ml-2">
-                        (must be 1–4h in 30-min increments)
+                        (must exactly equal time off in 30-min increments)
                       </span>
                     </div>
                   )}
@@ -528,7 +579,13 @@ export default function SubmitFlexibleTimePage() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={submitting || usedThisMonth}
+                  disabled={
+                    submitting ||
+                    usedThisMonth ||
+                    endTimeBeforeStart ||
+                    totalHoursOff <= 0 ||
+                    Math.abs(totalMakeupHours - totalHoursOff) > 0.01
+                  }
                 >
                   {submitting ? "Submitting..." : "Submit Request"}
                 </Button>
