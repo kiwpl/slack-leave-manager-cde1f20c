@@ -10,7 +10,7 @@ const corsHeaders = {
 interface SyncPayload {
   request_id?: string;
   flexible_time_request_id?: string;
-  action: "create" | "delete" | "update_incomplete" | "retroactive_fix";
+  action: "create" | "delete" | "update_incomplete" | "update_completed" | "retroactive_fix";
 }
 
 // Strip any timezone offset or microseconds from a Supabase time column value.
