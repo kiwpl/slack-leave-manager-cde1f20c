@@ -68,7 +68,7 @@ export default function SubmitFlexibleTimePage() {
   ]);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [usedThisMonth, setUsedThisMonth] = useState(false);
+  const [usedThisQuarter, setUsedThisQuarter] = useState(false);
   const [loadingEligibility, setLoadingEligibility] = useState(true);
   const [anchorDate, setAnchorDate] = useState<string | null>(null);
 
@@ -85,17 +85,28 @@ export default function SubmitFlexibleTimePage() {
   useEffect(() => {
     if (!user) return;
     const now = new Date();
-    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    const monthEnd = format(nextMonth, "yyyy-MM-dd");
+    // Calendar quarter window: Q1 Jan–Mar, Q2 Apr–Jun, Q3 Jul–Sep, Q4 Oct–Dec.
+    const quarterIndex = Math.floor(now.getMonth() / 3); // 0, 1, 2, or 3
+    const quarterStartMonth = quarterIndex * 3; // 0, 3, 6, or 9
+    const quarterStart = format(
+      new Date(now.getFullYear(), quarterStartMonth, 1),
+      "yyyy-MM-dd"
+    );
+    // First day of the month AFTER the quarter ends. Passing month index
+    // quarterStartMonth + 3 to the Date constructor rolls Q4 (9 + 3 = 12)
+    // into January of the following year automatically.
+    const quarterEnd = format(
+      new Date(now.getFullYear(), quarterStartMonth + 3, 1),
+      "yyyy-MM-dd"
+    );
 
     Promise.all([
       supabase
         .from("flexible_time_requests")
         .select("id")
         .eq("employee_id", user.id)
-        .gte("submitted_at", monthStart)
-        .lt("submitted_at", monthEnd)
+        .gte("submitted_at", quarterStart)
+        .lt("submitted_at", quarterEnd)
         .not("status", "in", "(cancelled,rejected)"),
       supabase
         .from("app_settings")
@@ -103,7 +114,7 @@ export default function SubmitFlexibleTimePage() {
         .eq("key", "pay_period_anchor_date")
         .single(),
     ]).then(([reqRes, anchorRes]) => {
-      setUsedThisMonth((reqRes.data?.length || 0) > 0);
+      setUsedThisQuarter((reqRes.data?.length || 0) > 0);
       setAnchorDate(anchorRes.data?.value || null);
       setLoadingEligibility(false);
     });
@@ -140,8 +151,8 @@ export default function SubmitFlexibleTimePage() {
     else if (startTime && endTime && totalHoursOff <= 0) newErrors.endTime = "End time must be after start time.";
     if (totalHoursOff > 4) newErrors.endTime = "Maximum 4 working hours per request.";
 
-    if (usedThisMonth) {
-      newErrors.eligibility = "You have already used your flexible time request this month.";
+    if (usedThisQuarter) {
+      newErrors.eligibility = "You have already used your flexible time request this quarter.";
     }
 
     if (!anchorDate) {
@@ -321,18 +332,18 @@ export default function SubmitFlexibleTimePage() {
         {/* Eligibility */}
         {!loadingEligibility && (
           <Alert
-            variant={usedThisMonth ? "destructive" : "default"}
+            variant={usedThisQuarter ? "destructive" : "default"}
             className={
-              usedThisMonth
+              usedThisQuarter
                 ? undefined
                 : "border-primary/30 bg-primary/5"
             }
           >
             <Clock className="h-4 w-4" />
             <AlertDescription>
-              {usedThisMonth
-                ? "You have already used your 1 flexible time request this month."
-                : "You have 1 flexible time request available this month."}
+              {usedThisQuarter
+                ? "You have already used your 1 flexible time request this quarter."
+                : "You have 1 flexible time request available this quarter."}
             </AlertDescription>
           </Alert>
         )}
@@ -354,7 +365,7 @@ export default function SubmitFlexibleTimePage() {
           </Alert>
         )}
 
-        {!usedThisMonth && anchorDate && (
+        {!usedThisQuarter && anchorDate && (
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Time Off Details</CardTitle>
@@ -581,7 +592,7 @@ export default function SubmitFlexibleTimePage() {
                   className="w-full"
                   disabled={
                     submitting ||
-                    usedThisMonth ||
+                    usedThisQuarter ||
                     endTimeBeforeStart ||
                     totalHoursOff <= 0 ||
                     Math.abs(totalMakeupHours - totalHoursOff) > 0.01

@@ -10,7 +10,7 @@ const corsHeaders = {
 interface SyncPayload {
   request_id?: string;
   flexible_time_request_id?: string;
-  action: "create" | "delete" | "update_incomplete" | "retroactive_fix";
+  action: "create" | "delete" | "update_incomplete" | "update_completed" | "retroactive_fix";
 }
 
 // Strip any timezone offset or microseconds from a Supabase time column value.
@@ -686,6 +686,27 @@ async function handleFlexibleTimeCalendar(
       return new Response(JSON.stringify({ success: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
+    if (action === "update_completed") {
+      const { data: entries } = await supabase
+        .from("flexible_time_makeup_entries").select("*")
+        .eq("request_id", flexRequestId);
+      for (const entry of entries || []) {
+        if (entry.google_calendar_event_id) {
+          await fetch(
+            `${calendarApiBase}/events/${encodeURIComponent(entry.google_calendar_event_id)}`,
+            {
+              method: "PATCH",
+              headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+              body: JSON.stringify({ summary: `Make-Up Time – ${name}` }),
+            }
+          );
+        }
+      }
+      return new Response(JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
 
     return new Response(JSON.stringify({ error: "Invalid action" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });

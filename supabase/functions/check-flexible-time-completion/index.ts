@@ -32,11 +32,11 @@ Deno.serve(async (req) => {
       .eq("completed", false)
       .lte("makeup_date", today);
 
-    // 2. Check approved requests where pay period has ended
+    // 2. Check approved or previously-incomplete requests where pay period has ended
     const { data: endedRequests } = await supabase
       .from("flexible_time_requests")
       .select("*")
-      .eq("status", "approved")
+      .in("status", ["approved", "incomplete"])
       .lte("pay_period_end", today);
 
     for (const req of endedRequests || []) {
@@ -46,6 +46,7 @@ Deno.serve(async (req) => {
         .eq("request_id", req.id);
 
       const allCompleted = (entries || []).every((e: any) => e.completed);
+      const wasIncomplete = req.status === "incomplete";
 
       if (allCompleted) {
         await supabase
@@ -59,7 +60,18 @@ Deno.serve(async (req) => {
           actor_type: "system",
           actor_id: null,
         });
-      } else {
+
+        // If this request was previously marked incomplete, restore calendar titles
+        if (wasIncomplete) {
+          try {
+            await supabase.functions.invoke("sync-google-calendar", {
+              body: { flexible_time_request_id: req.id, action: "update_completed" },
+            });
+          } catch (e) {
+            console.error("Calendar restore failed:", e);
+          }
+        }
+      } else if (req.status === "approved") {
         await supabase
           .from("flexible_time_requests")
           .update({ status: "incomplete" })
