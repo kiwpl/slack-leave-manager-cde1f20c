@@ -96,22 +96,39 @@ CREATE POLICY "Managers can view request audit logs"
 -- rejected it and when. Those facts were never written to audit_logs because of
 -- the foreign key above. Reconstruct them so past decisions — including
 -- approvals that appeared to vanish — show up in the timeline and audit log.
+--
+-- actor_id points at auth.users with ON DELETE SET NULL, and a request can
+-- outlive the person who made it: flexible_time_requests.employee_id carried no
+-- foreign key until the next migration, so a deleted user leaves their requests
+-- behind. Each insert therefore LEFT JOINs auth.users and writes NULL when the
+-- account is gone — the same state the constraint would have left behind had
+-- the row existed at the time. The original id is kept in details so nothing
+-- is lost.
 
 INSERT INTO public.audit_logs (request_id, action_type, actor_type, actor_id, details, created_at)
-SELECT f.id, 'flexible_time_submitted', 'staff', f.employee_id,
-       jsonb_build_object('backfilled', true, 'total_hours', f.total_hours),
+SELECT f.id, 'flexible_time_submitted', 'staff', u.id,
+       jsonb_build_object(
+         'backfilled', true,
+         'total_hours', f.total_hours,
+         'original_actor_id', f.employee_id
+       ),
        f.submitted_at
   FROM public.flexible_time_requests f
+  LEFT JOIN auth.users u ON u.id = f.employee_id
  WHERE NOT EXISTS (
    SELECT 1 FROM public.audit_logs a
     WHERE a.request_id = f.id AND a.action_type = 'flexible_time_submitted'
  );
 
 INSERT INTO public.audit_logs (request_id, action_type, actor_type, actor_id, details, created_at)
-SELECT f.id, 'flexible_time_approved', 'manager', f.approved_by_user_id,
-       jsonb_build_object('backfilled', true),
+SELECT f.id, 'flexible_time_approved', 'manager', u.id,
+       jsonb_build_object(
+         'backfilled', true,
+         'original_actor_id', f.approved_by_user_id
+       ),
        f.approved_at
   FROM public.flexible_time_requests f
+  LEFT JOIN auth.users u ON u.id = f.approved_by_user_id
  WHERE f.approved_at IS NOT NULL
    AND NOT EXISTS (
      SELECT 1 FROM public.audit_logs a
@@ -119,10 +136,15 @@ SELECT f.id, 'flexible_time_approved', 'manager', f.approved_by_user_id,
    );
 
 INSERT INTO public.audit_logs (request_id, action_type, actor_type, actor_id, details, created_at)
-SELECT f.id, 'flexible_time_rejected', 'manager', f.rejected_by_user_id,
-       jsonb_build_object('backfilled', true, 'rejection_reason', f.rejection_reason),
+SELECT f.id, 'flexible_time_rejected', 'manager', u.id,
+       jsonb_build_object(
+         'backfilled', true,
+         'rejection_reason', f.rejection_reason,
+         'original_actor_id', f.rejected_by_user_id
+       ),
        f.rejected_at
   FROM public.flexible_time_requests f
+  LEFT JOIN auth.users u ON u.id = f.rejected_by_user_id
  WHERE f.rejected_at IS NOT NULL
    AND NOT EXISTS (
      SELECT 1 FROM public.audit_logs a
