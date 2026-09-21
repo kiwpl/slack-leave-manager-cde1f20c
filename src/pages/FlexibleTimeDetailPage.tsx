@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { parseDateUTC } from "@/lib/payPeriod";
+import { LUNCH_LABEL, formatHours, getLunchOverlapHours } from "@/lib/workingHours";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import StatusBadge from "@/components/StatusBadge";
@@ -79,7 +80,10 @@ export default function FlexibleTimeDetailPage() {
         .select("full_name")
         .eq("id", reqRes.data.employee_id)
         .single();
-      setEmployeeName(profile?.full_name || "Unknown");
+      setEmployeeName(
+        profile?.full_name ||
+        `Unknown employee (id ${reqRes.data.employee_id.slice(0, 8)})`
+      );
     }
     setEntries((entriesRes.data || []) as any);
     setAuditLogs(logsRes.data || []);
@@ -153,21 +157,33 @@ export default function FlexibleTimeDetailPage() {
     if (!request || !user) return;
     setProcessing(true);
 
-    await supabase
+    const { data: approved, error: approveError } = await supabase
       .from("flexible_time_requests")
       .update({
         status: "approved",
         approved_at: new Date().toISOString(),
         approved_by_user_id: user.id,
       })
-      .eq("id", request.id);
+      .eq("id", request.id)
+      .select("id");
 
-    await supabase.from("audit_logs").insert({
+    if (approveError || !approved || approved.length === 0) {
+      toast.error("Could not approve this request: " + (approveError?.message || "no change was saved"));
+      setProcessing(false);
+      return;
+    }
+
+    const { error: logError } = await supabase.from("audit_logs").insert({
       request_id: request.id,
       action_type: "flexible_time_approved",
       actor_type: "manager",
       actor_id: user.id,
+      details: { via: "app" },
     });
+    if (logError) {
+      console.error("[approve] Audit log insert failed:", logError);
+      toast.warning("Approved, but the action could not be written to the audit log.");
+    }
 
     // Calendar sync
     supabase.functions.invoke("sync-google-calendar", {
@@ -192,7 +208,7 @@ export default function FlexibleTimeDetailPage() {
     if (!request || !user) return;
     setProcessing(true);
 
-    await supabase
+    const { data: rejected, error: rejectError } = await supabase
       .from("flexible_time_requests")
       .update({
         status: "rejected",
@@ -200,15 +216,26 @@ export default function FlexibleTimeDetailPage() {
         rejected_by_user_id: user.id,
         rejection_reason: rejectionReason || "Rejected by manager",
       })
-      .eq("id", request.id);
+      .eq("id", request.id)
+      .select("id");
 
-    await supabase.from("audit_logs").insert({
+    if (rejectError || !rejected || rejected.length === 0) {
+      toast.error("Could not reject this request: " + (rejectError?.message || "no change was saved"));
+      setProcessing(false);
+      return;
+    }
+
+    const { error: logError } = await supabase.from("audit_logs").insert({
       request_id: request.id,
       action_type: "flexible_time_rejected",
       actor_type: "manager",
       actor_id: user.id,
-      details: { rejection_reason: rejectionReason },
+      details: { via: "app", rejection_reason: rejectionReason },
     });
+    if (logError) {
+      console.error("[reject] Audit log insert failed:", logError);
+      toast.warning("Rejected, but the action could not be written to the audit log.");
+    }
 
     supabase.functions.invoke("send-slack-notification", {
       body: {
@@ -246,6 +273,10 @@ export default function FlexibleTimeDetailPage() {
   }
 
   const flexStatus = request.status as any;
+  const makeupTotal = entries.reduce((sum, e) => sum + Number(e.hours ?? 0), 0);
+  const hoursOff = Number(request.total_hours ?? 0);
+  const makeupShortfall = Math.round((hoursOff - makeupTotal) * 100) / 100;
+  const offLunchHours = getLunchOverlapHours(request.start_time, request.end_time);
 
   return (
     <AppLayout>
@@ -279,7 +310,13 @@ export default function FlexibleTimeDetailPage() {
               </div>
               <div>
                 <p className="text-muted-foreground">Total Hours</p>
-                <p className="font-medium text-foreground">{request.total_hours}h</p>
+                <p className="font-medium text-foreground">{formatHours(hoursOff)}</p>
+                {offLunchHours > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Clock time is longer &mdash; the {LUNCH_LABEL} lunch break
+                    ({formatHours(offLunchHours)}) does not count as working time.
+                  </p>
+                )}
               </div>
               <div className="col-span-2">
                 <p className="text-muted-foreground">Pay Period</p>
@@ -321,6 +358,29 @@ export default function FlexibleTimeDetailPage() {
             <CardTitle className="text-base">Make-Up Schedule</CardTitle>
           </CardHeader>
           <CardContent>
+            <div
+              className={
+                "mb-3 p-3 rounded-lg text-sm " +
+                (Math.abs(makeupShortfall) > 0.01
+                  ? "bg-destructive/10 text-destructive"
+                  : "bg-muted/50 text-muted-foreground")
+              }
+            >
+              <span className="font-medium">
+                {formatHours(makeupTotal)} scheduled of {formatHours(hoursOff)} owed
+              </span>
+              {makeupShortfall > 0.01 && (
+                <span> &mdash; {formatHours(makeupShortfall)} short.</span>
+              )}
+              {makeupShortfall < -0.01 && (
+                <span> &mdash; {formatHours(-makeupShortfall)} more than required.</span>
+              )}
+              <span className="block text-xs mt-1">
+                Working hours only. The {LUNCH_LABEL} lunch break never counts towards
+                make-up time.
+              </span>
+            </div>
+
             <div className="space-y-2">
               {entries.map((entry) => (
                 <div
@@ -332,7 +392,10 @@ export default function FlexibleTimeDetailPage() {
                       {entry.makeup_date}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {entry.start_time?.slice(0, 5)} – {entry.end_time?.slice(0, 5)} · {entry.hours}h
+                      {entry.start_time?.slice(0, 5)} – {entry.end_time?.slice(0, 5)} ·{" "}
+                      {formatHours(Number(entry.hours ?? 0))}
+                      {getLunchOverlapHours(entry.start_time, entry.end_time) > 0 &&
+                        ` (excludes ${formatHours(getLunchOverlapHours(entry.start_time, entry.end_time))} lunch)`}
                     </p>
                   </div>
                   <Badge

@@ -1,3 +1,5 @@
+// v3 – spell out flexible time make-up plans in working hours, and retire the
+//      Approve/Reject buttons in Slack when a decision is made inside the app.
 // v2 – include half-day (start_day_portion) in all notification messages
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -64,6 +66,8 @@ Deno.serve(async (req) => {
     let typeLabel = "";
     let specialApprovalNote = "";
     let isHalfDayPm = false;
+    let makeupPlanText = "";
+    let makeupTotalHours = 0;
 
     if (flexible_time) {
       const { data: flexReq, error: flexError } = await supabase
@@ -78,7 +82,24 @@ Deno.serve(async (req) => {
       if (!emp) throw new Error("Employee profile not found");
       employee = emp;
 
-      dateRange = `${request.date_off} ${request.start_time?.slice(0, 5)} – ${request.end_time?.slice(0, 5)} (${request.total_hours}h)`;
+      // The stored makeup_plan string is a snapshot taken at submission time.
+      // The entries table is what completion tracking actually runs on, so read
+      // the plan from there and show its real total in working hours.
+      const { data: makeupEntries } = await supabase
+        .from("flexible_time_makeup_entries")
+        .select("makeup_date, start_time, end_time, hours")
+        .eq("request_id", request_id)
+        .order("makeup_date");
+
+      makeupPlanText = formatMakeupPlan(makeupEntries, request.makeup_plan);
+      makeupTotalHours = (makeupEntries ?? []).reduce(
+        (sum: number, e: any) => sum + Number(e.hours ?? 0), 0
+      );
+
+      dateRange =
+        `${request.date_off} ${request.start_time?.slice(0, 5)} – ${request.end_time?.slice(0, 5)}` +
+        ` (${fmtHours(request.total_hours)} of working time` +
+        `${lunchOverlapHours(request.start_time, request.end_time) > 0 ? ", lunch break excluded" : ""})`;
       typeLabel = "⏰ Flexible Time";
     } else {
       const { data: reqData, error: reqError } = await supabase
@@ -103,6 +124,15 @@ Deno.serve(async (req) => {
         ? "\n⚠️ _(Requires special approval: within 30 days)_"
         : "";
     }
+    // Who made the call, for the message that replaces the buttons in Slack.
+    const deciderId = request.approved_by_user_id || request.rejected_by_user_id;
+    let deciderName = "a manager";
+    if (deciderId) {
+      const { data: decider } = await supabase
+        .from("profiles").select("full_name").eq("id", deciderId).maybeSingle();
+      if (decider?.full_name) deciderName = decider.full_name;
+    }
+
     let messages: Array<{
       slackUserId: string;
       text: string;
@@ -190,6 +220,14 @@ Deno.serve(async (req) => {
             messageType: "approval_notification",
           });
         }
+
+        // The request is decided, so the Approve/Reject buttons still sitting
+        // in every manager's DM have to go — otherwise a second manager can
+        // press them on a request that is already settled.
+        await resolveApprovalMessages(
+          supabase, SLACK_BOT_TOKEN, request_id, employee.full_name,
+          typeLabel, dateRange, true, deciderName, testMode
+        );
         break;
       }
 
@@ -202,6 +240,14 @@ Deno.serve(async (req) => {
             messageType: "rejection_notification",
           });
         }
+
+        // The request is decided, so the Approve/Reject buttons still sitting
+        // in every manager's DM have to go — otherwise a second manager can
+        // press them on a request that is already settled.
+        await resolveApprovalMessages(
+          supabase, SLACK_BOT_TOKEN, request_id, employee.full_name,
+          typeLabel, dateRange, false, deciderName, testMode
+        );
         break;
       }
 
@@ -366,7 +412,16 @@ Deno.serve(async (req) => {
                   type: "section",
                   text: {
                     type: "mrkdwn",
-                    text: `*📋 Action Required: ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Time Off:* ${dateRange}\n*Make-up Plan:* ${request.makeup_plan || "N/A"}`,
+                    text:
+                      `*📋 Action Required: ${typeLabel} Request*\n` +
+                      `*From:* ${employee.full_name}\n` +
+                      `*Time Off:* ${dateRange}\n` +
+                      `*Make-up Plan:* ${fmtHours(makeupTotalHours)} total\n${makeupPlanText}` +
+                      `${
+                        Math.abs(makeupTotalHours - Number(request.total_hours)) > 0.01
+                          ? `\n⚠️ _Make-up time does not match the ${fmtHours(request.total_hours)} being taken off. Check before approving._`
+                          : ""
+                      }`,
                   },
                 },
                 {
@@ -393,6 +448,14 @@ Deno.serve(async (req) => {
             messageType: "approval_notification",
           });
         }
+
+        // The request is decided, so the Approve/Reject buttons still sitting
+        // in every manager's DM have to go — otherwise a second manager can
+        // press them on a request that is already settled.
+        await resolveApprovalMessages(
+          supabase, SLACK_BOT_TOKEN, request_id, employee.full_name,
+          typeLabel, dateRange, true, deciderName, testMode
+        );
         break;
       }
 
@@ -405,6 +468,14 @@ Deno.serve(async (req) => {
             messageType: "rejection_notification",
           });
         }
+
+        // The request is decided, so the Approve/Reject buttons still sitting
+        // in every manager's DM have to go — otherwise a second manager can
+        // press them on a request that is already settled.
+        await resolveApprovalMessages(
+          supabase, SLACK_BOT_TOKEN, request_id, employee.full_name,
+          typeLabel, dateRange, false, deciderName, testMode
+        );
         break;
       }
 
@@ -574,7 +645,7 @@ Deno.serve(async (req) => {
 
       // Track the message (only when Slack accepted it — state must be 'active' or 'handled')
       if (slackData.ok) {
-        await supabase.from("slack_message_tracking").insert({
+        const { error: trackError } = await supabase.from("slack_message_tracking").insert({
           request_id,
           message_type: msg.messageType as any,
           slack_message_ts: slackData.ts || null,
@@ -582,6 +653,12 @@ Deno.serve(async (req) => {
           slack_recipient_user_id: msg.slackUserId,
           current_state: "active",
         });
+        if (trackError) {
+          console.error(
+            "[slack-notify] Could not track message — its buttons cannot be " +
+            "retired automatically later:", trackError
+          );
+        }
       }
 
       results.push({ slackUserId: msg.slackUserId, ok: slackData.ok, error: slackData.error || null });
@@ -618,4 +695,143 @@ async function updateSlackMessage(
     },
     body: JSON.stringify({ channel, ts, text, blocks: [] }),
   });
+}
+
+// ── Working-hours helpers ───────────────────────────────────────────
+// The office lunch break (12:00–13:00) is unpaid, so a block of time that
+// crosses it is worth an hour less than the clock says. Mirrors
+// public.calculate_working_hours() and src/lib/workingHours.ts.
+
+const LUNCH_START_MINUTES = 12 * 60;
+const LUNCH_END_MINUTES = 13 * 60;
+
+function toMinutes(t: string): number {
+  const [h, m] = (t ?? "").split(":").map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+
+function lunchOverlapHours(start: string, end: string): number {
+  if (!start || !end) return 0;
+  const overlap =
+    Math.min(toMinutes(end), LUNCH_END_MINUTES) -
+    Math.max(toMinutes(start), LUNCH_START_MINUTES);
+  return Math.max(0, overlap) / 60;
+}
+
+/** "4h" / "3.5h" — no trailing zeros. */
+function fmtHours(hours: unknown): string {
+  return `${Number(Number(hours ?? 0).toFixed(2))}h`;
+}
+
+/**
+ * One line per make-up block, each with its own working hours, so a manager can
+ * see what they are agreeing to instead of a single run-on string.
+ */
+function formatMakeupPlan(entries: any[] | null, fallback: string | null): string {
+  if (!entries || entries.length === 0) {
+    return fallback ? `> ${fallback}` : "> _No make-up entries recorded._";
+  }
+  return entries
+    .map((e) => {
+      const start = e.start_time?.slice(0, 5);
+      const end = e.end_time?.slice(0, 5);
+      const lunch = lunchOverlapHours(e.start_time, e.end_time);
+      const lunchNote = lunch > 0 ? ` _(excl. ${fmtHours(lunch)} lunch)_` : "";
+      return `> • ${e.makeup_date}  ${start}–${end}  —  ${fmtHours(e.hours)}${lunchNote}`;
+    })
+    .join("\n");
+}
+
+/**
+ * Retire the Approve/Reject buttons sitting in every manager's Slack DM once a
+ * request has been decided — whichever side the decision came from. Without
+ * this, a decision made in the app leaves live buttons in Slack that other
+ * managers can still press.
+ */
+async function resolveApprovalMessages(
+  supabase: any,
+  token: string,
+  requestId: string,
+  employeeName: string,
+  typeLabel: string,
+  dateRange: string,
+  approved: boolean,
+  deciderName: string,
+  testMode: boolean
+): Promise<void> {
+  const { data: tracked, error } = await supabase
+    .from("slack_message_tracking")
+    .select("*")
+    .eq("request_id", requestId)
+    .eq("message_type", "approval_request")
+    .eq("current_state", "active");
+
+  if (error) {
+    console.error("[slack-notify] Could not load tracked approval messages:", error);
+    return;
+  }
+  if (!tracked || tracked.length === 0) return;
+
+  const emoji = approved ? "✅" : "❌";
+  const statusText = approved ? "Approved" : "Rejected";
+  const text = `${employeeName}'s ${typeLabel} request (${dateRange}) — ${emoji} ${statusText} by ${deciderName}`;
+  const blocks = [
+    {
+      type: "section",
+      text: { type: "mrkdwn", text: `*${typeLabel} Request — ${employeeName}*` },
+    },
+    {
+      type: "section",
+      fields: [
+        { type: "mrkdwn", text: `*Date/Time:*\n${dateRange}` },
+        { type: "mrkdwn", text: `*Status:*\n${emoji} *${statusText}*` },
+        { type: "mrkdwn", text: `*${statusText} by:*\n${deciderName}` },
+        {
+          type: "mrkdwn",
+          text:
+            `*At:*\n${new Date().toLocaleString("en-US", { timeZone: "America/New_York" })}`,
+        },
+      ],
+    },
+    { type: "divider" },
+    {
+      type: "context",
+      elements: [
+        {
+          type: "mrkdwn",
+          text: `${emoji} Decided in the app. No further action needed.`,
+        },
+      ],
+    },
+  ];
+
+  for (const msg of tracked) {
+    if (!msg.slack_message_ts || !msg.slack_channel_or_dm_id) continue;
+    if (testMode) {
+      console.log(`[TEST MODE] Would close out message ${msg.slack_message_ts}`);
+    } else {
+      const res = await fetch("https://slack.com/api/chat.update", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          channel: msg.slack_channel_or_dm_id,
+          ts: msg.slack_message_ts,
+          text,
+          blocks,
+        }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        console.error("[slack-notify] chat.update failed:", data.error);
+        continue;
+      }
+    }
+    await supabase
+      .from("slack_message_tracking")
+      .update({ current_state: "handled" })
+      .eq("id", msg.id);
+  }
 }

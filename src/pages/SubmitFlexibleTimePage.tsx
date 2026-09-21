@@ -12,6 +12,14 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { AlertCircle, Info, Plus, Trash2, Clock } from "lucide-react";
 import { getPayPeriod, parseDateUTC, parseLocalDate, formatDateUTC, getWeekKey } from "@/lib/payPeriod";
+import {
+  LUNCH_LABEL,
+  calculateWorkingHours,
+  formatHours,
+  getLunchOverlapHours,
+  overlapsTimeOff,
+  parseTimeToMinutes,
+} from "@/lib/workingHours";
 import TimeSelect from "@/components/TimeSelect";
 
 interface MakeupEntry {
@@ -19,41 +27,6 @@ interface MakeupEntry {
   date: string;
   startTime: string;
   endTime: string;
-}
-
-function parseTimeToMinutes(timeStr: string): number {
-  const [hours, minutes] = timeStr.split(":").map(Number);
-  return hours * 60 + minutes;
-}
-
-function calcHours(start: string, end: string): number {
-  if (!start || !end) return 0;
-  const diff = (parseTimeToMinutes(end) - parseTimeToMinutes(start)) / 60;
-  return Math.max(0, Math.round(diff * 100) / 100);
-}
-
-const LUNCH_START = 12 * 60; // 720 minutes
-const LUNCH_END = 13 * 60;   // 780 minutes
-
-function calculateWorkingHours(start: string, end: string): number {
-  if (!start || !end) return 0;
-  const startMin = parseTimeToMinutes(start);
-  const endMin = parseTimeToMinutes(end);
-  const rawMinutes = endMin - startMin;
-  if (rawMinutes <= 0) return 0;
-  const overlapStart = Math.max(startMin, LUNCH_START);
-  const overlapEnd = Math.min(endMin, LUNCH_END);
-  const lunchOverlap = Math.max(0, overlapEnd - overlapStart);
-  return Math.round((rawMinutes - lunchOverlap) / 60 * 100) / 100;
-}
-
-function getLunchOverlapHours(start: string, end: string): number {
-  if (!start || !end) return 0;
-  const startMin = parseTimeToMinutes(start);
-  const endMin = parseTimeToMinutes(end);
-  const overlapStart = Math.max(startMin, LUNCH_START);
-  const overlapEnd = Math.min(endMin, LUNCH_END);
-  return Math.max(0, overlapEnd - overlapStart) / 60;
 }
 
 export default function SubmitFlexibleTimePage() {
@@ -77,7 +50,7 @@ export default function SubmitFlexibleTimePage() {
   const lunchOverlapHours = getLunchOverlapHours(startTime, endTime);
   const endTimeBeforeStart = !!(startTime && endTime && parseTimeToMinutes(endTime) <= parseTimeToMinutes(startTime));
   const totalMakeupHours = makeupEntries.reduce(
-    (sum, e) => sum + calcHours(e.startTime, e.endTime),
+    (sum, e) => sum + calculateWorkingHours(e.startTime, e.endTime),
     0
   );
 
@@ -173,12 +146,24 @@ export default function SubmitFlexibleTimePage() {
       if (!entry.startTime) entryErrors.push(`Make-up entry ${i + 1}: start time is required.`);
       if (!entry.endTime) entryErrors.push(`Make-up entry ${i + 1}: end time is required.`);
 
-      const entryHours = calcHours(entry.startTime, entry.endTime);
+      const entryHours = calculateWorkingHours(entry.startTime, entry.endTime);
       if (entryHours <= 0 && entry.startTime && entry.endTime) {
         entryErrors.push(`Make-up entry ${i + 1}: end time must be after start time.`);
       }
       if (entryHours > 0 && entryHours < 0.5) {
-        entryErrors.push(`Make-up entry ${i + 1}: minimum duration is 30 minutes.`);
+        entryErrors.push(`Make-up entry ${i + 1}: minimum duration is 30 minutes of working time.`);
+      }
+
+      // Making up time during the hours you are away does not put them back.
+      if (
+        overlapsTimeOff(
+          entry.date, entry.startTime, entry.endTime,
+          dateOff, startTime, endTime
+        )
+      ) {
+        entryErrors.push(
+          `Make-up entry ${i + 1}: falls during the time off you are requesting (${startTime}–${endTime} on ${dateOff}). Choose a different day or time.`
+        );
       }
 
       if (entry.date && payPeriod) {
@@ -209,11 +194,11 @@ export default function SubmitFlexibleTimePage() {
     if (totalMakeupHours > 0) {
       if (totalMakeupHours > 4) {
         entryErrors.push(
-          `Total make-up hours (${totalMakeupHours}h) cannot exceed 4 hours.`
+          `Total make-up hours (${formatHours(totalMakeupHours)}) cannot exceed 4 hours.`
         );
       } else if (Math.abs((totalMakeupHours * 2) - Math.round(totalMakeupHours * 2)) > 0.01) {
         entryErrors.push(
-          `Total make-up hours (${totalMakeupHours}h) must be in 30-minute increments.`
+          `Total make-up hours (${formatHours(totalMakeupHours)}) must be in 30-minute increments.`
         );
       }
     }
@@ -221,11 +206,11 @@ export default function SubmitFlexibleTimePage() {
     if (totalHoursOff > 0 && Math.abs(totalMakeupHours - totalHoursOff) > 0.01) {
       if (totalMakeupHours < totalHoursOff) {
         entryErrors.push(
-          `Your make-up time (${totalMakeupHours}h) must equal your time off (${totalHoursOff}h). Please adjust your make-up entries.`
+          `Your make-up time (${formatHours(totalMakeupHours)} of working time) must equal your time off (${formatHours(totalHoursOff)}). You are ${formatHours(totalHoursOff - totalMakeupHours)} short — remember the ${LUNCH_LABEL} lunch break does not count.`
         );
       } else {
         entryErrors.push(
-          `Your make-up time (${totalMakeupHours}h) exceeds your time off (${totalHoursOff}h). Please reduce your make-up entries.`
+          `Your make-up time (${formatHours(totalMakeupHours)} of working time) exceeds your time off (${formatHours(totalHoursOff)}). Please reduce your make-up entries.`
         );
       }
     }
@@ -247,7 +232,12 @@ export default function SubmitFlexibleTimePage() {
 
     // Build a makeup plan summary from entries
     const makeupPlanSummary = makeupEntries
-      .map((e, i) => `Entry ${i + 1}: ${e.date} ${e.startTime}-${e.endTime} (${calcHours(e.startTime, e.endTime)}h)`)
+      .map((e, i) => {
+        const worked = calculateWorkingHours(e.startTime, e.endTime);
+        const lunch = getLunchOverlapHours(e.startTime, e.endTime);
+        const lunchNote = lunch > 0 ? ` [excl. ${formatHours(lunch)} lunch]` : "";
+        return `Entry ${i + 1}: ${e.date} ${e.startTime}-${e.endTime} (${formatHours(worked)})${lunchNote}`;
+      })
       .join("; ");
 
     const { data, error } = await supabase
@@ -278,7 +268,7 @@ export default function SubmitFlexibleTimePage() {
       makeup_date: e.date,
       start_time: e.startTime,
       end_time: e.endTime,
-      hours: calcHours(e.startTime, e.endTime),
+      hours: calculateWorkingHours(e.startTime, e.endTime),
     }));
 
     const { error: entryError } = await supabase
@@ -479,7 +469,7 @@ export default function SubmitFlexibleTimePage() {
                   <Alert className="border-primary/30 bg-primary/5">
                     <Info className="h-4 w-4" />
                     <AlertDescription className="text-sm">
-                      All make-up time must be completed within the same pay period as your time off. Times must be in 30-minute intervals.
+                      All make-up time must be completed within the same pay period as your time off, in 30-minute intervals, and outside the hours you are taking off. The {LUNCH_LABEL} lunch break does not count towards make-up time, so a block that crosses it is worth an hour less than the clock suggests.
                     </AlertDescription>
                   </Alert>
 
@@ -542,9 +532,14 @@ export default function SubmitFlexibleTimePage() {
                           />
                         </div>
                       </div>
-                      {calcHours(entry.startTime, entry.endTime) > 0 && (
+                      {calculateWorkingHours(entry.startTime, entry.endTime) > 0 && (
                         <p className="text-xs text-muted-foreground">
-                          {calcHours(entry.startTime, entry.endTime)}h
+                          {formatHours(calculateWorkingHours(entry.startTime, entry.endTime))} of make-up time
+                          {getLunchOverlapHours(entry.startTime, entry.endTime) > 0 && (
+                            <span>
+                              {" "}(excludes {formatHours(getLunchOverlapHours(entry.startTime, entry.endTime))} lunch break {LUNCH_LABEL})
+                            </span>
+                          )}
                         </p>
                       )}
                     </div>
@@ -556,9 +551,21 @@ export default function SubmitFlexibleTimePage() {
                       <span className="font-medium">
                         Total make-up hours:
                       </span>{" "}
-                      {totalMakeupHours}h
-                      <span className="text-muted-foreground ml-2">
-                        (must exactly equal time off in 30-min increments)
+                      {formatHours(totalMakeupHours)}
+                      {totalHoursOff > 0 && (
+                        <span className="ml-2">
+                          of {formatHours(totalHoursOff)} required
+                          {Math.abs(totalMakeupHours - totalHoursOff) > 0.01 && (
+                            <span className="text-destructive font-medium">
+                              {" "}— {formatHours(Math.abs(totalHoursOff - totalMakeupHours))}{" "}
+                              {totalMakeupHours < totalHoursOff ? "short" : "over"}
+                            </span>
+                          )}
+                        </span>
+                      )}
+                      <span className="block text-xs text-muted-foreground mt-1">
+                        Working hours only — the {LUNCH_LABEL} lunch break never counts as
+                        make-up time, for your time off or your make-up entries.
                       </span>
                     </div>
                   )}
