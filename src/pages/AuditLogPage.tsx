@@ -61,11 +61,21 @@ export default function AuditLogPage() {
             <SelectContent>
               <SelectItem value="all">All Actions</SelectItem>
               <SelectItem value="request_submitted">Submitted</SelectItem>
+              <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
               <SelectItem value="request_edited">Edited</SelectItem>
               <SelectItem value="request_cancelled">Cancelled</SelectItem>
+              <SelectItem value="cancellation_requested">Cancellation Requested</SelectItem>
+              <SelectItem value="cancellation_approved">Cancellation Approved</SelectItem>
+              <SelectItem value="cancellation_denied">Cancellation Denied</SelectItem>
               <SelectItem value="sick_day_auto_approved">Auto-Approved</SelectItem>
               <SelectItem value="approved_request_edited">Approved Edited</SelectItem>
               <SelectItem value="rejected_request_resubmitted">Resubmitted</SelectItem>
+              <SelectItem value="flexible_time_submitted">Flexible Time Submitted</SelectItem>
+              <SelectItem value="flexible_time_approved">Flexible Time Approved</SelectItem>
+              <SelectItem value="flexible_time_rejected">Flexible Time Rejected</SelectItem>
+              <SelectItem value="flexible_time_completed">Flexible Time Completed</SelectItem>
+              <SelectItem value="flexible_time_incomplete">Flexible Time Incomplete</SelectItem>
             </SelectContent>
           </Select>
         </div>

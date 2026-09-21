@@ -1,3 +1,5 @@
+// v3 – every database write is checked. A write that fails now says so in Slack
+//      instead of reporting a decision that never actually landed.
 // v2 – respond to Slack immediately (< 3s), process everything in the background
 // Slack's interactive component webhook requires an HTTP 200 within 3 seconds.
 // All DB work, calendar sync, and follow-up messages happen via EdgeRuntime.waitUntil()
@@ -311,16 +313,37 @@ async function handleApproval(
     };
     if (!isFlexible) updateData.approval_source = "manager";
 
-    await supabase.from(table).update(updateData).eq("id", requestId);
+    // Read the row back. If the write silently did nothing, the manager needs to
+    // know rather than seeing a green tick for an approval that never happened.
+    const { data: approvedRows, error: approveError } = await supabase
+      .from(table).update(updateData).eq("id", requestId).select("id, status");
+
+    if (approveError || !approvedRows || approvedRows.length === 0) {
+      console.error("[slack-handler] Approval write failed:", approveError);
+      await updateSlack(
+        token, channelId, messageTs,
+        "⚠️ Could not approve this request — the change was not saved. " +
+        "Nothing has been approved. Please try again or use the app.",
+        []
+      );
+      await sendDM(
+        token, manager.slack_user_id ?? "",
+        "⚠️ Your approval could not be saved. The request is still pending."
+      );
+      return;
+    }
     console.log(`[slack-handler] DB → approved for ${requestId}`);
 
-    await supabase.from("audit_logs").insert({
+    const { error: auditError } = await supabase.from("audit_logs").insert({
       request_id: requestId,
       action_type: isFlexible ? "flexible_time_approved" : "approved",
       actor_type: "manager",
       actor_id: manager.id,
       details: { via: "slack", approver_name: manager.full_name },
     });
+    if (auditError) {
+      console.error("[slack-handler] Audit log insert failed:", auditError);
+    }
 
     if (employee?.slack_user_id) {
       await sendDM(
@@ -345,21 +368,36 @@ async function handleApproval(
     }
   } else {
     // ── Reject ──
-    await supabase.from(table).update({
-      status: "rejected",
-      rejected_by_user_id: manager.id,
-      rejected_at: nowIso,
-      rejection_reason: `Rejected by ${manager.full_name} via Slack`,
-    }).eq("id", requestId);
+    const { data: rejectedRows, error: rejectError } = await supabase
+      .from(table).update({
+        status: "rejected",
+        rejected_by_user_id: manager.id,
+        rejected_at: nowIso,
+        rejection_reason: `Rejected by ${manager.full_name} via Slack`,
+      }).eq("id", requestId).select("id, status");
+
+    if (rejectError || !rejectedRows || rejectedRows.length === 0) {
+      console.error("[slack-handler] Rejection write failed:", rejectError);
+      await updateSlack(
+        token, channelId, messageTs,
+        "⚠️ Could not reject this request — the change was not saved. " +
+        "The request is still pending. Please try again or use the app.",
+        []
+      );
+      return;
+    }
     console.log(`[slack-handler] DB → rejected for ${requestId}`);
 
-    await supabase.from("audit_logs").insert({
+    const { error: auditError } = await supabase.from("audit_logs").insert({
       request_id: requestId,
       action_type: isFlexible ? "flexible_time_rejected" : "rejected",
       actor_type: "manager",
       actor_id: manager.id,
       details: { via: "slack", rejector_name: manager.full_name },
     });
+    if (auditError) {
+      console.error("[slack-handler] Audit log insert failed:", auditError);
+    }
 
     if (employee?.slack_user_id) {
       await sendDM(
@@ -505,11 +543,23 @@ async function handleCancellation(
   });
 
   if (isCancelApprove) {
-    await supabase.from(cancelTable).update({
-      status: "cancelled",
-      cancelled_at: nowIso,
-      previous_status: null,
-    }).eq("id", requestId);
+    const { data: cancelledRows, error: cancelError } = await supabase
+      .from(cancelTable).update({
+        status: "cancelled",
+        cancelled_at: nowIso,
+        previous_status: null,
+      }).eq("id", requestId).select("id");
+
+    if (cancelError || !cancelledRows || cancelledRows.length === 0) {
+      console.error("[slack-handler] Cancellation write failed:", cancelError);
+      await updateSlack(
+        token, channelId, messageTs,
+        "⚠️ Could not cancel this request — the change was not saved. " +
+        "The request is unchanged. Please try again or use the app.",
+        []
+      );
+      return;
+    }
     console.log(`[slack-handler] DB → cancelled for ${requestId}`);
 
     await supabase.from("audit_logs").insert({
@@ -554,10 +604,22 @@ async function handleCancellation(
   } else {
     // Deny — revert to previous status
     const previousStatus = cancelReq.previous_status || "approved";
-    await supabase.from(cancelTable).update({
-      status: previousStatus,
-      previous_status: null,
-    }).eq("id", requestId);
+    const { data: revertedRows, error: denyError } = await supabase
+      .from(cancelTable).update({
+        status: previousStatus,
+        previous_status: null,
+      }).eq("id", requestId).select("id");
+
+    if (denyError || !revertedRows || revertedRows.length === 0) {
+      console.error("[slack-handler] Cancellation denial write failed:", denyError);
+      await updateSlack(
+        token, channelId, messageTs,
+        "⚠️ Could not deny this cancellation — the change was not saved. " +
+        "Please try again or use the app.",
+        []
+      );
+      return;
+    }
     console.log(`[slack-handler] DB → ${previousStatus} (denied) for ${requestId}`);
 
     await supabase.from("audit_logs").insert({
