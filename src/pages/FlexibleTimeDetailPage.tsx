@@ -165,10 +165,19 @@ export default function FlexibleTimeDetailPage() {
         approved_by_user_id: user.id,
       })
       .eq("id", request.id)
+      // Still pending only — otherwise two managers approving at once would
+      // each trigger a calendar sync and orphan one of the events.
+      .eq("status", "pending_approval")
       .select("id");
 
-    if (approveError || !approved || approved.length === 0) {
-      toast.error("Could not approve this request: " + (approveError?.message || "no change was saved"));
+    if (approveError) {
+      toast.error("Could not approve this request: " + approveError.message);
+      setProcessing(false);
+      return;
+    }
+    if (!approved || approved.length === 0) {
+      toast.info("This request was already decided by someone else. Refreshing.");
+      fetchData();
       setProcessing(false);
       return;
     }
@@ -217,10 +226,18 @@ export default function FlexibleTimeDetailPage() {
         rejection_reason: rejectionReason || "Rejected by manager",
       })
       .eq("id", request.id)
+      .eq("status", "pending_approval")
       .select("id");
 
-    if (rejectError || !rejected || rejected.length === 0) {
-      toast.error("Could not reject this request: " + (rejectError?.message || "no change was saved"));
+    if (rejectError) {
+      toast.error("Could not reject this request: " + rejectError.message);
+      setProcessing(false);
+      return;
+    }
+    if (!rejected || rejected.length === 0) {
+      toast.info("This request was already decided by someone else. Refreshing.");
+      setRejectOpen(false);
+      fetchData();
       setProcessing(false);
       return;
     }

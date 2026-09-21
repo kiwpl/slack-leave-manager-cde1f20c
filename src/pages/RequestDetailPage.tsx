@@ -79,7 +79,11 @@ export default function RequestDetailPage() {
     if (!request || !user || !id) return;
     setProcessing(true);
 
-    const { error } = await supabase
+    // Only a request that is STILL pending may be approved. Without this the
+    // two managers who both press Approve at the same moment would each create
+    // a calendar event, and the second would overwrite the stored event id,
+    // leaving the first orphaned on the shared calendar forever.
+    const { data: approved, error } = await supabase
       .from("time_off_requests")
       .update({
         status: "approved",
@@ -87,10 +91,18 @@ export default function RequestDetailPage() {
         approved_at: new Date().toISOString(),
         approved_by_user_id: user.id,
       })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("status", "pending_approval")
+      .select("id");
 
     if (error) {
       toast.error("Could not approve this request: " + error.message);
+      setProcessing(false);
+      return;
+    }
+    if (!approved || approved.length === 0) {
+      toast.info("This request was already decided by someone else. Refreshing.");
+      fetchData();
       setProcessing(false);
       return;
     }
@@ -129,7 +141,7 @@ export default function RequestDetailPage() {
 
     const reason = rejectionReason.trim() || "Rejected by manager";
 
-    const { error } = await supabase
+    const { data: rejected, error } = await supabase
       .from("time_off_requests")
       .update({
         status: "rejected",
@@ -137,10 +149,19 @@ export default function RequestDetailPage() {
         rejected_by_user_id: user.id,
         rejection_reason: reason,
       })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("status", "pending_approval")
+      .select("id");
 
     if (error) {
       toast.error("Could not reject this request: " + error.message);
+      setProcessing(false);
+      return;
+    }
+    if (!rejected || rejected.length === 0) {
+      toast.info("This request was already decided by someone else. Refreshing.");
+      setRejectDialogOpen(false);
+      fetchData();
       setProcessing(false);
       return;
     }
