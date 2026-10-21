@@ -73,12 +73,12 @@ export default function MyRequestsPage() {
   return (
     <AppLayout>
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h1 className="text-2xl font-bold text-foreground">My Requests</h1>
             <p className="text-muted-foreground">View and manage your time off requests</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button asChild>
               <Link to="/submit-request">
                 <Plus className="h-4 w-4 mr-2" />
@@ -94,7 +94,7 @@ export default function MyRequestsPage() {
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-40">
               <SelectValue placeholder="Type" />

@@ -304,13 +304,13 @@ export default function FlexibleTimeDetailPage() {
 
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <CardTitle className="text-lg">Flexible Time Request</CardTitle>
               <StatusBadge status={flexStatus} />
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground">Employee</p>
                 <p className="font-medium text-foreground">{employeeName}</p>
@@ -433,7 +433,7 @@ export default function FlexibleTimeDetailPage() {
 
         {/* Manager actions */}
         {canApprove && (
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Button
               className="flex-1"
               onClick={handleApprove}
