@@ -1,43 +1,17 @@
+# Phone-friendly layout (under 768px), desktop unchanged
 
+All changes use mobile-first classes that only kick in below 768px (`md:` keeps today's desktop look). No data, logic, sign-in, or backend changes.
 
-## Flexible Time Request Updates
+## What changes on phones
+- **Two/three-column form and detail grids** become one column: Dashboard, Submit Request, Manager Submit Request, Edit Request, Submit Flexible Time (dates + make-up entry rows), Request Detail, Flexible Time Detail.
+- **Button rows and filter rows** wrap onto the next line: Dashboard header, My Requests, Manager Dashboard, Audit Log, Admin Settings, Request Detail, Flexible Time Detail, Edit Request, User Management.
+- **List rows** (requests, users, audit entries) that put info and date side by side stack vertically, showing each field as "Label: value" where they are currently laid out like table columns (User Management, Audit Log, Manager Dashboard).
+- **Date pickers / calendar popovers / time selects** set to full width with a max of the screen width.
+- **Safety net**: page container prevents horizontal overflow, long text (emails, IDs, notes) wraps instead of pushing the page wide.
+- Login, Signup, Forgot/Reset Password, Profile, Policy Editor checked and fixed the same way.
 
-Four changes to the flexible time feature: role-restrict to office/admin staff, enforce 30-minute time intervals, enforce minimum 30-minute make-up entries, and add a reminder about same-pay-period completion requirement.
-
-### 1. Role-Restrict Flexible Time to Office/Admin Staff
-
-**Route protection** in `App.tsx`: Change the `/submit-flexible-time` route from open `<ProtectedRoute>` to `<ProtectedRoute requiredRoles={["office_manager", "admin", "superadmin"]}>`.
-
-**Dashboard button** in `DashboardPage.tsx`: Wrap the "Flexible Time" button in a role check (`hasAnyRole(["office_manager", "admin", "superadmin"])`) so only eligible users see it.
-
-**Submission page** in `SubmitFlexibleTimePage.tsx`: Add a note at the top: "Flexible time requests are available for office and admin staff only."
-
-**My Requests / Manager Dashboard**: No changes needed — existing requests will still display regardless of role.
-
-### 2. Enforce 30-Minute Intervals for Time Off
-
-In `SubmitFlexibleTimePage.tsx`, add `step="1800"` (30 minutes) to the start time and end time `<Input type="time">` fields for the time-off section. Add client-side validation that both times are on 30-minute boundaries (minutes must be 0 or 30). Show inline error if not.
-
-### 3. Enforce Minimum 30-Minute Make-Up Entries
-
-In `SubmitFlexibleTimePage.tsx`, add `step="1800"` to the make-up entry start/end time inputs. Add validation that each make-up entry's duration is at least 30 minutes, and that times are on 30-minute boundaries. Show inline error per entry if violated.
-
-Update the `calcHours` rounding to align with 30-minute granularity.
-
-### 4. Add Same-Pay-Period Completion Reminder
-
-In `SubmitFlexibleTimePage.tsx`, add an informational alert in the make-up entries section:
-
-> "All make-up time must be completed within the same pay period as your time off."
-
-This is already validated (make-up dates must fall within the pay period), but this adds an explicit UI reminder. Also add this note to the `FlexibleTimeDetailPage.tsx` detail view.
-
-### Files to Edit
-
-| File | Change |
-|------|--------|
-| `src/App.tsx` | Add `requiredRoles` to flexible time route |
-| `src/pages/DashboardPage.tsx` | Role-gate the Flexible Time button |
-| `src/pages/SubmitFlexibleTimePage.tsx` | Add role note, 30-min step/validation, min 30-min makeup validation, pay-period reminder |
-| `src/pages/FlexibleTimeDetailPage.tsx` | Add pay-period completion note |
-
+## Technical details
+- Replace `grid-cols-2/3` with `grid-cols-1 md:grid-cols-2/3`; `flex gap-*` rows get `flex-wrap`, and side-by-side rows get `flex-col md:flex-row`.
+- `AppLayout` main: add `min-w-0 overflow-x-hidden`; `break-words` on text-heavy cells.
+- Any shadcn `Table` usage (none found in pages currently) would get a `md:hidden` card view plus `hidden md:table`.
+- Verify with Playwright at 375px on each page (scrollWidth equals viewport width) and at 1280px to confirm desktop is visually unchanged.
