@@ -326,7 +326,7 @@ export default function RequestDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Type</p>
                 <p className="font-medium capitalize text-foreground">{request.request_type}</p>
@@ -393,7 +393,7 @@ export default function RequestDetailPage() {
                 {employeeName || "the employee"} in Slack. You can also use the
                 buttons in your Slack message — either place does the same thing.
               </p>
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <Button className="flex-1" onClick={handleApprove} disabled={processing}>
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   {processing ? "Working..." : "Approve"}
@@ -514,7 +514,7 @@ export default function RequestDetailPage() {
             ) : (
               <div className="space-y-4">
                 {auditLogs.map((log) => (
-                  <div key={log.id} className="flex gap-3">
+                  <div key={log.id} className="flex flex-wrap gap-3">
                     <div className="w-2 h-2 mt-2 rounded-full bg-primary shrink-0" />
                     <div>
                       <p className="text-sm font-medium text-foreground">

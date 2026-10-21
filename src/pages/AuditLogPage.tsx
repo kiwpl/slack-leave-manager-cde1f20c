@@ -47,7 +47,7 @@ export default function AuditLogPage() {
           <p className="text-muted-foreground">Complete history of all actions</p>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Input
             placeholder="Search logs..."
             value={search}

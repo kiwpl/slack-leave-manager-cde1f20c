@@ -68,7 +68,7 @@ export default function AdminSettingsPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>Shared Calendar ID</Label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Input
                       value={googleCalendarId}
                       onChange={(e) => setGoogleCalendarId(e.target.value)}
@@ -79,7 +79,7 @@ export default function AdminSettingsPage() {
                     </Button>
                   </div>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="text-sm font-medium text-foreground">Test Mode</p>
                     <p className="text-xs text-muted-foreground">Log calendar actions without actually syncing</p>
@@ -104,7 +104,7 @@ export default function AdminSettingsPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>Anchor Date (start of any known pay period)</Label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Input
                       type="date"
                       value={payPeriodAnchor}
@@ -129,7 +129,7 @@ export default function AdminSettingsPage() {
                 <CardDescription>Configure Slack notifications and approvals</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="text-sm font-medium text-foreground">Test Mode</p>
                     <p className="text-xs text-muted-foreground">Log Slack messages without sending</p>

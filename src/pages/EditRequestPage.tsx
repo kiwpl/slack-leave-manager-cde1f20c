@@ -216,7 +216,7 @@ export default function EditRequestPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-5">
               {isVacation && (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Start Date</Label>
                     <Input
@@ -278,7 +278,7 @@ export default function EditRequestPage() {
                 </Alert>
               )}
 
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <Button type="submit" disabled={submitting}>
                   {submitting ? "Saving..." : "Save Changes"}
                 </Button>

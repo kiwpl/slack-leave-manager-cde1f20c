@@ -110,3 +110,9 @@
     font-family: 'Inter', system-ui, sans-serif;
   }
 }
+
+@media (max-width: 767px) {
+  input[type="date"], input[type="time"] { width: 100%; max-width: 100%; min-width: 0; }
+  [data-radix-popper-content-wrapper] { max-width: 100vw; }
+  .rdp { max-width: 100%; }
+}

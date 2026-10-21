@@ -175,7 +175,7 @@ export default function UserManagementPage() {
   return (
     <AppLayout>
       <div className="max-w-5xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h1 className="text-2xl font-bold text-foreground">User Management</h1>
             <p className="text-muted-foreground">Manage users, roles, and Slack mappings</p>
@@ -196,7 +196,7 @@ export default function UserManagementPage() {
                     <div className="flex-1">
                       <p className="font-medium text-foreground">{u.full_name}</p>
                       <p className="text-sm text-muted-foreground">{u.email}</p>
-                      <div className="flex gap-1 mt-2">
+                      <div className="flex flex-wrap gap-1 mt-2">
                         {u.roles.map((role) => (
                           <Badge key={role} variant="outline" className="text-xs">{role}</Badge>
                         ))}

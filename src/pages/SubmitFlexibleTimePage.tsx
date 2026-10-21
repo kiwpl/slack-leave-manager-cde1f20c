@@ -380,7 +380,7 @@ export default function SubmitFlexibleTimePage() {
                 </div>
 
                 {/* Time range - 30min interval selects */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label>Start Time</Label>
                     <TimeSelect
@@ -454,7 +454,7 @@ export default function SubmitFlexibleTimePage() {
 
                 {/* Make-up entries */}
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <Label>Make-Up Time Entries</Label>
                     <Button
                       type="button"
@@ -488,7 +488,7 @@ export default function SubmitFlexibleTimePage() {
                       key={entry.id}
                       className="p-3 rounded-lg border border-border space-y-2"
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-sm font-medium">
                           Entry {i + 1}
                         </span>
@@ -504,7 +504,7 @@ export default function SubmitFlexibleTimePage() {
                           </Button>
                         )}
                       </div>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                         <div className="space-y-1">
                           <Label className="text-xs">Date</Label>
                           <Input
