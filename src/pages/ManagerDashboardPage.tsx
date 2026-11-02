@@ -151,7 +151,7 @@ export default function ManagerDashboardPage() {
     <AppLayout>
       <div className="max-w-5xl mx-auto space-y-6">
         <div>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h1 className="text-2xl font-bold text-foreground">Manager Dashboard</h1>
               <p className="text-muted-foreground">
@@ -166,7 +166,7 @@ export default function ManagerDashboardPage() {
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-48">
               <SelectValue />

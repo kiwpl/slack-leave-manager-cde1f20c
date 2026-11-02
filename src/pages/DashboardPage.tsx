@@ -238,9 +238,9 @@ export default function DashboardPage() {
         )}
 
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-2xl font-bold text-foreground">Time Off</h1>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {hasSlackId && (
               <>
                 <Button onClick={() => setShowForm(!showForm)} variant={showForm ? "outline" : "default"} size="sm">
@@ -282,7 +282,7 @@ export default function DashboardPage() {
                   {requestType && (
                     <>
                       {/* Dates */}
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div className="space-y-2">
                           <Label>Start Date</Label>
                           <Input

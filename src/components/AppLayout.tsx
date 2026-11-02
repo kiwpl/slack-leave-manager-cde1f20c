@@ -76,7 +76,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Mobile header */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 min-w-0 flex flex-col">
         <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card">
           <h1 className="text-lg font-bold text-foreground">Time Off Manager</h1>
           <Button variant="ghost" size="sm" onClick={() => { signOut(); navigate("/login"); }}>
@@ -109,7 +109,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </nav>
         )}
 
-        <main className="flex-1 p-4 md:p-8 overflow-auto">
+        <main className="flex-1 min-w-0 p-4 md:p-8 overflow-x-hidden overflow-y-auto break-words">
           {children}
         </main>
       </div>
