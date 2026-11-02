@@ -371,7 +371,7 @@ Deno.serve(async (req) => {
 
       const description = [
         request.note,
-        isHalfDayPm ? "Half day – afternoon off (12:00 PM – 5:00 PM)" : null,
+        isHalfDayPm ? "Half day – afternoon off (12:30 PM – 5:00 PM)" : null,
       ].filter(Boolean).join("\n") || undefined;
 
       // Half-day: timed event in company timezone. Full day: all-day event (date only).
@@ -379,7 +379,7 @@ Deno.serve(async (req) => {
         ? {
             summary,
             description,
-            start: { dateTime: `${startDate}T12:00:00`, timeZone: companyTimezone },
+            start: { dateTime: `${startDate}T12:30:00`, timeZone: companyTimezone },
             end:   { dateTime: `${startDate}T17:00:00`, timeZone: companyTimezone },
           }
         : {
@@ -405,15 +405,55 @@ Deno.serve(async (req) => {
         throw new Error(`Calendar API error: ${JSON.stringify(eventData)}`);
       }
 
+      // A vacation that starts with a half day and runs past its first day also
+      // gets an all-day event for the rest (start_date+1 through end_date).
+      // Both event ids are stored comma-separated so delete removes both.
+      let storedEventId = eventData.id;
+      if (
+        isHalfDayPm &&
+        request.request_type === "vacation" &&
+        normalizeDate(request.end_date!) > startDate
+      ) {
+        const restEvent = {
+          summary: `${employee?.full_name} - Vacation`,
+          description: request.note || undefined,
+          start: { date: nextDay(startDate) },
+          end:   { date: endDate },
+        };
+
+        const restRes = await fetch(`${calendarApiBase}/events`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(restEvent),
+        });
+
+        const restData = await restRes.json();
+
+        if (!restRes.ok) {
+          // Keep the afternoon event's id so delete can still remove it.
+          await supabase
+            .from("time_off_requests")
+            .update({ google_calendar_event_id: eventData.id })
+            .eq("id", request_id);
+          await logSync(supabase, request_id, "failed", eventData.id, JSON.stringify(restData));
+          throw new Error(`Calendar API error: ${JSON.stringify(restData)}`);
+        }
+
+        storedEventId = `${eventData.id},${restData.id}`;
+      }
+
       await supabase
         .from("time_off_requests")
-        .update({ google_calendar_event_id: eventData.id })
+        .update({ google_calendar_event_id: storedEventId })
         .eq("id", request_id);
 
-      await logSync(supabase, request_id, "create", eventData.id);
+      await logSync(supabase, request_id, "create", storedEventId);
 
       return new Response(
-        JSON.stringify({ success: true, eventId: eventData.id }),
+        JSON.stringify({ success: true, eventId: storedEventId }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -428,15 +468,18 @@ Deno.serve(async (req) => {
         );
       }
 
-      const res = await fetch(
-        `${calendarApiBase}/events/${encodeURIComponent(eventId)}`,
-        { method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` } }
-      );
+      // A vacation that starts with a half day stores two ids, comma-separated.
+      for (const singleId of eventId.split(",")) {
+        const res = await fetch(
+          `${calendarApiBase}/events/${encodeURIComponent(singleId)}`,
+          { method: "DELETE", headers: { Authorization: `Bearer ${accessToken}` } }
+        );
 
-      if (!res.ok && res.status !== 410) {
-        const errData = await res.text();
-        await logSync(supabase, request_id, "failed", eventId, errData);
-        throw new Error(`Calendar delete error: ${errData}`);
+        if (!res.ok && res.status !== 410) {
+          const errData = await res.text();
+          await logSync(supabase, request_id, "failed", singleId, errData);
+          throw new Error(`Calendar delete error: ${errData}`);
+        }
       }
 
       await supabase
