@@ -57,6 +57,11 @@ Deno.serve(async (req) => {
         headers: { Location: slackAuthUrl.toString() },
       });
     }
+
+    return new Response(JSON.stringify({ error: "No code provided" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   // Step 2: Exchange code for tokens
