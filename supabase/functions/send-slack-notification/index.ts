@@ -1,3 +1,4 @@
+// v4 – include morning off (end_day_portion "am") in all notification messages
 // v3 – spell out flexible time make-up plans in working hours, and retire the
 //      Approve/Reject buttons in Slack when a decision is made inside the app.
 // v2 – include half-day (start_day_portion) in all notification messages
@@ -66,6 +67,7 @@ Deno.serve(async (req) => {
     let typeLabel = "";
     let specialApprovalNote = "";
     let isHalfDayPm = false;
+    let halfDayLabel = "";
     let makeupPlanText = "";
     let makeupTotalHours = 0;
 
@@ -115,7 +117,19 @@ Deno.serve(async (req) => {
       employee = emp;
 
       isHalfDayPm = request.start_day_portion === "pm";
-      const halfDaySuffix = isHalfDayPm ? " (Afternoon off - Half Day)" : "";
+      const isHalfDayAm = request.end_day_portion === "am";
+      halfDayLabel = isHalfDayPm && isHalfDayAm
+        ? "Afternoon off first day, Morning off last day"
+        : isHalfDayPm
+          ? "Afternoon off"
+          : isHalfDayAm
+            ? "Morning off"
+            : "";
+      const halfDaySuffix = isHalfDayPm && isHalfDayAm
+        ? ` (${halfDayLabel})`
+        : halfDayLabel
+          ? ` (${halfDayLabel} - Half Day)`
+          : "";
       dateRange = request.request_type === "vacation"
         ? `${request.start_date} → ${request.end_date}${halfDaySuffix}`
         : (request.sick_date || "N/A") + halfDaySuffix;
@@ -181,7 +195,7 @@ Deno.serve(async (req) => {
                   type: "section",
                   text: {
                     type: "mrkdwn",
-                    text: `*New ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${isHalfDayPm ? `\n*Half Day:* Afternoon off` : ""}${request.note ? `\n*Note:* ${request.note}` : ""}${specialApprovalNote}`,
+                    text: `*New ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${halfDayLabel ? `\n*Half Day:* ${halfDayLabel}` : ""}${request.note ? `\n*Note:* ${request.note}` : ""}${specialApprovalNote}`,
                   },
                 },
                 {
@@ -364,7 +378,7 @@ Deno.serve(async (req) => {
                   type: "section",
                   text: {
                     type: "mrkdwn",
-                    text: `🔔 *Reminder: Pending ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${isHalfDayPm ? `\n*Half Day:* Afternoon off` : ""}${request.note ? `\n*Note:* ${request.note}` : ""}${specialApprovalNote}`,
+                    text: `🔔 *Reminder: Pending ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${halfDayLabel ? `\n*Half Day:* ${halfDayLabel}` : ""}${request.note ? `\n*Note:* ${request.note}` : ""}${specialApprovalNote}`,
                   },
                 },
                 {

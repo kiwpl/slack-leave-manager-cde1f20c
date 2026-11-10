@@ -1,0 +1,663 @@
+<title>Morning Off Mockup</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ["Inter", "system-ui", "sans-serif"], mono: ["JetBrains Mono", "monospace"] },
+        colors: {
+          border: "hsl(var(--border))",
+          input: "hsl(var(--input))",
+          ring: "hsl(var(--ring))",
+          background: "hsl(var(--background))",
+          foreground: "hsl(var(--foreground))",
+          primary: { DEFAULT: "hsl(var(--primary))", foreground: "hsl(var(--primary-foreground))" },
+          secondary: { DEFAULT: "hsl(var(--secondary))", foreground: "hsl(var(--secondary-foreground))" },
+          destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
+          muted: { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
+          accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
+          card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
+          success: { DEFAULT: "hsl(var(--success))", foreground: "hsl(var(--success-foreground))" },
+          warning: { DEFAULT: "hsl(var(--warning))", foreground: "hsl(var(--warning-foreground))" },
+          info: { DEFAULT: "hsl(var(--info))", foreground: "hsl(var(--info-foreground))" },
+        },
+        borderRadius: { lg: "var(--radius)", md: "calc(var(--radius) - 2px)", sm: "calc(var(--radius) - 4px)" },
+      },
+    },
+  };
+</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: the real Time Off page (sidebar + centred max-w-2xl column), with a mockup strip on top. Tokens copied from the app's src/index.css. */
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 220 20% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 10%;
+    --primary: 220 70% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 94%;
+    --secondary-foreground: 220 20% 20%;
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 10% 46%;
+    --accent: 220 14% 94%;
+    --accent-foreground: 220 20% 20%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 90%;
+    --input: 220 13% 90%;
+    --ring: 220 70% 50%;
+    --radius: 0.5rem;
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+    /* yellow alert (Tailwind yellow-50 / 500 / 600 / 700 / 800 in the app) */
+    --warn-bg: #fefce8;
+    --warn-border: rgb(234 179 8 / 0.5);
+    --warn-icon: #ca8a04;
+    --warn-text: #854d0e;
+    --warn-badge: #a16207;
+    /* mockup-only: outline colour for "what changed" */
+    --changed: #f97316;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --background: 220 20% 7%;
+      --foreground: 210 20% 95%;
+      --card: 220 20% 10%;
+      --card-foreground: 210 20% 95%;
+      --primary: 220 70% 55%;
+      --primary-foreground: 0 0% 100%;
+      --secondary: 220 14% 16%;
+      --secondary-foreground: 210 20% 95%;
+      --muted: 220 14% 16%;
+      --muted-foreground: 220 10% 60%;
+      --accent: 220 14% 16%;
+      --accent-foreground: 210 20% 95%;
+      --destructive: 0 62% 40%;
+      --border: 220 14% 18%;
+      --input: 220 14% 18%;
+      --ring: 220 70% 55%;
+      --success: 142 71% 40%;
+      --warning: 38 92% 45%;
+      --info: 199 89% 42%;
+      --warn-bg: rgb(66 32 6 / 0.2);
+      --warn-border: rgb(234 179 8 / 0.5);
+      --warn-icon: #ca8a04;
+      --warn-text: #fef08a;
+      --warn-badge: #fde047;
+      --changed: #fb923c;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --background: 220 20% 7%;
+    --foreground: 210 20% 95%;
+    --card: 220 20% 10%;
+    --card-foreground: 210 20% 95%;
+    --primary: 220 70% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 16%;
+    --secondary-foreground: 210 20% 95%;
+    --muted: 220 14% 16%;
+    --muted-foreground: 220 10% 60%;
+    --accent: 220 14% 16%;
+    --accent-foreground: 210 20% 95%;
+    --destructive: 0 62% 40%;
+    --border: 220 14% 18%;
+    --input: 220 14% 18%;
+    --ring: 220 70% 55%;
+    --success: 142 71% 40%;
+    --warning: 38 92% 45%;
+    --info: 199 89% 42%;
+    --warn-bg: rgb(66 32 6 / 0.2);
+    --warn-border: rgb(234 179 8 / 0.5);
+    --warn-icon: #ca8a04;
+    --warn-text: #fef08a;
+    --warn-badge: #fde047;
+    --changed: #fb923c;
+    color-scheme: dark;
+  }
+  * { border-color: hsl(var(--border)); }
+  body {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: "Inter", system-ui, sans-serif;
+  }
+  .gutter {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  @media (min-width: 768px) {
+    .gutter-md {
+      padding-left: max(32px, env(safe-area-inset-left, 0px));
+      padding-right: max(32px, env(safe-area-inset-right, 0px));
+    }
+  }
+  @media (max-width: 767px) {
+    input[type="date"] { width: 100%; max-width: 100%; min-width: 0; }
+  }
+
+  /* shadcn checkbox look */
+  .cbx {
+    appearance: none; -webkit-appearance: none;
+    height: 1rem; width: 1rem; flex-shrink: 0; margin: 0;
+    border-radius: calc(var(--radius) - 4px);
+    border: 1px solid hsl(var(--primary));
+    background: transparent; cursor: pointer; display: grid; place-content: center;
+  }
+  .cbx:checked {
+    background: hsl(var(--primary));
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+    background-size: 1rem 1rem; background-position: center; background-repeat: no-repeat;
+  }
+  .cbx:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring)); }
+
+  .warn-alert { border-color: var(--warn-border); background: var(--warn-bg); }
+  .warn-alert .warn-icon { color: var(--warn-icon); }
+  .warn-alert .warn-text { color: var(--warn-text); }
+  .warn-badge { border-color: var(--warn-border); background: var(--warn-bg); color: var(--warn-badge); }
+
+  /* "Outline what changed" */
+  body.show-changes [data-changed] {
+    outline: 2px dashed var(--changed);
+    outline-offset: 4px;
+    border-radius: 6px;
+  }
+
+  .switch { position: relative; width: 36px; height: 20px; border-radius: 999px; background: hsl(var(--input)); transition: background .15s; flex-shrink: 0; }
+  .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 999px; background: hsl(var(--card)); box-shadow: 0 1px 2px rgb(0 0 0 / .25); transition: transform .15s; }
+  .switch[aria-checked="true"] { background: hsl(var(--primary)); }
+  .switch[aria-checked="true"]::after { transform: translateX(16px); }
+  .switch:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring)); }
+
+  #toast { transition: opacity .2s, transform .2s; }
+  #toast.hide { opacity: 0; transform: translateY(8px); pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) { #toast, .switch, .switch::after { transition: none; } }
+</style>
+
+<!-- Mockup strip (not part of the app) -->
+<div class="border-b border-border bg-card">
+  <div class="gutter py-3 max-w-5xl mx-auto flex flex-col gap-2">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center rounded-full border border-border px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">Mockup · Round 1</span>
+        <span class="text-sm font-semibold text-foreground">Morning off option</span>
+      </div>
+      <label class="flex items-center gap-2 text-sm text-foreground cursor-pointer select-none" for="outlineToggle">
+        <button id="outlineToggle" type="button" role="switch" aria-checked="true" class="switch" aria-label="Outline what changed"></button>
+        Outline what changed
+      </label>
+    </div>
+    <div class="text-sm">
+      <p class="font-medium text-foreground">What changed since the live app</p>
+      <ul class="list-disc ml-5 text-muted-foreground">
+        <li>New checkbox under the afternoon one: "Half day on last day (morning off)".</li>
+        <li>On a one-day request, ticking one half-day box unticks the other.</li>
+        <li>The summary line says "morning off" and counts it as half a day.</li>
+        <li>My Requests shows a morning off as "Morning off · date" (sick day: "Morning · date").</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- The app -->
+<div class="flex min-h-screen bg-background">
+  <!-- Sidebar -->
+  <aside class="hidden md:flex w-56 flex-col border-r border-border bg-card">
+    <div class="p-5 border-b border-border">
+      <h1 class="text-lg font-bold text-foreground">Time Off Manager</h1>
+    </div>
+    <nav class="flex-1 p-3 space-y-1">
+      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground" onclick="return false">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        Time Off
+      </a>
+    </nav>
+    <div class="p-4 border-t border-border">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">M</div>
+        <div class="flex-1 min-w-0"><p class="text-sm font-medium truncate text-foreground">Maria Santos</p></div>
+      </div>
+      <button type="button" class="inline-flex items-center gap-2 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 w-full justify-start text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+        <svg class="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+        Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <div class="flex-1 min-w-0 flex flex-col">
+    <!-- Mobile header -->
+    <header class="md:hidden flex items-center justify-between py-4 gutter border-b border-border bg-card">
+      <h1 class="text-lg font-bold text-foreground">Time Off Manager</h1>
+      <button type="button" class="inline-flex items-center justify-center rounded-md h-9 px-3 hover:bg-accent" aria-label="Sign out">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+      </button>
+    </header>
+
+    <main class="flex-1 min-w-0 py-4 md:py-8 gutter gutter-md overflow-x-hidden break-words">
+      <div class="max-w-2xl mx-auto space-y-6">
+        <!-- Header -->
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h1 class="text-2xl font-bold text-foreground">Time Off</h1>
+          <div class="flex flex-wrap gap-2">
+            <button id="toggleForm" type="button" class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"></button>
+            <button type="button" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground">
+              <svg class="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Flexible Time
+            </button>
+          </div>
+        </div>
+
+        <div id="formArea" class="space-y-6">
+          <!-- Policy -->
+          <div class="rounded-lg border bg-card text-card-foreground shadow-sm border-info/30 bg-info/5">
+            <div class="flex flex-col space-y-1.5 p-6 pb-3">
+              <h3 class="font-semibold leading-none tracking-tight flex items-center gap-2 text-base text-info">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+                Vacation and Sick Day Policy
+              </h3>
+            </div>
+            <div class="p-6 pt-0">
+              <div class="space-y-0.5">
+                <p class="text-sm text-muted-foreground">Please review this policy before submitting a request.</p><br>
+                <h4 class="font-semibold text-foreground mt-4 mb-1">Vacation Requests</h4><br>
+                <li class="ml-4 text-sm text-muted-foreground">All vacation requests must be submitted through this app.</li>
+                <li class="ml-4 text-sm text-muted-foreground">Vacation requests are not approved until the employee receives an approval confirmation.</li>
+                <li class="ml-4 text-sm text-muted-foreground">Submitting a request does not guarantee approval.</li>
+                <li class="ml-4 text-sm text-muted-foreground">Vacation requests should be submitted as early as possible to support scheduling and coverage.</li>
+                <li class="ml-4 text-sm text-muted-foreground">Approval may depend on staffing needs, timing, and overlapping requests from other employees.</li><br>
+                <h4 class="font-semibold text-foreground mt-4 mb-1">Sick Day Requests</h4><br>
+                <li class="ml-4 text-sm text-muted-foreground">Sick days are intended for unexpected illness-related absences.</li>
+                <li class="ml-4 text-sm text-muted-foreground">Sick day requests may only be submitted for today or a past date.</li>
+                <li class="ml-4 text-sm text-muted-foreground">Future sick day submissions are not allowed.</li>
+                <li class="ml-4 text-sm text-muted-foreground">Eligible sick day requests are automatically recorded in the system.</li>
+                <li class="ml-4 text-sm text-muted-foreground">Misuse of sick day submissions may be reviewed by management.</li><br>
+                <h4 class="font-semibold text-foreground mt-4 mb-1">Changes and Cancellations</h4><br>
+                <li class="ml-4 text-sm text-muted-foreground">Employees may edit or cancel their own requests in the app.</li>
+                <li class="ml-4 text-sm text-muted-foreground">Changes to approved vacation requests will require re-approval.</li>
+                <li class="ml-4 text-sm text-muted-foreground">Employees may cancel approved vacation requests without approval, but management will be notified.</li>
+                <li class="ml-4 text-sm text-muted-foreground">Cancelled approved requests will be removed from the shared calendar.</li><br>
+                <h4 class="font-semibold text-foreground mt-4 mb-1">Employee Responsibility</h4><br>
+                <li class="ml-4 text-sm text-muted-foreground">Employees are responsible for submitting accurate information.</li>
+                <li class="ml-4 text-sm text-muted-foreground">Duplicate, misleading, or overlapping requests may be reviewed, corrected, or denied.</li><br>
+                <h4 class="font-semibold text-foreground mt-4 mb-1">Policy Updates</h4><br>
+                <li class="ml-4 text-sm text-muted-foreground">The company may update this policy from time to time.</li><br>
+                <h4 class="font-semibold text-foreground mt-4 mb-1">Acknowledgment</h4><br>
+                <p class="text-sm text-muted-foreground">By submitting a request, you confirm that the information provided is accurate and that you have read and understood this policy.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- New Request -->
+          <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+            <div class="flex flex-col space-y-1.5 p-6 pb-3">
+              <h3 class="font-semibold leading-none tracking-tight text-base">New Request</h3>
+            </div>
+            <div class="p-6 pt-0">
+              <form id="reqForm" class="space-y-4" novalidate>
+                <div class="space-y-2">
+                  <label class="text-sm font-medium leading-none" for="reqType">Type</label>
+                  <div class="relative">
+                    <select id="reqType" class="appearance-none flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer">
+                      <option value="">Select type...</option>
+                      <option value="vacation">Vacation</option>
+                      <option value="sick">Sick Day</option>
+                    </select>
+                    <svg class="h-4 w-4 opacity-50 absolute right-3 top-3 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                  </div>
+                  <p id="errType" class="text-sm text-destructive" hidden></p>
+                </div>
+
+                <div id="typeFields" class="space-y-4">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="space-y-2 min-w-0">
+                      <label class="text-sm font-medium leading-none" for="startDate">Start Date</label>
+                      <input id="startDate" type="date" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                      <p id="errStart" class="text-sm text-destructive" hidden></p>
+                    </div>
+                    <div class="space-y-2 min-w-0">
+                      <label class="text-sm font-medium leading-none" for="endDate">End Date</label>
+                      <input id="endDate" type="date" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                      <p id="errEnd" class="text-sm text-destructive" hidden></p>
+                    </div>
+                  </div>
+
+                  <!-- Half day toggles -->
+                  <div class="space-y-3">
+                    <div class="flex items-center gap-3">
+                      <input id="startHalfDay" type="checkbox" class="cbx">
+                      <label for="startHalfDay" class="text-sm font-medium leading-none cursor-pointer">Half day on first day (afternoon off)</label>
+                    </div>
+                    <div class="flex items-center gap-3" data-changed>
+                      <input id="endHalfDay" type="checkbox" class="cbx">
+                      <label for="endHalfDay" class="text-sm font-medium leading-none cursor-pointer">Half day on last day (morning off)</label>
+                    </div>
+                  </div>
+
+                  <!-- Summary -->
+                  <div class="p-3 rounded-lg bg-accent/50 border border-border" data-changed>
+                    <p id="summary" class="text-sm text-foreground"></p>
+                  </div>
+
+                  <div id="alert10" class="relative w-full rounded-lg border p-4 warn-alert" hidden>
+                    <svg class="warn-icon h-4 w-4 absolute left-4 top-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                    <div class="warn-text text-sm pl-7">This request exceeds 10 business days and will require <strong>special approval</strong> from management.</div>
+                  </div>
+                  <div id="alert30" class="relative w-full rounded-lg border p-4 warn-alert" hidden>
+                    <svg class="warn-icon h-4 w-4 absolute left-4 top-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                    <div class="warn-text text-sm pl-7">This vacation is within the next 30 days and requires special approval. It may be declined if coverage is limited.</div>
+                  </div>
+
+                  <div class="space-y-2">
+                    <label id="noteLabel" class="text-sm font-medium leading-none" for="note">Reason</label>
+                    <textarea id="note" rows="2" class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"></textarea>
+                    <p id="errNote" class="text-sm text-destructive" hidden></p>
+                  </div>
+
+                  <div class="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/50">
+                    <input id="policyAck" type="checkbox" class="cbx">
+                    <label for="policyAck" class="text-sm font-medium leading-snug cursor-pointer">I have read and understand the policy</label>
+                  </div>
+                  <p id="errPolicy" class="text-sm text-destructive" hidden></p>
+
+                  <button type="submit" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium h-10 px-4 py-2 w-full bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">Submit</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- My Requests -->
+        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+          <div class="flex flex-col space-y-1.5 p-6 pb-3">
+            <h3 class="font-semibold leading-none tracking-tight text-base">My Requests</h3>
+          </div>
+          <div class="p-6 pt-0">
+            <div id="reqList" class="space-y-2"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Toast (sonner look, bottom right) -->
+<div id="toast" class="hide fixed z-50 flex items-center gap-2 rounded-lg border border-border bg-background text-foreground shadow-lg px-4 py-3 text-sm" style="right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); max-width: calc(100vw - 32px);" role="status" aria-live="polite">
+  <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm4.7 7.7a1 1 0 0 0-1.4-1.4L11 12.6l-2.3-2.3a1 1 0 0 0-1.4 1.4l3 3a1 1 0 0 0 1.4 0l5-5Z" clip-rule="evenodd"/></svg>
+  <span id="toastText"></span>
+</div>
+
+<script>
+  // "Today" in the mockup, so the sample data stays realistic.
+  const TODAY = "2026-11-10";
+
+  const $ = (id) => document.getElementById(id);
+  const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+  function parse(s) { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); }
+  function iso(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function fmt(s) { const d = parse(s); return MONTHS[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear(); }
+  function isWeekend(d) { const w = d.getDay(); return w === 0 || w === 6; }
+  function addDays(d, n) { const c = new Date(d); c.setDate(c.getDate() + n); return c; }
+  function countBusinessDays(start, end) {
+    let n = 0; let d = parse(start); const e = parse(end);
+    if (d > e) return 0;
+    while (d <= e) { if (!isWeekend(d)) n++; d = addDays(d, 1); }
+    return n;
+  }
+  // Same as the app's calcTotal, plus the morning off on the last day.
+  function calcTotal(start, end, startP, endP) {
+    const biz = countBusinessDays(start, end);
+    if (start === end) return (startP === "pm" || endP === "am") ? 0.5 : 1;
+    let total = biz;
+    if (startP === "pm" && !isWeekend(parse(start))) total -= 0.5;
+    if (endP === "am" && !isWeekend(parse(end))) total -= 0.5;
+    return total;
+  }
+  function returnDate(end) { let d = addDays(parse(end), 1); while (isWeekend(d)) d = addDays(d, 1); return fmt(iso(d)); }
+  function isWithin30Days(start) { return !!start && parse(start) <= addDays(parse(TODAY), 30); }
+
+  const state = {
+    showForm: true,
+    type: "vacation",
+    start: "2026-11-12",
+    end: "2026-11-12",
+    startHalf: false,
+    endHalf: true,
+    note: "Dentist appointment",
+    ack: false,
+  };
+
+  const requests = [
+    { kind: "time_off", type: "sick", start: "2026-11-04", end: "2026-11-04", startP: "full", endP: "am", status: "approved", auto: true, submitted: "2026-11-04", sample: true },
+    { kind: "time_off", type: "vacation", start: "2026-12-22", end: "2027-01-02", startP: "full", endP: "full", status: "approved", submitted: "2026-11-03" },
+    { kind: "flexible", date: "2026-10-30", st: "08:30", et: "10:30", hours: 2, status: "approved", submitted: "2026-10-28" },
+    { kind: "time_off", type: "sick", start: "2026-10-21", end: "2026-10-21", startP: "pm", endP: "full", status: "approved", auto: true, submitted: "2026-10-21" },
+    { kind: "time_off", type: "vacation", start: "2026-10-09", end: "2026-10-09", startP: "pm", endP: "full", status: "approved", submitted: "2026-09-22" },
+    { kind: "time_off", type: "vacation", start: "2026-09-14", end: "2026-09-18", startP: "full", endP: "full", status: "cancelled", submitted: "2026-08-12" },
+    { kind: "time_off", type: "vacation", start: "2026-08-03", end: "2026-08-07", startP: "full", endP: "full", status: "approved", submitted: "2026-06-30" },
+  ];
+  let showAll = false;
+
+  const STATUS = {
+    pending_approval: ["Pending Approval", "bg-warning/15 text-warning border-warning/30"],
+    approved: ["Approved", "bg-success/15 text-success border-success/30"],
+    cancelled: ["Cancelled", "bg-muted text-muted-foreground border-border"],
+  };
+
+  function badge(status, auto) {
+    const [label, cls] = STATUS[status];
+    return `<div class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${cls}">${status === "approved" && auto ? "Auto-Approved" : label}</div>`;
+  }
+  const specialBadge = `<div class="inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold gap-1 text-xs warn-badge"><svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>Special approval</div>`;
+  const clockIcon = `<svg class="h-3.5 w-3.5 inline mr-1 align-[-2px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+
+  // The app's formatRequestDates, with morning off added.
+  function formatRequestDates(r) {
+    const startSuffix = r.startP === "pm" ? " (afternoon)" : "";
+    const endSuffix = r.endP === "am" ? " (morning)" : "";
+    const oneDay = r.start === r.end;
+    if (r.type === "vacation") {
+      if (oneDay) {
+        if (r.startP === "pm") return `Afternoon off · ${r.start}`;
+        if (r.endP === "am") return `Morning off · ${r.start}`;
+        return r.start;
+      }
+      return `${r.start}${startSuffix} → ${r.end}${endSuffix}`;
+    }
+    if (!oneDay) return `${r.start}${startSuffix} → ${r.end}${endSuffix}`;
+    if (r.startP === "pm") return `Afternoon · ${r.start}`;
+    if (r.endP === "am") return `Morning · ${r.start}`;
+    return r.start;
+  }
+  function shortDate(s) { const d = parse(s); return (d.getMonth() + 1) + "/" + d.getDate() + "/" + d.getFullYear(); }
+  function isMorning(r) { return r.kind === "time_off" && r.endP === "am"; }
+
+  function renderList() {
+    const items = showAll ? requests : requests.slice(0, 5);
+    let html = items.map((r) => {
+      const changed = isMorning(r) ? " data-changed" : "";
+      if (r.kind === "flexible") {
+        return `<div class="flex items-center justify-between gap-2 p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer">
+          <div class="min-w-0"><div class="flex flex-wrap items-center gap-2 mb-0.5"><span class="font-medium text-sm text-foreground">${clockIcon}Flexible Time</span>${badge(r.status)}</div>
+          <p class="text-xs text-muted-foreground">${r.date} · ${r.st}–${r.et} (${r.hours}h)</p></div>
+          <span class="text-xs text-muted-foreground shrink-0">${shortDate(r.submitted)}</span></div>`;
+      }
+      return `<div class="flex items-center justify-between gap-2 p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer">
+        <div class="min-w-0"><div class="flex flex-wrap items-center gap-2 mb-0.5"><span class="font-medium text-sm text-foreground">${r.type === "vacation" ? "Vacation" : "Sick Day"}</span>${badge(r.status, r.auto)}${r.special ? specialBadge : ""}</div>
+        <p class="text-xs text-muted-foreground"><span${changed}>${formatRequestDates(r)}</span></p></div>
+        <span class="text-xs text-muted-foreground shrink-0">${shortDate(r.submitted)}</span></div>`;
+    }).join("");
+    if (requests.length > 5) {
+      html += `<button type="button" id="showAllBtn" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 w-full hover:bg-accent hover:text-accent-foreground">
+        ${showAll
+          ? `<svg class="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg> Show less`
+          : `<svg class="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg> Show all ${requests.length} requests`}
+      </button>`;
+    }
+    $("reqList").innerHTML = html;
+    const b = $("showAllBtn");
+    if (b) b.onclick = () => { showAll = !showAll; renderList(); };
+  }
+
+  // The app's RequestSummary, with morning off added.
+  function summaryText() {
+    const incomplete = "Please complete the form to see your request summary.";
+    const { type, start } = state;
+    const startP = state.startHalf ? "pm" : "full";
+    const endP = state.endHalf ? "am" : "full";
+    if (!type) return incomplete;
+    const end = type === "sick" ? (state.end || start) : state.end;
+    if (!start || !end) return incomplete;
+    const biz = countBusinessDays(start, end);
+    if (biz === 0) return incomplete;
+    const sameDay = start === end;
+    const total = calcTotal(start, end, startP, endP);
+    const dayLabel = total === 1 ? "1 business day" : `${total} business days`;
+    const startNote = startP === "pm" ? " (afternoon only)" : "";
+    const endNote = endP === "am" ? " (morning only)" : "";
+    if (type === "vacation") {
+      if (sameDay) {
+        if (startP === "pm") return `You will take the afternoon off on ${fmt(start)}.`;
+        if (endP === "am") return `You will take the morning off on ${fmt(start)}.`;
+        return `You will take 1 full day off on ${fmt(start)}.`;
+      }
+      const back = endP === "am" ? `${fmt(end)} (afternoon)` : returnDate(end);
+      return `You will take vacation from ${fmt(start)}${startNote} to ${fmt(end)}${endNote} (${dayLabel}). You return on ${back}.`;
+    }
+    if (sameDay) {
+      if (startP === "pm") return `You were sick in the afternoon on ${fmt(start)}.`;
+      if (endP === "am") return `You were sick in the morning on ${fmt(start)}.`;
+      return `You were sick on ${fmt(start)}.`;
+    }
+    return `You were sick from ${fmt(start)}${startNote} to ${fmt(end)}${endNote} (${dayLabel}).`;
+  }
+
+  function renderForm() {
+    const btn = $("toggleForm");
+    if (state.showForm) {
+      btn.className = btn.className.replace(/bg-primary text-primary-foreground hover:bg-primary\/90|border border-input bg-background hover:bg-accent hover:text-accent-foreground/g, "").trim() + " border border-input bg-background hover:bg-accent hover:text-accent-foreground";
+      btn.textContent = "Cancel";
+    } else {
+      btn.className = btn.className.replace(/bg-primary text-primary-foreground hover:bg-primary\/90|border border-input bg-background hover:bg-accent hover:text-accent-foreground/g, "").trim() + " bg-primary text-primary-foreground hover:bg-primary/90";
+      btn.innerHTML = `<svg class="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg> New Request`;
+    }
+    $("formArea").hidden = !state.showForm;
+    $("typeFields").hidden = !state.type;
+    $("reqType").value = state.type;
+    $("startDate").value = state.start;
+    $("endDate").value = state.end;
+    $("startDate").max = state.type === "sick" ? TODAY : "";
+    $("endDate").max = state.type === "sick" ? TODAY : "";
+    $("endDate").min = state.start || "";
+    $("startHalfDay").checked = state.startHalf;
+    $("endHalfDay").checked = state.endHalf;
+    $("note").value = state.note;
+    $("policyAck").checked = state.ack;
+    $("noteLabel").textContent = state.type === "vacation" ? "Reason" : "Note (optional)";
+    $("note").placeholder = state.type === "vacation" ? "Please provide a reason for your request..." : "Any details...";
+    $("summary").textContent = summaryText();
+
+    const startP = state.startHalf ? "pm" : "full";
+    const endP = state.endHalf ? "am" : "full";
+    $("alert10").hidden = !(state.type === "vacation" && state.start && state.end && state.start <= state.end && calcTotal(state.start, state.end, startP, endP) > 10);
+    $("alert30").hidden = !(state.type === "vacation" && isWithin30Days(state.start));
+  }
+
+  function setErr(id, msg) { const el = $(id); el.textContent = msg || ""; el.hidden = !msg; }
+  function clearErrs() { ["errType", "errStart", "errEnd", "errNote", "errPolicy"].forEach((id) => setErr(id, "")); }
+
+  function validate() {
+    clearErrs();
+    let ok = true;
+    const s = state;
+    if (!s.type) { setErr("errType", "Please select a request type."); ok = false; }
+    if (!s.start) { setErr("errStart", "Start date is required."); ok = false; }
+    if (s.type === "vacation") {
+      if (!s.end) { setErr("errEnd", "End date is required."); ok = false; }
+      if (s.start && s.end && s.start > s.end) { setErr("errEnd", "End date must be on or after start date."); ok = false; }
+      if (!s.note.trim()) { setErr("errNote", "Please provide a reason for your vacation request."); ok = false; }
+    }
+    if (s.type === "sick") {
+      if (s.start && s.start > TODAY) { setErr("errStart", "Future sick days cannot be submitted. Please submit a vacation request or contact your manager."); ok = false; }
+      const effEnd = s.end || s.start;
+      if (effEnd && effEnd > TODAY) { setErr("errEnd", "Sick day end date cannot be in the future."); ok = false; }
+    }
+    if (!s.ack) { setErr("errPolicy", "You must acknowledge the policy before submitting."); ok = false; }
+    return ok;
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    $("toastText").textContent = msg;
+    $("toast").classList.remove("hide");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => $("toast").classList.add("hide"), 3500);
+  }
+
+  function resetForm() {
+    Object.assign(state, { type: "", start: "", end: "", startHalf: false, endHalf: false, note: "", ack: false, showForm: false });
+    clearErrs();
+  }
+
+  // On a one-day request, a day can't be both morning off and afternoon off.
+  function keepOneHalf(changed) {
+    if (state.start && state.start === state.end && state.startHalf && state.endHalf) {
+      if (changed === "start") state.endHalf = false; else state.startHalf = false;
+    }
+  }
+
+  $("toggleForm").onclick = () => {
+    if (state.showForm) { resetForm(); } else { state.showForm = true; }
+    renderForm();
+  };
+  $("reqType").onchange = (e) => { state.type = e.target.value; renderForm(); };
+  $("startDate").onchange = (e) => {
+    state.start = e.target.value;
+    if (!state.end || state.end < state.start) state.end = state.start;
+    keepOneHalf("end");
+    renderForm();
+  };
+  $("endDate").onchange = (e) => { state.end = e.target.value; keepOneHalf("end"); renderForm(); };
+  $("startHalfDay").onchange = (e) => { state.startHalf = e.target.checked; keepOneHalf("start"); renderForm(); };
+  $("endHalfDay").onchange = (e) => { state.endHalf = e.target.checked; keepOneHalf("end"); renderForm(); };
+  $("note").oninput = (e) => { state.note = e.target.value; };
+  $("policyAck").onchange = (e) => { state.ack = e.target.checked; };
+
+  $("reqForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+    const sick = state.type === "sick";
+    requests.unshift({
+      kind: "time_off",
+      type: state.type,
+      start: state.start,
+      end: state.end || state.start,
+      startP: state.startHalf ? "pm" : "full",
+      endP: state.endHalf ? "am" : "full",
+      status: sick ? "approved" : "pending_approval",
+      auto: sick,
+      special: !sick && isWithin30Days(state.start),
+      submitted: TODAY,
+    });
+    toast(sick ? "Sick day recorded and auto-approved." : "Vacation request submitted for approval.");
+    resetForm();
+    renderForm();
+    renderList();
+  });
+
+  $("outlineToggle").onclick = () => {
+    const on = $("outlineToggle").getAttribute("aria-checked") !== "true";
+    $("outlineToggle").setAttribute("aria-checked", String(on));
+    document.body.classList.toggle("show-changes", on);
+  };
+  document.body.classList.add("show-changes");
+
+  renderForm();
+  renderList();
+</script>

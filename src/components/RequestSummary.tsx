@@ -5,7 +5,7 @@ interface RequestSummaryProps {
   startDate: string;
   endDate: string;
   startDayPortion: "full" | "pm";
-  endDayPortion?: "full";
+  endDayPortion?: "full" | "am";
 }
 
 function formatDate(dateStr: string): string {
@@ -25,13 +25,14 @@ export function countBusinessDays(start: string, end: string): number {
   }
 }
 
-export function calcTotal(businessDays: number, startPortion: string, _endPortion?: string, sameDay?: boolean): number {
+export function calcTotal(businessDays: number, startPortion: string, endPortion?: string, sameDay?: boolean): number {
   let total = businessDays;
   if (sameDay) {
-    if (startPortion === "pm") return 0.5;
+    if (startPortion === "pm" || endPortion === "am") return 0.5;
     return 1;
   }
   if (startPortion === "pm") total -= 0.5;
+  if (endPortion === "am") total -= 0.5;
   return total;
 }
 
@@ -51,6 +52,7 @@ export default function RequestSummary({
   startDate,
   endDate,
   startDayPortion,
+  endDayPortion = "full",
 }: RequestSummaryProps) {
   const incomplete = "Please complete the form to see your request summary.";
 
@@ -63,19 +65,22 @@ export default function RequestSummary({
       if (biz === 0) return incomplete;
 
       const sameDay = startDate === endDate;
-      const total = calcTotal(biz, startDayPortion, "full", sameDay);
+      const total = calcTotal(biz, startDayPortion, endDayPortion, sameDay);
 
       if (sameDay) {
         if (startDayPortion === "pm")
           return `You will take the afternoon off on ${formatDate(startDate)}.`;
+        if (endDayPortion === "am")
+          return `You will take the morning off on ${formatDate(startDate)}.`;
         return `You will take 1 full day off on ${formatDate(startDate)}.`;
       }
 
       const startNote = startDayPortion === "pm" ? " (afternoon only)" : "";
+      const endNote = endDayPortion === "am" ? " (morning only)" : "";
       const dayLabel = total === 1 ? "1 business day" : `${total} business days`;
-      const returnInfo = getReturnDate(endDate);
+      const returnInfo = endDayPortion === "am" ? `${formatDate(endDate)} (afternoon)` : getReturnDate(endDate);
 
-      return `You will take vacation from ${formatDate(startDate)}${startNote} to ${formatDate(endDate)} (${dayLabel}). You return on ${returnInfo}.`;
+      return `You will take vacation from ${formatDate(startDate)}${startNote} to ${formatDate(endDate)}${endNote} (${dayLabel}). You return on ${returnInfo}.`;
     }
 
     if (requestType === "sick") {
@@ -85,18 +90,21 @@ export default function RequestSummary({
       if (biz === 0) return incomplete;
 
       const sameDay = startDate === end;
-      const total = calcTotal(biz, startDayPortion, "full", sameDay);
+      const total = calcTotal(biz, startDayPortion, endDayPortion, sameDay);
 
       if (sameDay) {
         if (startDayPortion === "pm")
           return `You were sick in the afternoon on ${formatDate(startDate)}.`;
+        if (endDayPortion === "am")
+          return `You were sick in the morning on ${formatDate(startDate)}.`;
         return `You were sick on ${formatDate(startDate)}.`;
       }
 
       const startNote = startDayPortion === "pm" ? " (afternoon only)" : "";
+      const endNote = endDayPortion === "am" ? " (morning only)" : "";
       const dayLabel = total === 1 ? "1 business day" : `${total} business days`;
 
-      return `You were sick from ${formatDate(startDate)}${startNote} to ${formatDate(end)} (${dayLabel}).`;
+      return `You were sick from ${formatDate(startDate)}${startNote} to ${formatDate(end)}${endNote} (${dayLabel}).`;
     }
 
     return incomplete;
