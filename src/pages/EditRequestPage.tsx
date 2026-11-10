@@ -29,6 +29,7 @@ export default function EditRequestPage() {
   const [sickDate, setSickDate] = useState("");
   const [note, setNote] = useState("");
   const [startHalfDay, setStartHalfDay] = useState(false);
+  const [endHalfDay, setEndHalfDay] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -50,10 +51,18 @@ export default function EditRequestPage() {
           setSickDate(data.sick_date || "");
           setNote(data.note || "");
           setStartHalfDay(data.start_day_portion === "pm");
+          setEndHalfDay(data.end_day_portion === "am");
         }
         setLoading(false);
       });
   }, [id]);
+
+  const isOneDay = !!startDate && startDate === (endDate || startDate);
+
+  // A single day can't be both a morning off and an afternoon off.
+  useEffect(() => {
+    if (isOneDay && startHalfDay && endHalfDay) setStartHalfDay(false);
+  }, [startDate, endDate]);
 
   if (loading) {
     return (
@@ -108,9 +117,11 @@ export default function EditRequestPage() {
     setSubmitting(true);
 
     const startPortion = startHalfDay ? "pm" : "full";
+    const endPortion = endHalfDay ? "am" : "full";
     const updates: any = {
       note: note || null,
       start_day_portion: startPortion,
+      end_day_portion: endPortion,
       last_edited_at: new Date().toISOString(),
       last_edited_by_user_id: user.id,
       requires_special_approval: isVacation ? isWithin30Days(startDate) : false,
@@ -239,9 +250,15 @@ export default function EditRequestPage() {
               )}
 
               {!isApprovedSickDay && (
-                <div className="flex items-center gap-3">
-                  <Checkbox id="editStartHalfDay" checked={startHalfDay} onCheckedChange={(c) => setStartHalfDay(c === true)} />
-                  <Label htmlFor="editStartHalfDay" className="text-sm cursor-pointer">Half day on first day (afternoon off)</Label>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Checkbox id="editStartHalfDay" checked={startHalfDay} onCheckedChange={(c) => { setStartHalfDay(c === true); if (c === true && isOneDay) setEndHalfDay(false); }} />
+                    <Label htmlFor="editStartHalfDay" className="text-sm cursor-pointer">Half day on first day (afternoon off)</Label>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Checkbox id="editEndHalfDay" checked={endHalfDay} onCheckedChange={(c) => { setEndHalfDay(c === true); if (c === true && isOneDay) setStartHalfDay(false); }} />
+                    <Label htmlFor="editEndHalfDay" className="text-sm cursor-pointer">Half day on last day (morning off)</Label>
+                  </div>
                 </div>
               )}
 

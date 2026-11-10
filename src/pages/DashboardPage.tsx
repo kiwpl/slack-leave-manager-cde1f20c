@@ -51,12 +51,19 @@ export default function DashboardPage() {
   const [endDate, setEndDate] = useState("");
   const [note, setNote] = useState("");
   const [startHalfDay, setStartHalfDay] = useState(false);
+  const [endHalfDay, setEndHalfDay] = useState(false);
   const [policyAcknowledged, setPolicyAcknowledged] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const today = format(new Date(), "yyyy-MM-dd");
   const hasSlackId = !!profile?.slack_user_id;
+  const isOneDay = !!startDate && startDate === (endDate || startDate);
+
+  // A single day can't be both a morning off and an afternoon off.
+  useEffect(() => {
+    if (isOneDay && startHalfDay && endHalfDay) setStartHalfDay(false);
+  }, [startDate, endDate]);
 
   const fetchRequests = () => {
     if (!user) return;
@@ -116,6 +123,7 @@ export default function DashboardPage() {
     setEndDate("");
     setNote("");
     setStartHalfDay(false);
+    setEndHalfDay(false);
     setPolicyAcknowledged(false);
     setErrors({});
     setShowForm(false);
@@ -130,6 +138,7 @@ export default function DashboardPage() {
     const status = isSickDay ? "approved" : "pending_approval";
     const approvalSource = isSickDay ? "system_auto_approved" : null;
     const startPortion = startHalfDay ? "pm" : "full";
+    const endPortion = endHalfDay ? "am" : "full";
     const effectiveEnd = endDate || startDate;
 
     const requiresSpecialApproval = !isSickDay && isWithin30Days(startDate);
@@ -144,7 +153,7 @@ export default function DashboardPage() {
       status,
       day_portion: "full" as any,
       start_day_portion: startPortion as any,
-      end_day_portion: "full" as any,
+      end_day_portion: endPortion as any,
       approval_source: approvalSource,
       approved_at: isSickDay ? new Date().toISOString() : null,
       requires_special_approval: requiresSpecialApproval,
@@ -187,6 +196,7 @@ export default function DashboardPage() {
   };
 
   const startDayPortion = startHalfDay ? "pm" : "full";
+  const endDayPortion = endHalfDay ? "am" : "full";
 
   // Merge time-off and flexible requests into a single sorted list
   const allItems: DisplayItem[] = [
@@ -202,19 +212,23 @@ export default function DashboardPage() {
 
   const formatRequestDates = (req: Request) => {
     const startP = (req as any).start_day_portion || "full";
+    const endP = req.end_day_portion || "full";
     const startSuffix = startP === "pm" ? " (afternoon)" : "";
+    const endSuffix = endP === "am" ? " (morning)" : "";
 
     if (req.request_type === "vacation") {
       if (req.start_date === req.end_date || !req.end_date) {
         if (startP === "pm") return `Afternoon off · ${req.start_date}`;
+        if (endP === "am") return `Morning off · ${req.start_date}`;
         return req.start_date;
       }
-      return `${req.start_date}${startSuffix} → ${req.end_date}`;
+      return `${req.start_date}${startSuffix} → ${req.end_date}${endSuffix}`;
     }
     if (req.start_date && req.end_date && req.start_date !== req.end_date) {
-      return `${req.start_date}${startSuffix} → ${req.end_date}`;
+      return `${req.start_date}${startSuffix} → ${req.end_date}${endSuffix}`;
     }
     if (startP === "pm") return `Afternoon · ${req.sick_date || req.start_date}`;
+    if (endP === "am") return `Morning · ${req.sick_date || req.start_date}`;
     return req.sick_date || req.start_date;
   };
 
@@ -309,10 +323,16 @@ export default function DashboardPage() {
                         </div>
                       </div>
 
-                      {/* Half day toggle */}
-                      <div className="flex items-center gap-3">
-                        <Checkbox id="startHalfDay" checked={startHalfDay} onCheckedChange={(c) => setStartHalfDay(c === true)} />
-                        <Label htmlFor="startHalfDay" className="text-sm cursor-pointer">Half day on first day (afternoon off)</Label>
+                      {/* Half day toggles */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <Checkbox id="startHalfDay" checked={startHalfDay} onCheckedChange={(c) => { setStartHalfDay(c === true); if (c === true && isOneDay) setEndHalfDay(false); }} />
+                          <Label htmlFor="startHalfDay" className="text-sm cursor-pointer">Half day on first day (afternoon off)</Label>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Checkbox id="endHalfDay" checked={endHalfDay} onCheckedChange={(c) => { setEndHalfDay(c === true); if (c === true && isOneDay) setStartHalfDay(false); }} />
+                          <Label htmlFor="endHalfDay" className="text-sm cursor-pointer">Half day on last day (morning off)</Label>
+                        </div>
                       </div>
 
                       {/* Summary */}
@@ -321,11 +341,12 @@ export default function DashboardPage() {
                         startDate={startDate}
                         endDate={endDate}
                         startDayPortion={startDayPortion}
+                        endDayPortion={endDayPortion}
                       />
 
                       {requestType === "vacation" && startDate && endDate && (() => {
                         const biz = countBusinessDays(startDate, endDate);
-                        const total = calcTotal(biz, startDayPortion, "full", startDate === endDate);
+                        const total = calcTotal(biz, startDayPortion, endDayPortion, startDate === endDate);
                         return total > 10 ? (
                           <Alert className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20">
                             <AlertTriangle className="h-4 w-4 text-yellow-600" />

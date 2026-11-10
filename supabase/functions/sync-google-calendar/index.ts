@@ -1,3 +1,4 @@
+// v6 – morning off (end_day_portion "am"): 8:30 AM – 12:30 PM event on the last day
 // v5 – plain local-time dateTime strings + explicit timeZone field (no UTC conversion)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -321,6 +322,7 @@ Deno.serve(async (req) => {
       .from("profiles").select("full_name").eq("id", request.employee_id).single();
 
     const isHalfDayPm = request.start_day_portion === "pm";
+    const isHalfDayAm = request.end_day_portion === "am";
 
     const GOOGLE_SERVICE_ACCOUNT_JSON = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
     if (!GOOGLE_SERVICE_ACCOUNT_JSON) {
@@ -351,99 +353,85 @@ Deno.serve(async (req) => {
         );
       }
 
-      const summary =
-        request.request_type === "vacation"
-          ? isHalfDayPm
-            ? `${employee?.full_name} - Vacation - Half Day (Afternoon Off)`
-            : `${employee?.full_name} - Vacation`
-          : isHalfDayPm
-            ? `${employee?.full_name} - Sick Day - Half Day (Afternoon Off)`
-            : `${employee?.full_name} - Sick Day`;
+      const typeName = request.request_type === "vacation" ? "Vacation" : "Sick Day";
 
-      let startDate: string, endDate: string;
-      if (request.request_type === "vacation") {
-        startDate = normalizeDate(request.start_date!);
-        endDate   = nextDay(request.end_date!);
-      } else {
-        startDate = normalizeDate(request.sick_date!);
-        endDate   = nextDay(request.sick_date!);
-      }
+      // First and last day off. Sick days are synced as a single day.
+      const firstDay = normalizeDate(
+        request.request_type === "vacation" ? request.start_date! : request.sick_date!
+      );
+      const lastDay = request.request_type === "vacation"
+        ? normalizeDate(request.end_date!)
+        : firstDay;
 
-      const description = [
-        request.note,
-        isHalfDayPm ? "Half day – afternoon off (12:30 PM – 5:00 PM)" : null,
-      ].filter(Boolean).join("\n") || undefined;
+      // A multi-day sick request is synced as its first day only, so a morning
+      // off on its last day does not apply to that event.
+      const sickSpansDays = request.request_type === "sick" &&
+        normalizeDate(request.end_date || request.sick_date!) !== firstDay;
+      const morningOff = isHalfDayAm && !sickSpansDays;
 
-      // Half-day: timed event in company timezone. Full day: all-day event (date only).
-      const event = isHalfDayPm
-        ? {
-            summary,
-            description,
-            start: { dateTime: `${startDate}T12:30:00`, timeZone: companyTimezone },
-            end:   { dateTime: `${startDate}T17:00:00`, timeZone: companyTimezone },
-          }
-        : {
-            summary,
-            description,
-            start: { date: startDate },
-            end:   { date: endDate },
-          };
-
-      const res = await fetch(`${calendarApiBase}/events`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(event),
+      // Half-day: timed event in company timezone.
+      // Afternoon off = 12:30 PM – 5:00 PM on the first day.
+      // Morning off   = 8:30 AM – 12:30 PM on the last day.
+      const halfDayEvent = (day: string, portion: "am" | "pm") => ({
+        summary: `${employee?.full_name} - ${typeName} - Half Day (${portion === "pm" ? "Afternoon" : "Morning"} Off)`,
+        description: [
+          request.note,
+          portion === "pm"
+            ? "Half day – afternoon off (12:30 PM – 5:00 PM)"
+            : "Half day – morning off (8:30 AM – 12:30 PM)",
+        ].filter(Boolean).join("\n"),
+        start: { dateTime: `${day}T${portion === "pm" ? "12:30:00" : "08:30:00"}`, timeZone: companyTimezone },
+        end:   { dateTime: `${day}T${portion === "pm" ? "17:00:00" : "12:30:00"}`, timeZone: companyTimezone },
       });
 
-      const eventData = await res.json();
+      // Build the events: afternoon of the first day, all-day events for the
+      // whole days in between (Google's end date is exclusive), morning of the
+      // last day. All event ids are stored comma-separated so delete removes all.
+      const events: unknown[] = [];
+      if (isHalfDayPm) events.push(halfDayEvent(firstDay, "pm"));
 
-      if (!res.ok) {
-        await logSync(supabase, request_id, "failed", null, JSON.stringify(eventData));
-        throw new Error(`Calendar API error: ${JSON.stringify(eventData)}`);
+      const allDayStart = isHalfDayPm ? nextDay(firstDay) : firstDay;
+      const allDayEnd   = morningOff ? lastDay : nextDay(lastDay);
+      if (allDayStart < allDayEnd) {
+        events.push({
+          summary: `${employee?.full_name} - ${typeName}`,
+          description: request.note || undefined,
+          start: { date: allDayStart },
+          end:   { date: allDayEnd },
+        });
       }
 
-      // A vacation that starts with a half day and runs past its first day also
-      // gets an all-day event for the rest (start_date+1 through end_date).
-      // Both event ids are stored comma-separated so delete removes both.
-      let storedEventId = eventData.id;
-      if (
-        isHalfDayPm &&
-        request.request_type === "vacation" &&
-        normalizeDate(request.end_date!) > startDate
-      ) {
-        const restEvent = {
-          summary: `${employee?.full_name} - Vacation`,
-          description: request.note || undefined,
-          start: { date: nextDay(startDate) },
-          end:   { date: endDate },
-        };
+      if (morningOff) events.push(halfDayEvent(lastDay, "am"));
 
-        const restRes = await fetch(`${calendarApiBase}/events`, {
+      const eventIds: string[] = [];
+      for (const event of events) {
+        const res = await fetch(`${calendarApiBase}/events`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(restEvent),
+          body: JSON.stringify(event),
         });
 
-        const restData = await restRes.json();
+        const eventData = await res.json();
 
-        if (!restRes.ok) {
-          // Keep the afternoon event's id so delete can still remove it.
-          await supabase
-            .from("time_off_requests")
-            .update({ google_calendar_event_id: eventData.id })
-            .eq("id", request_id);
-          await logSync(supabase, request_id, "failed", eventData.id, JSON.stringify(restData));
-          throw new Error(`Calendar API error: ${JSON.stringify(restData)}`);
+        if (!res.ok) {
+          // Keep the ids of events already created so delete can still remove them.
+          if (eventIds.length > 0) {
+            await supabase
+              .from("time_off_requests")
+              .update({ google_calendar_event_id: eventIds.join(",") })
+              .eq("id", request_id);
+          }
+          await logSync(supabase, request_id, "failed", eventIds.join(",") || null, JSON.stringify(eventData));
+          throw new Error(`Calendar API error: ${JSON.stringify(eventData)}`);
         }
 
-        storedEventId = `${eventData.id},${restData.id}`;
+        eventIds.push(eventData.id);
       }
+
+      const storedEventId = eventIds.join(",");
 
       await supabase
         .from("time_off_requests")
@@ -468,7 +456,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      // A vacation that starts with a half day stores two ids, comma-separated.
+      // A vacation with a half day can store several ids, comma-separated.
       for (const singleId of eventId.split(",")) {
         const res = await fetch(
           `${calendarApiBase}/events/${encodeURIComponent(singleId)}`,

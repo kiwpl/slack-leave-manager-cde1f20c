@@ -336,7 +336,7 @@ export default function RequestDetailPage() {
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wider">Dates</p>
                     <p className="font-medium text-foreground">
-                      {request.start_date}{request.start_day_portion === "pm" ? " (afternoon)" : ""} → {request.end_date}
+                      {request.start_date}{request.start_day_portion === "pm" ? " (afternoon)" : ""} → {request.end_date}{request.end_day_portion === "am" ? " (morning)" : ""}
                     </p>
                   </div>
                 </>
@@ -346,6 +346,7 @@ export default function RequestDetailPage() {
                   <p className="font-medium text-foreground">
                     {request.sick_date || request.start_date}{request.start_day_portion === "pm" ? " (afternoon)" : ""}
                     {request.end_date && request.end_date !== (request.sick_date || request.start_date) ? ` → ${request.end_date}` : ""}
+                    {request.end_day_portion === "am" ? " (morning)" : ""}
                   </p>
                 </div>
               )}
