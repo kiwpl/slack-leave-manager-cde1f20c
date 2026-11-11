@@ -86,7 +86,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Mobile nav */}
         {visibleItems.length > 1 && (
-          <nav className="md:hidden flex overflow-x-auto border-b border-border bg-card px-2 gap-1">
+          <nav className="md:hidden grid grid-cols-3 border-b border-border bg-card px-2">
             {visibleItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.to;
@@ -95,13 +95,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   key={item.to}
                   to={item.to}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition-colors",
+                    "flex flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] leading-tight font-medium text-center whitespace-nowrap border-b-2 transition-colors",
                     isActive
                       ? "border-primary text-primary"
                       : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  <Icon className="h-3.5 w-3.5" />
+                  <Icon className="h-4 w-4" />
                   {item.label}
                 </Link>
               );

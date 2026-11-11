@@ -1,0 +1,1537 @@
+<title>Time Off Feature Ideas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ["Inter", "system-ui", "sans-serif"], mono: ["JetBrains Mono", "monospace"] },
+        colors: {
+          border: "hsl(var(--border))",
+          input: "hsl(var(--input))",
+          ring: "hsl(var(--ring))",
+          background: "hsl(var(--background))",
+          foreground: "hsl(var(--foreground))",
+          primary: { DEFAULT: "hsl(var(--primary))", foreground: "hsl(var(--primary-foreground))" },
+          secondary: { DEFAULT: "hsl(var(--secondary))", foreground: "hsl(var(--secondary-foreground))" },
+          destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
+          muted: { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
+          accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
+          card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
+          success: { DEFAULT: "hsl(var(--success))", foreground: "hsl(var(--success-foreground))" },
+          warning: { DEFAULT: "hsl(var(--warning))", foreground: "hsl(var(--warning-foreground))" },
+          info: { DEFAULT: "hsl(var(--info))", foreground: "hsl(var(--info-foreground))" },
+        },
+        borderRadius: { lg: "var(--radius)", md: "calc(var(--radius) - 2px)", sm: "calc(var(--radius) - 4px)" },
+      },
+    },
+  };
+</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Lato:wght@400;700;900&display=swap">
+<style>
+  /* Layout: the real app (sidebar + centred column) under a mockup strip with a switcher for the 6 ideas.
+     App tokens copied from the app's src/index.css (same as round 1). Slack screens use their own Slack-like tokens. */
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 220 20% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 10%;
+    --primary: 220 70% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 94%;
+    --secondary-foreground: 220 20% 20%;
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 10% 46%;
+    --accent: 220 14% 94%;
+    --accent-foreground: 220 20% 20%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 90%;
+    --input: 220 13% 90%;
+    --ring: 220 70% 50%;
+    --radius: 0.5rem;
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+    /* yellow alert (Tailwind yellow-50 / 500 / 600 / 700 / 800 in the app) */
+    --warn-bg: #fefce8;
+    --warn-border: rgb(234 179 8 / 0.5);
+    --warn-icon: #ca8a04;
+    --warn-text: #854d0e;
+    --warn-badge: #a16207;
+    /* Admin Settings page background (bg-yellow-50 in the app) */
+    --admin-bg: #fefce8;
+    /* mockup-only: outline colour for "what changed" */
+    --changed: #f97316;
+    /* Slack look */
+    --slack-bg: #ffffff;
+    --slack-fg: #1d1c1d;
+    --slack-muted: #616061;
+    --slack-border: #dddddd;
+    --slack-side: #3f0e40;
+    --slack-side-fg: #cfc3cf;
+    --slack-side-active: #1164a3;
+    --slack-on-color: #ffffff;
+    --slack-green: #007a5a;
+    --slack-red: #e01e5a;
+    --slack-tag: #e8e8e8;
+    --slack-divider: #dddddd;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --background: 220 20% 7%;
+      --foreground: 210 20% 95%;
+      --card: 220 20% 10%;
+      --card-foreground: 210 20% 95%;
+      --primary: 220 70% 55%;
+      --primary-foreground: 0 0% 100%;
+      --secondary: 220 14% 16%;
+      --secondary-foreground: 210 20% 95%;
+      --muted: 220 14% 16%;
+      --muted-foreground: 220 10% 60%;
+      --accent: 220 14% 16%;
+      --accent-foreground: 210 20% 95%;
+      --destructive: 0 62% 40%;
+      --border: 220 14% 18%;
+      --input: 220 14% 18%;
+      --ring: 220 70% 55%;
+      --success: 142 71% 40%;
+      --warning: 38 92% 45%;
+      --info: 199 89% 42%;
+      --warn-bg: rgb(66 32 6 / 0.2);
+      --warn-border: rgb(234 179 8 / 0.5);
+      --warn-icon: #ca8a04;
+      --warn-text: #fef08a;
+      --warn-badge: #fde047;
+      --admin-bg: rgb(66 32 6 / 0.25);
+      --changed: #fb923c;
+      --slack-bg: #1a1d21;
+      --slack-fg: #d1d2d3;
+      --slack-muted: #ababad;
+      --slack-border: #35373b;
+      --slack-side: #19171d;
+      --slack-side-fg: #b9b3bb;
+      --slack-side-active: #1164a3;
+      --slack-on-color: #ffffff;
+      --slack-green: #148567;
+      --slack-red: #e8467c;
+      --slack-tag: #2c2d30;
+      --slack-divider: #35373b;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --background: 220 20% 7%;
+    --foreground: 210 20% 95%;
+    --card: 220 20% 10%;
+    --card-foreground: 210 20% 95%;
+    --primary: 220 70% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 16%;
+    --secondary-foreground: 210 20% 95%;
+    --muted: 220 14% 16%;
+    --muted-foreground: 220 10% 60%;
+    --accent: 220 14% 16%;
+    --accent-foreground: 210 20% 95%;
+    --destructive: 0 62% 40%;
+    --border: 220 14% 18%;
+    --input: 220 14% 18%;
+    --ring: 220 70% 55%;
+    --success: 142 71% 40%;
+    --warning: 38 92% 45%;
+    --info: 199 89% 42%;
+    --warn-bg: rgb(66 32 6 / 0.2);
+    --warn-border: rgb(234 179 8 / 0.5);
+    --warn-icon: #ca8a04;
+    --warn-text: #fef08a;
+    --warn-badge: #fde047;
+    --admin-bg: rgb(66 32 6 / 0.25);
+    --changed: #fb923c;
+    --slack-bg: #1a1d21;
+    --slack-fg: #d1d2d3;
+    --slack-muted: #ababad;
+    --slack-border: #35373b;
+    --slack-side: #19171d;
+    --slack-side-fg: #b9b3bb;
+    --slack-side-active: #1164a3;
+    --slack-on-color: #ffffff;
+    --slack-green: #148567;
+    --slack-red: #e8467c;
+    --slack-tag: #2c2d30;
+    --slack-divider: #35373b;
+    color-scheme: dark;
+  }
+  [hidden] { display: none !important; }
+  * { border-color: hsl(var(--border)); }
+  body {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: "Inter", system-ui, sans-serif;
+  }
+  .gutter {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  @media (min-width: 768px) {
+    .gutter-md {
+      padding-left: max(32px, env(safe-area-inset-left, 0px));
+      padding-right: max(32px, env(safe-area-inset-right, 0px));
+    }
+  }
+  @media (max-width: 767px) {
+    input[type="date"] { width: 100%; max-width: 100%; min-width: 0; }
+  }
+
+  /* shadcn checkbox look */
+  .cbx {
+    appearance: none; -webkit-appearance: none;
+    height: 1rem; width: 1rem; flex-shrink: 0; margin: 0;
+    border-radius: calc(var(--radius) - 4px);
+    border: 1px solid hsl(var(--primary));
+    background: transparent; cursor: pointer; display: grid; place-content: center;
+  }
+  .cbx:checked {
+    background: hsl(var(--primary));
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+    background-size: 1rem 1rem; background-position: center; background-repeat: no-repeat;
+  }
+  .cbx:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring)); }
+
+  .warn-alert { border-color: var(--warn-border); background: var(--warn-bg); }
+  .warn-alert .warn-icon { color: var(--warn-icon); }
+  .warn-alert .warn-text { color: var(--warn-text); }
+  .warn-badge { border-color: var(--warn-border); background: var(--warn-bg); color: var(--warn-badge); }
+  .admin-bg { background: var(--admin-bg); }
+
+  /* "Outline what changed" */
+  body.show-changes [data-changed] {
+    outline: 2px dashed var(--changed);
+    outline-offset: 4px;
+    border-radius: 6px;
+  }
+
+  .switch { position: relative; width: 36px; height: 20px; border-radius: 999px; background: hsl(var(--input)); transition: background .15s; flex-shrink: 0; }
+  .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 999px; background: hsl(var(--card)); box-shadow: 0 1px 2px rgb(0 0 0 / .25); transition: transform .15s; }
+  .switch[aria-checked="true"] { background: hsl(var(--primary)); }
+  .switch[aria-checked="true"]::after { transform: translateX(16px); }
+  .switch:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring)); }
+
+  /* Mockup strip: collapsible "what changed" list */
+  #changesBox > summary { list-style: none; }
+  #changesBox > summary::-webkit-details-marker { display: none; }
+  #changesBox[open] .chev { transform: rotate(180deg); }
+  #changesBox > summary:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--ring)); border-radius: calc(var(--radius) - 2px); }
+
+  /* Slack screens */
+  .slack { background: var(--slack-bg); color: var(--slack-fg); border: 1px solid var(--slack-border); font-family: "Lato", system-ui, sans-serif; }
+  .slack .s-muted { color: var(--slack-muted); }
+  .slack .s-border { border-color: var(--slack-border); }
+  .slack-side { background: var(--slack-side); color: var(--slack-side-fg); }
+  .slack-side .s-active { background: var(--slack-side-active); color: var(--slack-on-color); }
+  .slack-tag { font-size: 10px; font-weight: 700; line-height: 1; padding: 3px 4px; border-radius: 3px; background: var(--slack-tag); color: var(--slack-muted); }
+  .slack-btn { display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 4px; font-weight: 700; font-size: 14px; color: var(--slack-on-color); }
+  .slack-btn:focus-visible { outline: 2px solid var(--slack-side-active); outline-offset: 2px; }
+  .slack-green { background: var(--slack-green); }
+  .slack-red { background: var(--slack-red); }
+  .slack-day { display: flex; align-items: center; gap: 12px; font-size: 13px; font-weight: 700; }
+  .slack-day::before, .slack-day::after { content: ""; flex: 1; height: 1px; background: var(--slack-divider); }
+  .slack-icon { background: hsl(var(--primary)); color: var(--slack-on-color); }
+
+  #toast { transition: opacity .2s, transform .2s; }
+  #toast.hide { opacity: 0; transform: translateY(8px); pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) { #toast, .switch, .switch::after, #changesBox .chev { transition: none; } }
+</style>
+
+<!-- Mockup strip (not part of the app) -->
+<div class="border-b border-border bg-card">
+  <div class="gutter py-3 max-w-5xl mx-auto flex flex-col gap-3">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2 min-w-0">
+        <span class="inline-flex items-center rounded-full border border-border px-2.5 py-0.5 text-xs font-semibold text-muted-foreground shrink-0">Mockup · Round 3</span>
+        <span class="text-sm font-semibold text-foreground">6 feature ideas</span>
+      </div>
+      <label class="flex items-center gap-2 text-sm text-foreground cursor-pointer select-none" for="outlineToggle">
+        <button id="outlineToggle" type="button" role="switch" aria-checked="true" class="switch" aria-label="Outline what changed"></button>
+        Outline what changed
+      </label>
+    </div>
+    <!-- Phone: one dropdown -->
+    <div class="md:hidden space-y-2 text-sm" data-changed>
+      <label for="ideaSelect" class="text-sm font-medium leading-none text-foreground">Idea</label>
+      <div class="relative">
+        <select id="ideaSelect" class="appearance-none flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer"></select>
+        <svg class="h-4 w-4 opacity-50 absolute right-3 top-3 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+      <p id="ideaLine" class="text-muted-foreground"></p>
+    </div>
+    <!-- Desktop: the full list -->
+    <div class="hidden md:block text-sm">
+      <p class="font-medium text-foreground">The 6 ideas <span class="font-normal text-muted-foreground">· tap one to see it</span></p>
+      <div id="propList" class="mt-2 grid gap-1"></div>
+    </div>
+    <div id="screenRow" class="flex flex-wrap items-center gap-2 text-sm"></div>
+    <p id="tryHint" class="text-sm text-muted-foreground"></p>
+    <details id="changesBox" class="text-sm rounded-md border border-border">
+      <summary class="flex items-center justify-between gap-2 px-3 py-2 cursor-pointer font-medium text-foreground">
+        What changed since round 2
+        <svg class="chev h-4 w-4 opacity-60 shrink-0 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </summary>
+      <ul class="list-disc ml-8 mr-3 pb-3 text-muted-foreground space-y-0.5">
+        <li>Removed idea 7 (more leave types). Requests stay vacation and sick days only.</li>
+        <li>Phone: “Who else is off” shows one row per day, so every name can be read.</li>
+        <li>Phone: the export pop-up fits the screen, with shorter column names.</li>
+        <li>Phone: the team limits warning has space between its lines.</li>
+        <li>Phone: the days-left boxes show a big number with a small label.</li>
+        <li>Phone: the “When a request hits…” label in Team limits has more line spacing.</li>
+        <li>Phone: this idea list is a dropdown, so the app starts on the first screen.</li>
+      </ul>
+    </details>
+  </div>
+</div>
+
+<!-- The app (or a Slack screen) -->
+<div id="app"></div>
+
+<!-- Dialog layer -->
+<div id="dialogRoot"></div>
+
+<!-- Toast (sonner look, bottom right) -->
+<div id="toast" class="hide fixed z-[60] flex items-center gap-2 rounded-lg border border-border bg-background text-foreground shadow-lg px-4 py-3 text-sm" style="right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); max-width: calc(100vw - 32px);" role="status" aria-live="polite">
+  <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm4.7 7.7a1 1 0 0 0-1.4-1.4L11 12.6l-2.3-2.3a1 1 0 0 0-1.4 1.4l3 3a1 1 0 0 0 1.4 0l5-5Z" clip-rule="evenodd"/></svg>
+  <span id="toastText"></span>
+</div>
+
+<script>
+  // "Today" in the mockup, so the sample data stays realistic.
+  const TODAY = "2026-11-11";
+
+  const $ = (id) => document.getElementById(id);
+  const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const MON3 = MONTHS.map((m) => m.slice(0, 3));
+  const WEEKDAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function parse(s) { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); }
+  function iso(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function fmt(s) { const d = parse(s); return MONTHS[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear(); }
+  function fmtShort(s) { const d = parse(s); return MON3[d.getMonth()] + " " + d.getDate(); }
+  function fmtRange(s, e) {
+    const a = parse(s), b = parse(e);
+    if (s === e) return fmtShort(s) + ", " + a.getFullYear();
+    if (a.getFullYear() === b.getFullYear()) return fmtShort(s) + " – " + fmtShort(e) + ", " + a.getFullYear();
+    return fmtShort(s) + ", " + a.getFullYear() + " – " + fmtShort(e) + ", " + b.getFullYear();
+  }
+  function shortDate(s) { const d = parse(s); return (d.getMonth() + 1) + "/" + d.getDate() + "/" + d.getFullYear(); }
+  function isWeekend(d) { const w = d.getDay(); return w === 0 || w === 6; }
+  function addDays(d, n) { const c = new Date(d); c.setDate(c.getDate() + n); return c; }
+  function eachDay(s, e, fn) { let d = parse(s); const end = parse(e); while (d <= end) { fn(d, iso(d)); d = addDays(d, 1); } }
+  function num(n) { return String(Math.round(n * 100) / 100); }
+  function joinAnd(list) { return list.length <= 1 ? list.join("") : list.slice(0, -1).join(", ") + " and " + list[list.length - 1]; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+  // Ontario statutory holidays (observed dates when they fall on a weekend).
+  const HOLIDAYS = {
+    "2026-01-01": ["New Year's Day"], "2026-02-16": ["Family Day"], "2026-04-03": ["Good Friday"],
+    "2026-05-18": ["Victoria Day"], "2026-07-01": ["Canada Day"], "2026-09-07": ["Labour Day"],
+    "2026-10-12": ["Thanksgiving"], "2026-12-25": ["Christmas Day"], "2026-12-28": ["Boxing Day", true],
+    "2027-01-01": ["New Year's Day"], "2027-02-15": ["Family Day"], "2027-03-26": ["Good Friday"],
+    "2027-05-24": ["Victoria Day"], "2027-07-01": ["Canada Day"], "2027-09-06": ["Labour Day"],
+    "2027-10-11": ["Thanksgiving"], "2027-12-27": ["Christmas Day", true], "2027-12-28": ["Boxing Day", true],
+  };
+  function isOff(d, useHol) { return isWeekend(d) || (useHol && !!HOLIDAYS[iso(d)]); }
+  function countBusinessDays(start, end, useHol) {
+    if (parse(start) > parse(end)) return 0;
+    let n = 0; eachDay(start, end, (d) => { if (!isOff(d, useHol)) n++; });
+    return n;
+  }
+  // Same as the app's calcTotal (with morning off); holidays left out only when useHol is on.
+  function calcTotal(start, end, startP, endP, useHol) {
+    const biz = countBusinessDays(start, end, useHol);
+    if (start === end) return (startP === "pm" || endP === "am") ? 0.5 : 1;
+    let total = biz;
+    if (startP === "pm" && !isOff(parse(start), useHol)) total -= 0.5;
+    if (endP === "am" && !isOff(parse(end), useHol)) total -= 0.5;
+    return total;
+  }
+  function returnDate(end, useHol) { let d = addDays(parse(end), 1); while (isOff(d, useHol)) d = addDays(d, 1); return fmt(iso(d)); }
+  function holidaysBetween(start, end) {
+    const out = [];
+    if (!start || !end || parse(start) > parse(end)) return out;
+    eachDay(start, end, (d, s) => { if (HOLIDAYS[s] && !isWeekend(d)) out.push(s); });
+    return out;
+  }
+  function holidayLabel(s) { const [name, observed] = HOLIDAYS[s]; return observed ? `${name} (observed, ${fmtShort(s)})` : `${name} (${fmtShort(s)})`; }
+  function isWithin30Days(start) { return !!start && parse(start) <= addDays(parse(TODAY), 30); }
+
+  // ---------- Sample team data ----------
+  const PEOPLE = ["Alex Martin", "Chris Wong", "David Chen", "Jordan Lee", "Maria Santos", "Nadia Rahman", "Priya Shah", "Sam Patel"];
+  // k: vac | sick | flex. sp "pm" = afternoon off on first day, ep "am" = morning off on last day.
+  const ENTRIES = [
+    { n: "Maria Santos", k: "vac", s: "2026-08-03", e: "2026-08-07", sub: "2026-06-30" },
+    { n: "Maria Santos", k: "vac", s: "2026-10-09", e: "2026-10-09", sp: "pm", sub: "2026-09-22" },
+    { n: "Maria Santos", k: "sick", s: "2026-10-21", e: "2026-10-21", sp: "pm", sub: "2026-10-21" },
+    { n: "Maria Santos", k: "flex", s: "2026-10-30", st: "08:30", et: "10:30", h: 2, sub: "2026-10-28" },
+    { n: "Maria Santos", k: "sick", s: "2026-11-04", e: "2026-11-04", ep: "am", sub: "2026-11-04" },
+    { n: "Maria Santos", k: "vac", s: "2026-12-22", e: "2027-01-02", sub: "2026-11-03" },
+    { n: "Priya Shah", k: "vac", s: "2026-07-13", e: "2026-07-24", sub: "2026-05-11" },
+    { n: "Priya Shah", k: "vac", s: "2026-11-09", e: "2026-11-13", sub: "2026-09-28" },
+    { n: "Priya Shah", k: "vac", s: "2026-12-16", e: "2026-12-17", sub: "2026-10-19" },
+    { n: "Sam Patel", k: "sick", s: "2026-03-03", e: "2026-03-03", sub: "2026-03-03" },
+    { n: "Sam Patel", k: "sick", s: "2026-11-11", e: "2026-11-11", ep: "am", sub: "2026-11-11" },
+    { n: "Sam Patel", k: "vac", s: "2026-12-23", e: "2026-12-24", pending: true, sub: "2026-11-10" },
+    { n: "Jordan Lee", k: "vac", s: "2026-06-01", e: "2026-06-05", sub: "2026-04-20" },
+    { n: "Jordan Lee", k: "flex", s: "2026-11-11", st: "13:00", et: "15:00", h: 2, sub: "2026-11-06" },
+    { n: "Jordan Lee", k: "vac", s: "2026-12-21", e: "2026-12-24", pending: true, sub: "2026-11-09" },
+    { n: "Alex Martin", k: "sick", s: "2026-02-09", e: "2026-02-10", sub: "2026-02-10" },
+    { n: "Alex Martin", k: "vac", s: "2026-10-26", e: "2026-10-30", sub: "2026-09-14" },
+    { n: "Alex Martin", k: "vac", s: "2026-12-15", e: "2026-12-18", sub: "2026-10-05" },
+    { n: "David Chen", k: "vac", s: "2026-09-08", e: "2026-09-11", sub: "2026-07-27" },
+    { n: "David Chen", k: "vac", s: "2026-11-13", e: "2026-11-13", sp: "pm", sub: "2026-10-30" },
+    { n: "Chris Wong", k: "vac", s: "2026-08-17", e: "2026-08-21", sub: "2026-06-15" },
+    { n: "Nadia Rahman", k: "sick", s: "2026-09-29", e: "2026-09-29", sub: "2026-09-29" },
+  ];
+  // Calls cb(date, amount) for each weekday of an entry inside [from, to]. Flexible time gives hours.
+  function entryDays(en, from, to, cb) {
+    if (en.k === "flex") { if (en.s >= from && en.s <= to) cb(en.s, en.h); return; }
+    const same = en.s === en.e;
+    eachDay(en.s, en.e, (d, s) => {
+      if (isWeekend(d) || s < from || s > to) return;
+      let amt = 1;
+      if (same) amt = (en.sp === "pm" || en.ep === "am") ? 0.5 : 1;
+      else { if (s === en.s && en.sp === "pm") amt -= 0.5; if (s === en.e && en.ep === "am") amt -= 0.5; }
+      cb(s, amt);
+    });
+  }
+
+  // Maria's own requests (same as round 1).
+  const myRequests = [
+    { kind: "time_off", type: "sick", start: "2026-11-04", end: "2026-11-04", startP: "full", endP: "am", status: "approved", auto: true, submitted: "2026-11-04" },
+    { kind: "time_off", type: "vacation", start: "2026-12-22", end: "2027-01-02", startP: "full", endP: "full", status: "approved", submitted: "2026-11-03" },
+    { kind: "flexible", date: "2026-10-30", st: "08:30", et: "10:30", hours: 2, status: "approved", submitted: "2026-10-28" },
+    { kind: "time_off", type: "sick", start: "2026-10-21", end: "2026-10-21", startP: "pm", endP: "full", status: "approved", auto: true, submitted: "2026-10-21" },
+    { kind: "time_off", type: "vacation", start: "2026-10-09", end: "2026-10-09", startP: "pm", endP: "full", status: "approved", submitted: "2026-09-22" },
+    { kind: "time_off", type: "vacation", start: "2026-09-14", end: "2026-09-18", startP: "full", endP: "full", status: "cancelled", submitted: "2026-08-12" },
+    { kind: "time_off", type: "vacation", start: "2026-08-03", end: "2026-08-07", startP: "full", endP: "full", status: "approved", submitted: "2026-06-30" },
+  ];
+
+  // Request types: vacation and sick days only.
+  const TYPES = {
+    vacation: { label: "Vacation", approval: true },
+    sick: { label: "Sick Day", approval: false },
+  };
+
+  // ---------- Icons (lucide) ----------
+  const svg = (paths, cls = "h-4 w-4") => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+  const P = {
+    home: '<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+    users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+    shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+    file: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+    activity: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+    logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>',
+    clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+    plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+    chevDown: '<path d="m6 9 6 6 6-6"/>',
+    chevUp: '<path d="m18 15-6-6-6 6"/>',
+    alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+    info: '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+    arrowLeft: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+    calendar: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
+    checkCircle: '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+    xCircle: '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
+    x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+    userPlus: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
+    hash: '<line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>',
+  };
+
+  // ---------- Shared bits that copy the app's components ----------
+  const BTN = "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
+  const BTN_PRIMARY = BTN + " h-10 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90";
+  const BTN_OUTLINE = BTN + " h-10 px-4 py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground";
+  const BTN_GHOST = BTN + " h-10 px-4 py-2 hover:bg-accent hover:text-accent-foreground";
+  const BTN_DESTRUCTIVE = BTN + " h-10 px-4 py-2 bg-destructive text-destructive-foreground hover:bg-destructive/90";
+  const INPUT = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+  const SELECT = "appearance-none flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer";
+  const LABEL = "text-sm font-medium leading-none";
+  const CARD = "rounded-lg border bg-card text-card-foreground shadow-sm";
+
+  function selectBox(id, options, value, extra = "") {
+    return `<div class="relative ${extra}"><select id="${id}" class="${SELECT}">${options.map(([v, l]) => `<option value="${esc(v)}"${v === value ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>${svg(P.chevDown, "h-4 w-4 opacity-50 absolute right-3 top-3 pointer-events-none")}</div>`;
+  }
+  function cardHead(title, desc, extraTitleCls = "") {
+    return `<div class="flex flex-col space-y-1.5 p-6${desc ? "" : " pb-3"}"><h3 class="font-semibold leading-none tracking-tight text-base ${extraTitleCls}">${title}</h3>${desc ? `<p class="text-sm text-muted-foreground">${desc}</p>` : ""}</div>`;
+  }
+  const STATUS = {
+    pending_approval: ["Pending Approval", "bg-warning/15 text-warning border-warning/30"],
+    approved: ["Approved", "bg-success/15 text-success border-success/30"],
+    rejected: ["Rejected", "bg-destructive/15 text-destructive border-destructive/30"],
+    cancelled: ["Cancelled", "bg-muted text-muted-foreground border-border"],
+    completed: ["Completed", "bg-success/15 text-success border-success/30"],
+    incomplete: ["Incomplete", "bg-destructive/15 text-destructive border-destructive/30"],
+  };
+  function badge(status, auto) {
+    const [label, cls] = STATUS[status];
+    return `<div class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${cls}">${status === "approved" && auto ? "Auto-Approved" : label}</div>`;
+  }
+  const specialBadge = `<div class="inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold gap-1 text-xs warn-badge">${svg(P.alert, "h-3 w-3")}Special approval</div>`;
+  function warnAlert(id, html, hidden) {
+    return `<div ${id ? `id="${id}"` : ""} class="relative w-full rounded-lg border p-4 warn-alert"${hidden ? " hidden" : ""}>${svg(P.alert, "warn-icon h-4 w-4 absolute left-4 top-4")}<div class="warn-text text-sm pl-7">${html}</div></div>`;
+  }
+  function errorAlert(html) {
+    return `<div class="relative w-full rounded-lg border border-destructive/50 p-4 text-destructive">${svg(P.alert, "h-4 w-4 absolute left-4 top-4")}<div class="text-sm pl-7">${html}</div></div>`;
+  }
+  function initials(name) { return name.split(" ").map((w) => w[0]).join(""); }
+
+  // ---------- App shell (AppLayout) ----------
+  const NAV = [
+    { key: "timeoff", label: "Time Off", icon: P.home },
+    { key: "manager", label: "Manager View", icon: P.users },
+    { key: "settings", label: "Admin Settings", icon: P.settings },
+    { key: "users", label: "User Management", icon: P.shield },
+    { key: "policy", label: "Policy Editor", icon: P.file },
+    { key: "audit", label: "Audit Log", icon: P.activity },
+  ];
+  const STAFF = { name: "Maria Santos", admin: false };
+  const ADMIN = { name: "David Chen", admin: true };
+
+  function shell(user, active, main, opts = {}) {
+    const items = user.admin ? NAV : NAV.slice(0, 1);
+    const side = items.map((it) => `<a href="#" onclick="return false" class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${it.key === active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"}">${svg(it.icon)}${it.label}</a>`).join("");
+    const mob = items.length > 1 ? `<nav class="md:hidden flex overflow-x-auto border-b border-border bg-card px-2 gap-1">${items.map((it) => `<a href="#" onclick="return false" class="flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${it.key === active ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}">${svg(it.icon, "h-3.5 w-3.5")}${it.label}</a>`).join("")}</nav>` : "";
+    return `
+    <div class="flex min-h-screen bg-background">
+      <aside class="hidden md:flex w-56 shrink-0 flex-col border-r border-border bg-card">
+        <div class="p-5 border-b border-border"><h1 class="text-lg font-bold text-foreground">Time Off Manager</h1></div>
+        <nav class="flex-1 p-3 space-y-1">${side}</nav>
+        <div class="p-4 border-t border-border">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">${user.name.charAt(0)}</div>
+            <div class="flex-1 min-w-0"><p class="text-sm font-medium truncate text-foreground">${user.name}</p></div>
+          </div>
+          <button type="button" class="inline-flex items-center gap-2 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 w-full justify-start text-muted-foreground hover:bg-accent hover:text-accent-foreground">${svg(P.logout, "h-4 w-4 mr-2")}Sign Out</button>
+        </div>
+      </aside>
+      <div class="flex-1 min-w-0 flex flex-col">
+        <header class="md:hidden flex items-center justify-between py-4 gutter border-b border-border bg-card">
+          <h1 class="text-lg font-bold text-foreground">Time Off Manager</h1>
+          <button type="button" class="inline-flex items-center justify-center rounded-md h-9 px-3 hover:bg-accent" aria-label="Sign out">${svg(P.logout)}</button>
+        </header>
+        ${mob}
+        <main class="flex-1 min-w-0 py-4 md:py-8 gutter gutter-md overflow-x-hidden break-words${opts.adminBg ? " admin-bg" : ""}">${main}</main>
+      </div>
+    </div>`;
+  }
+
+  // ---------- Time Off page (Maria) ----------
+  const POLICY_HTML = `
+    <div class="${CARD} border-info/30 bg-info/5">
+      <div class="flex flex-col space-y-1.5 p-6 pb-3">
+        <h3 class="font-semibold leading-none tracking-tight flex items-center gap-2 text-base text-info">${svg(P.info)}Vacation and Sick Day Policy</h3>
+      </div>
+      <div class="p-6 pt-0"><div class="space-y-0.5">
+        <p class="text-sm text-muted-foreground">Please review this policy before submitting a request.</p><br>
+        <h4 class="font-semibold text-foreground mt-4 mb-1">Vacation Requests</h4><br>
+        <li class="ml-4 text-sm text-muted-foreground">All vacation requests must be submitted through this app.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Vacation requests are not approved until the employee receives an approval confirmation.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Submitting a request does not guarantee approval.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Vacation requests should be submitted as early as possible to support scheduling and coverage.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Approval may depend on staffing needs, timing, and overlapping requests from other employees.</li><br>
+        <h4 class="font-semibold text-foreground mt-4 mb-1">Sick Day Requests</h4><br>
+        <li class="ml-4 text-sm text-muted-foreground">Sick days are intended for unexpected illness-related absences.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Sick day requests may only be submitted for today or a past date.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Future sick day submissions are not allowed.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Eligible sick day requests are automatically recorded in the system.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Misuse of sick day submissions may be reviewed by management.</li><br>
+        <h4 class="font-semibold text-foreground mt-4 mb-1">Changes and Cancellations</h4><br>
+        <li class="ml-4 text-sm text-muted-foreground">Employees may edit or cancel their own requests in the app.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Changes to approved vacation requests will require re-approval.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Employees may cancel approved vacation requests without approval, but management will be notified.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Cancelled approved requests will be removed from the shared calendar.</li><br>
+        <h4 class="font-semibold text-foreground mt-4 mb-1">Employee Responsibility</h4><br>
+        <li class="ml-4 text-sm text-muted-foreground">Employees are responsible for submitting accurate information.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Duplicate, misleading, or overlapping requests may be reviewed, corrected, or denied.</li><br>
+        <h4 class="font-semibold text-foreground mt-4 mb-1">Policy Updates</h4><br>
+        <li class="ml-4 text-sm text-muted-foreground">The company may update this policy from time to time.</li><br>
+        <h4 class="font-semibold text-foreground mt-4 mb-1">Acknowledgment</h4><br>
+        <p class="text-sm text-muted-foreground">By submitting a request, you confirm that the information provided is accurate and that you have read and understood this policy.</p>
+      </div></div>
+    </div>`;
+
+  const PRESETS = {
+    holidays: { type: "vacation", start: "2026-12-21", end: "2027-01-04", startHalf: false, endHalf: false, note: "Holidays with family", ack: false, showForm: true },
+    "days-left": { type: "vacation", start: "2026-11-12", end: "2026-11-12", startHalf: false, endHalf: true, note: "Dentist appointment", ack: false, showForm: true },
+    limits: { type: "vacation", start: "2026-12-15", end: "2026-12-17", startHalf: false, endHalf: false, note: "Moving apartments", ack: false, showForm: true },
+  };
+  const forms = JSON.parse(JSON.stringify(PRESETS));
+  let showAll = false;
+
+  // Idea 3: days left.
+  const ALLOWANCE = 15;
+  function balance() {
+    const out = { used: 0, booked: 0, pending: 0, sick: 0, flexQ: 0 };
+    for (const r of myRequests) {
+      if (r.kind === "flexible") {
+        if (r.date >= "2026-10-01" && r.date <= "2026-12-31" && r.status !== "cancelled" && r.status !== "rejected") out.flexQ++;
+        continue;
+      }
+      if (r.status !== "approved" && r.status !== "pending_approval") continue;
+      const en = { k: "x", s: r.start, e: r.end, sp: r.startP, ep: r.endP };
+      if (r.type === "sick") { entryDays(en, "2026-01-01", "2026-12-31", (s, a) => { out.sick += a; }); continue; }
+      if (r.type !== "vacation") continue;
+      entryDays(en, "2026-01-01", "2026-12-31", (s, a) => {
+        if (r.status === "pending_approval") out.pending += a;
+        else if (s < TODAY) out.used += a;
+        else out.booked += a;
+      });
+    }
+    out.left = ALLOWANCE - out.used - out.booked - out.pending;
+    return out;
+  }
+  function balanceCardInner() {
+    const b = balance();
+    const pct = (n) => Math.max(0, Math.min(100, (n / ALLOWANCE) * 100)).toFixed(2) + "%";
+    const leftText = b.left >= 0
+      ? `<span class="text-2xl font-bold text-foreground">${num(b.left)}</span> of ${ALLOWANCE} days left`
+      : `<span class="text-2xl font-bold text-destructive">${num(-b.left)}</span> days over your ${ALLOWANCE}`;
+    const dot = (cls, text) => `<span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full ${cls}"></span>${text}</span>`;
+    return `
+      ${cardHead("Your time off in 2026")}
+      <div class="p-6 pt-0 space-y-4">
+        <div>
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <p class="text-sm font-medium text-foreground">Vacation</p>
+            <p class="text-sm text-muted-foreground tabular-nums">${leftText}</p>
+          </div>
+          <div class="mt-2 flex h-2.5 w-full overflow-hidden rounded-full bg-muted" role="img" aria-label="${num(b.used)} used, ${num(b.booked)} booked, ${num(b.pending)} pending, ${num(Math.max(0, b.left))} left of ${ALLOWANCE} days">
+            <div class="bg-primary" style="width:${pct(b.used)}"></div>
+            <div class="bg-primary/40" style="width:${pct(b.booked)}"></div>
+            <div class="bg-warning/70" style="width:${pct(b.pending)}"></div>
+          </div>
+          <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground tabular-nums">
+            ${dot("bg-primary", "Used " + num(b.used))}
+            ${dot("bg-primary/40", "Booked " + num(b.booked))}
+            ${b.pending ? dot("bg-warning/70", "Waiting for approval " + num(b.pending)) : ""}
+            ${dot("bg-muted border border-border", "Left " + num(Math.max(0, b.left)))}
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3" data-changed>
+          <div class="rounded-lg border border-border p-3 min-w-0">
+            <p class="text-xs text-muted-foreground uppercase tracking-wider">Sick days</p>
+            <p class="mt-1 text-xl font-bold text-foreground tabular-nums">${num(b.sick)}</p>
+            <p class="text-xs text-muted-foreground">used this year</p>
+          </div>
+          <div class="rounded-lg border border-border p-3 min-w-0">
+            <p class="text-xs text-muted-foreground uppercase tracking-wider">Flexible time</p>
+            <p class="mt-1 text-xl font-bold text-foreground tabular-nums">${b.flexQ} of 1</p>
+            <p class="text-xs text-muted-foreground">used this quarter</p>
+          </div>
+        </div>
+        <p class="text-xs text-muted-foreground">Vacation days reset on January 1, 2027.</p>
+      </div>`;
+  }
+
+  // Idea 5: team limits (edited on Admin Settings, checked on the form).
+  const limits = {
+    max: 2,
+    mode: "warn",
+    blocked: [
+      { s: "2026-12-14", e: "2026-12-18", reason: "Year-end inventory" },
+      { s: "2027-03-29", e: "2027-04-02", reason: "Spring busy season" },
+    ],
+  };
+  function limitIssues(st) {
+    if (st.type !== "vacation" || !st.start || !st.end || st.start > st.end) return null;
+    const blocked = limits.blocked.filter((b) => b.s <= st.end && b.e >= st.start);
+    const fullDays = []; let most = 0;
+    if (limits.max) {
+      eachDay(st.start, st.end, (d, s) => {
+        if (isWeekend(d)) return;
+        const n = ENTRIES.filter((en) => en.k === "vac" && en.n !== "Maria Santos" && en.s <= s && en.e >= s).length;
+        if (n >= limits.max) { fullDays.push(s); most = Math.max(most, n); }
+      });
+    }
+    if (!blocked.length && !fullDays.length) return null;
+    return { blocked, fullDays, most };
+  }
+
+  function timeOffPage(v) {
+    const typeOptions = `<option value="">Select type...</option>` + ["vacation", "sick"].map((k) => `<option value="${k}">${TYPES[k].label}</option>`).join("");
+    return `
+    <div class="max-w-2xl mx-auto space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h1 class="text-2xl font-bold text-foreground">Time Off</h1>
+        <div class="flex flex-wrap gap-2">
+          <button id="toggleForm" type="button" class="${BTN} h-9 px-3"></button>
+          <button type="button" class="${BTN} h-9 px-3 border border-input bg-background hover:bg-accent hover:text-accent-foreground">${svg(P.clock, "h-4 w-4 mr-1")}Flexible Time</button>
+        </div>
+      </div>
+      ${v === "days-left" ? `<div id="balanceCard" class="${CARD}" data-focus>${balanceCardInner()}</div>` : ""}
+      <div id="formArea" class="space-y-6">
+        ${POLICY_HTML}
+        <div class="${CARD}">
+          ${cardHead("New Request")}
+          <div class="p-6 pt-0">
+            <form id="reqForm" class="space-y-4" novalidate>
+              <div class="space-y-2">
+                <label class="${LABEL}" for="reqType">Type</label>
+                <div class="relative">
+                  <select id="reqType" class="${SELECT}">${typeOptions}</select>
+                  ${svg(P.chevDown, "h-4 w-4 opacity-50 absolute right-3 top-3 pointer-events-none")}
+                </div>
+                <p id="errType" class="text-sm text-destructive" hidden></p>
+              </div>
+              <div id="typeFields" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div class="space-y-2 min-w-0">
+                    <label class="${LABEL}" for="startDate">Start Date</label>
+                    <input id="startDate" type="date" class="${INPUT}">
+                    <p id="errStart" class="text-sm text-destructive" hidden></p>
+                  </div>
+                  <div class="space-y-2 min-w-0">
+                    <label class="${LABEL}" for="endDate">End Date</label>
+                    <input id="endDate" type="date" class="${INPUT}">
+                    <p id="errEnd" class="text-sm text-destructive" hidden></p>
+                  </div>
+                </div>
+                <div class="space-y-3">
+                  <div class="flex items-center gap-3">
+                    <input id="startHalfDay" type="checkbox" class="cbx">
+                    <label for="startHalfDay" class="text-sm font-medium leading-none cursor-pointer">Half day on first day (afternoon off)</label>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <input id="endHalfDay" type="checkbox" class="cbx">
+                    <label for="endHalfDay" class="text-sm font-medium leading-none cursor-pointer">Half day on last day (morning off)</label>
+                  </div>
+                </div>
+                <div class="p-3 rounded-lg bg-accent/50 border border-border"${v === "holidays" ? " data-focus" : ""}>
+                  <p id="summary" class="text-sm text-foreground"></p>
+                  ${v === "holidays" ? `<p id="holNote" class="text-sm text-muted-foreground mt-1" hidden></p>` : ""}
+                </div>
+                ${v === "days-left" ? `<div id="afterLine" hidden></div>` : ""}
+                ${v === "limits" ? `<div id="limitAlerts" class="space-y-3" data-changed data-focus hidden></div>` : ""}
+                ${warnAlert("alert10", "This request exceeds 10 business days and will require <strong>special approval</strong> from management.", true)}
+                ${warnAlert("alert30", "This vacation is within the next 30 days and requires special approval. It may be declined if coverage is limited.", true)}
+                <div class="space-y-2">
+                  <label id="noteLabel" class="${LABEL}" for="note">Reason</label>
+                  <textarea id="note" rows="2" class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"></textarea>
+                  <p id="errNote" class="text-sm text-destructive" hidden></p>
+                </div>
+                <div class="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/50">
+                  <input id="policyAck" type="checkbox" class="cbx">
+                  <label for="policyAck" class="text-sm font-medium leading-snug cursor-pointer">I have read and understand the policy</label>
+                </div>
+                <p id="errPolicy" class="text-sm text-destructive" hidden></p>
+                <button type="submit" class="${BTN_PRIMARY} w-full">Submit</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div class="${CARD}">
+        ${cardHead("My Requests")}
+        <div class="p-6 pt-0"><div id="reqList" class="space-y-2"></div></div>
+      </div>
+    </div>`;
+  }
+
+  // The app's formatRequestDates.
+  function formatRequestDates(r) {
+    const startSuffix = r.startP === "pm" ? " (afternoon)" : "";
+    const endSuffix = r.endP === "am" ? " (morning)" : "";
+    const oneDay = r.start === r.end;
+    if (r.type === "vacation") {
+      if (oneDay) {
+        if (r.startP === "pm") return `Afternoon off · ${r.start}`;
+        if (r.endP === "am") return `Morning off · ${r.start}`;
+        return r.start;
+      }
+      return `${r.start}${startSuffix} → ${r.end}${endSuffix}`;
+    }
+    if (!oneDay) return `${r.start}${startSuffix} → ${r.end}${endSuffix}`;
+    if (r.startP === "pm") return `Afternoon · ${r.start}`;
+    if (r.endP === "am") return `Morning · ${r.start}`;
+    return r.start;
+  }
+
+  function renderList() {
+    const list = $("reqList");
+    if (!list) return;
+    const items = showAll ? myRequests : myRequests.slice(0, 5);
+    let html = items.map((r) => {
+      if (r.kind === "flexible") {
+        return `<div class="flex items-center justify-between gap-2 p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer">
+          <div class="min-w-0"><div class="flex flex-wrap items-center gap-2 mb-0.5"><span class="font-medium text-sm text-foreground">${svg(P.clock, "h-3.5 w-3.5 inline mr-1 align-[-2px]")}Flexible Time</span>${badge(r.status)}</div>
+          <p class="text-xs text-muted-foreground">${r.date} · ${r.st}–${r.et} (${r.hours}h)</p></div>
+          <span class="text-xs text-muted-foreground shrink-0">${shortDate(r.submitted)}</span></div>`;
+      }
+      return `<div class="flex items-center justify-between gap-2 p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer">
+        <div class="min-w-0"><div class="flex flex-wrap items-center gap-2 mb-0.5"><span class="font-medium text-sm text-foreground">${TYPES[r.type].label}</span>${badge(r.status, r.auto)}${r.special ? specialBadge : ""}</div>
+        <p class="text-xs text-muted-foreground">${formatRequestDates(r)}</p></div>
+        <span class="text-xs text-muted-foreground shrink-0">${shortDate(r.submitted)}</span></div>`;
+    }).join("");
+    if (myRequests.length > 5) {
+      html += `<button type="button" id="showAllBtn" class="${BTN} h-9 px-3 w-full hover:bg-accent hover:text-accent-foreground">
+        ${showAll ? svg(P.chevUp, "h-4 w-4 mr-1") + " Show less" : svg(P.chevDown, "h-4 w-4 mr-1") + ` Show all ${myRequests.length} requests`}</button>`;
+    }
+    list.innerHTML = html;
+    const b = $("showAllBtn");
+    if (b) b.onclick = () => { showAll = !showAll; renderList(); };
+  }
+
+  // The app's RequestSummary (holidays left out only on idea 2).
+  function summaryText(v, st) {
+    const useHol = v === "holidays";
+    const incomplete = "Please complete the form to see your request summary.";
+    const { type, start } = st;
+    const startP = st.startHalf ? "pm" : "full";
+    const endP = st.endHalf ? "am" : "full";
+    if (!type) return incomplete;
+    const end = type === "sick" ? (st.end || start) : st.end;
+    if (!start || !end) return incomplete;
+    const biz = countBusinessDays(start, end, useHol);
+    if (biz === 0) return incomplete;
+    const sameDay = start === end;
+    const total = calcTotal(start, end, startP, endP, useHol);
+    const dayLabel = total === 1 ? "1 business day" : `${num(total)} business days`;
+    const startNote = startP === "pm" ? " (afternoon only)" : "";
+    const endNote = endP === "am" ? " (morning only)" : "";
+    if (type === "vacation") {
+      if (sameDay) {
+        if (startP === "pm") return `You will take the afternoon off on ${fmt(start)}.`;
+        if (endP === "am") return `You will take the morning off on ${fmt(start)}.`;
+        return `You will take 1 full day off on ${fmt(start)}.`;
+      }
+      const back = endP === "am" ? `${fmt(end)} (afternoon)` : returnDate(end, useHol);
+      return `You will take vacation from ${fmt(start)}${startNote} to ${fmt(end)}${endNote} (${dayLabel}). You return on ${back}.`;
+    }
+    if (sameDay) {
+      if (startP === "pm") return `You were sick in the afternoon on ${fmt(start)}.`;
+      if (endP === "am") return `You were sick in the morning on ${fmt(start)}.`;
+      return `You were sick on ${fmt(start)}.`;
+    }
+    return `You were sick from ${fmt(start)}${startNote} to ${fmt(end)}${endNote} (${dayLabel}).`;
+  }
+
+  function renderForm(v) {
+    const st = forms[v];
+    const btn = $("toggleForm");
+    const base = `${BTN} h-9 px-3 `;
+    if (st.showForm) { btn.className = base + "border border-input bg-background hover:bg-accent hover:text-accent-foreground"; btn.textContent = "Cancel"; }
+    else { btn.className = base + "bg-primary text-primary-foreground hover:bg-primary/90"; btn.innerHTML = svg(P.plus, "h-4 w-4 mr-1") + " New Request"; }
+    $("formArea").hidden = !st.showForm;
+    $("typeFields").hidden = !st.type;
+    $("reqType").value = st.type;
+    $("startDate").value = st.start;
+    $("endDate").value = st.end;
+    $("startDate").max = st.type === "sick" ? TODAY : "";
+    $("endDate").max = st.type === "sick" ? TODAY : "";
+    $("endDate").min = st.start || "";
+    $("startHalfDay").checked = st.startHalf;
+    $("endHalfDay").checked = st.endHalf;
+    $("note").value = st.note;
+    $("policyAck").checked = st.ack;
+    $("noteLabel").textContent = st.type === "vacation" ? "Reason" : "Note (optional)";
+    $("note").placeholder = st.type === "vacation" ? "Please provide a reason for your request..." : "Any details...";
+    $("summary").textContent = summaryText(v, st);
+
+    const startP = st.startHalf ? "pm" : "full";
+    const endP = st.endHalf ? "am" : "full";
+    const useHol = v === "holidays";
+    const validRange = st.start && st.end && st.start <= st.end;
+    $("alert10").hidden = !(st.type === "vacation" && validRange && calcTotal(st.start, st.end, startP, endP, useHol) > 10);
+    $("alert30").hidden = !(st.type === "vacation" && isWithin30Days(st.start));
+
+    if (v === "holidays") {
+      const note = $("holNote");
+      const ok = st.type === "vacation" && validRange;
+      const hols = ok ? holidaysBetween(st.start, st.end) : [];
+      // Holidays between the last day off and the return date.
+      const skipped = [];
+      if (ok && !st.endHalf) {
+        let d = addDays(parse(st.end), 1);
+        while (isOff(d, true)) { if (HOLIDAYS[iso(d)]) skipped.push(iso(d)); d = addDays(d, 1); }
+      }
+      const parts = [];
+      if (hols.length) parts.push(`Not counted as days off: ${joinAnd(hols.map(holidayLabel))}.`);
+      if (skipped.length) parts.push(`Your return date skips ${joinAnd(skipped.map(holidayLabel))}.`);
+      note.textContent = parts.join(" ");
+      note.hidden = !parts.length;
+    }
+    if (v === "days-left") {
+      const el = $("afterLine");
+      if (st.type === "vacation" && validRange) {
+        const total = calcTotal(st.start, st.end, startP, endP, false);
+        const b = balance();
+        const after = b.left - total;
+        el.innerHTML = after >= 0
+          ? `<p class="text-sm text-muted-foreground">After this request you will have <strong class="text-foreground">${num(after)} ${after === 1 ? "day" : "days"}</strong> of vacation left this year.</p>`
+          : warnAlert("", `This request is ${num(total)} ${total === 1 ? "day" : "days"}, but you have ${num(Math.max(0, b.left))} ${b.left === 1 ? "day" : "days"} of vacation left this year. Talk to your manager before you submit.`, false);
+        el.hidden = false;
+      } else { el.innerHTML = ""; el.hidden = true; }
+    }
+    if (v === "limits") {
+      const el = $("limitAlerts");
+      const iss = limitIssues(st);
+      if (iss) {
+        const lines = [];
+        iss.blocked.forEach((b) => lines.push(`<strong>${fmtRange(b.s, b.e)} is blocked:</strong> ${esc(b.reason)}.`));
+        if (iss.fullDays.length) lines.push(`${iss.most} ${iss.most === 1 ? "person is" : "people are"} already off on ${joinAnd(iss.fullDays.map(fmtShort))}. The team limit is ${limits.max} off at once.`);
+        lines.push(limits.mode === "warn" ? "You can still submit, but your manager may decline it." : "Pick other dates to submit.");
+        const html = `<div class="space-y-2">${lines.map((l) => `<p>${l}</p>`).join("")}</div>`;
+        el.innerHTML = limits.mode === "warn" ? warnAlert("", html, false) : errorAlert(html);
+        el.hidden = false;
+      } else { el.innerHTML = ""; el.hidden = true; }
+    }
+  }
+
+  function setErr(id, msg) { const el = $(id); el.textContent = msg || ""; el.hidden = !msg; }
+  function clearErrs() { ["errType", "errStart", "errEnd", "errNote", "errPolicy"].forEach((id) => setErr(id, "")); }
+
+  function validate(v) {
+    clearErrs();
+    let ok = true;
+    const s = forms[v];
+    if (!s.type) { setErr("errType", "Please select a request type."); ok = false; }
+    if (!s.start) { setErr("errStart", "Start date is required."); ok = false; }
+    if (s.type === "vacation") {
+      if (!s.end) { setErr("errEnd", "End date is required."); ok = false; }
+      if (s.start && s.end && s.start > s.end) { setErr("errEnd", "End date must be on or after start date."); ok = false; }
+      if (!s.note.trim()) { setErr("errNote", "Please provide a reason for your vacation request."); ok = false; }
+    }
+    if (s.type === "sick") {
+      if (s.start && s.start > TODAY) { setErr("errStart", "Future sick days cannot be submitted. Please submit a vacation request or contact your manager."); ok = false; }
+      const effEnd = s.end || s.start;
+      if (effEnd && effEnd > TODAY) { setErr("errEnd", "Sick day end date cannot be in the future."); ok = false; }
+    }
+    if (v === "limits" && limits.mode === "block" && limitIssues(s)) { setErr("errEnd", "These dates are blocked or the team is full. Pick other dates."); ok = false; }
+    if (!s.ack) { setErr("errPolicy", "You must acknowledge the policy before submitting."); ok = false; }
+    return ok;
+  }
+
+  function resetForm(v) {
+    Object.assign(forms[v], { type: "", start: "", end: "", startHalf: false, endHalf: false, note: "", ack: false, showForm: false });
+    clearErrs();
+  }
+  // On a one-day request, a day can't be both morning off and afternoon off.
+  function keepOneHalf(v, changed) {
+    const st = forms[v];
+    if (st.start && st.start === st.end && st.startHalf && st.endHalf) {
+      if (changed === "start") st.endHalf = false; else st.startHalf = false;
+    }
+  }
+
+  function wireForm(v) {
+    const st = forms[v];
+    $("toggleForm").onclick = () => { if (st.showForm) resetForm(v); else st.showForm = true; renderForm(v); };
+    $("reqType").onchange = (e) => { st.type = e.target.value; renderForm(v); };
+    $("startDate").onchange = (e) => { st.start = e.target.value; if (!st.end || st.end < st.start) st.end = st.start; keepOneHalf(v, "end"); renderForm(v); };
+    $("endDate").onchange = (e) => { st.end = e.target.value; keepOneHalf(v, "end"); renderForm(v); };
+    $("startHalfDay").onchange = (e) => { st.startHalf = e.target.checked; keepOneHalf(v, "start"); renderForm(v); };
+    $("endHalfDay").onchange = (e) => { st.endHalf = e.target.checked; keepOneHalf(v, "end"); renderForm(v); };
+    $("note").oninput = (e) => { st.note = e.target.value; };
+    $("policyAck").onchange = (e) => { st.ack = e.target.checked; };
+    $("reqForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!validate(v)) return;
+      const sick = st.type === "sick";
+      myRequests.unshift({
+        kind: "time_off", type: st.type, start: st.start, end: st.end || st.start,
+        startP: st.startHalf ? "pm" : "full", endP: st.endHalf ? "am" : "full",
+        status: sick ? "approved" : "pending_approval", auto: sick,
+        special: !sick && isWithin30Days(st.start), submitted: TODAY,
+      });
+      toast(sick ? "Sick day recorded and auto-approved." : "Vacation request submitted for approval.");
+      resetForm(v);
+      renderForm(v);
+      renderList();
+      const bc = $("balanceCard");
+      if (bc) bc.innerHTML = balanceCardInner();
+    });
+    renderForm(v);
+    renderList();
+  }
+
+  // ---------- Idea 1: request page (manager) ----------
+  const req1 = { status: "pending_approval", decidedAt: "" };
+  const JORDAN = ENTRIES.find((en) => en.n === "Jordan Lee" && en.s === "2026-12-21");
+
+  function whoElse(req) {
+    const others = ENTRIES.filter((en) => en.k === "vac" && en !== req && en.s <= req.e && en.e >= req.s);
+    const days = [];
+    eachDay(req.s, req.e, (d, s) => {
+      if (isWeekend(d)) return;
+      const off = [req, ...others].filter((en) => en.s <= s && en.e >= s);
+      days.push({ s, d, off });
+    });
+    const most = Math.max(...days.map((x) => x.off.length));
+    const busiest = days.filter((x) => x.off.length === most).map((x) => fmtShort(x.s));
+    return { others, days, most, busiest };
+  }
+  function avatar(en, thisReq) {
+    const pending = en === thisReq ? req1.status === "pending_approval" : !!en.pending;
+    const cls = pending ? "bg-warning/15 text-warning" : "bg-primary/10 text-primary";
+    return `<span class="h-6 w-6 shrink-0 rounded-full ${cls} inline-flex items-center justify-center text-[10px] font-semibold" title="${en.n}">${initials(en.n)}</span>`;
+  }
+
+  function requestPage() {
+    const w = whoElse(JORDAN);
+    const pending = req1.status === "pending_approval";
+    // Phone: one row per day. Wider screens: 4 boxes side by side.
+    const dayCells = w.days.map((x) => `
+      <div class="rounded-md border border-border p-2 min-w-0 flex items-center gap-3 sm:block sm:text-center">
+        <div class="w-14 shrink-0 sm:w-auto">
+          <p class="text-xs text-muted-foreground uppercase tracking-wider">${WEEKDAYS[x.d.getDay()].slice(0, 3)}</p>
+          <p class="text-sm font-medium text-foreground">${fmtShort(x.s)}</p>
+        </div>
+        <div class="flex flex-1 flex-wrap gap-1 sm:justify-center sm:mt-2">${x.off.map((en) => avatar(en, JORDAN)).join("")}</div>
+        <p class="text-xs text-muted-foreground tabular-nums shrink-0 sm:mt-1">${x.off.length} off</p>
+      </div>`).join("");
+    const rows = w.others.map((en) => `
+      <div class="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border border-border">
+        <div class="flex items-center gap-3 min-w-0">
+          ${avatar(en, JORDAN)}
+          <div class="min-w-0"><p class="text-sm font-medium text-foreground">${en.n}</p><p class="text-xs text-muted-foreground">Vacation · ${fmtShort(en.s)} → ${fmtShort(en.e)}</p></div>
+        </div>
+        ${badge(en.pending ? "pending_approval" : "approved")}
+      </div>`).join("");
+    const timeline = [
+      { title: "Submitted", when: "11/9/2026, 3:42:10 PM", by: "staff" },
+      ...(pending ? [] : [{ title: req1.status === "approved" ? "Approved" : "Rejected", when: req1.decidedAt, by: "manager" }]),
+    ];
+    return `
+    <div class="max-w-3xl mx-auto space-y-6">
+      <div class="flex items-center gap-3">
+        <button type="button" class="${BTN} h-10 w-10 hover:bg-accent hover:text-accent-foreground" aria-label="Back">${svg(P.arrowLeft)}</button>
+        <div class="flex-1 min-w-0">
+          <h1 class="text-2xl font-bold text-foreground capitalize">Vacation Request</h1>
+          <p class="text-sm text-muted-foreground">Jordan Lee</p>
+        </div>
+        ${badge(req1.status)}
+      </div>
+
+      <div class="${CARD}">
+        ${cardHead(svg(P.calendar) + "Request Details", "", "flex items-center gap-2")}
+        <div class="p-6 pt-0 space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><p class="text-xs text-muted-foreground uppercase tracking-wider">Type</p><p class="font-medium capitalize text-foreground">vacation</p></div>
+            <div><p class="text-xs text-muted-foreground uppercase tracking-wider">Dates</p><p class="font-medium text-foreground">2026-12-21 → 2026-12-24</p></div>
+            <div><p class="text-xs text-muted-foreground uppercase tracking-wider">Submitted</p><p class="font-medium text-foreground">11/9/2026, 3:42:10 PM</p></div>
+            <div class="col-span-2"><p class="text-xs text-muted-foreground uppercase tracking-wider">Note</p><p class="text-foreground">Visiting family in Vancouver</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="${CARD}" data-focus>
+        ${cardHead(svg(P.users) + "Who else is off", "Approved and pending vacation from Dec 21 to Dec 24", "flex items-center gap-2")}
+        <div class="p-6 pt-0 space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-2" data-changed>${dayCells}</div>
+          <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-primary/60"></span>Approved</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-warning"></span>Pending</span>
+          </div>
+          <div class="space-y-2">${rows}</div>
+          <p class="text-sm text-muted-foreground">Busiest: <strong class="text-foreground">${w.most} of ${PEOPLE.length} people</strong> off on ${joinAnd(w.busiest)}${pending ? " if you approve this one" : ""}.</p>
+        </div>
+      </div>
+
+      ${pending ? `
+      <div class="${CARD} border-primary/30">
+        ${cardHead("Your Decision")}
+        <div class="p-6 pt-0 space-y-3">
+          <p class="text-sm text-muted-foreground">Approving adds this to the shared calendar and notifies Jordan Lee in Slack. You can also use the buttons in your Slack message — either place does the same thing.</p>
+          <div class="flex flex-wrap gap-3">
+            <button id="approveBtn" type="button" class="${BTN_PRIMARY} flex-1">${svg(P.checkCircle, "h-4 w-4 mr-2")}Approve</button>
+            <button id="rejectBtn" type="button" class="${BTN_DESTRUCTIVE} flex-1">${svg(P.xCircle, "h-4 w-4 mr-2")}Reject</button>
+          </div>
+        </div>
+      </div>` : ""}
+
+      <div class="${CARD}">
+        ${cardHead("Activity Timeline")}
+        <div class="p-6 pt-0"><div class="space-y-4">
+          ${timeline.map((t) => `<div class="flex flex-wrap gap-3"><div class="w-2 h-2 mt-2 rounded-full bg-primary shrink-0"></div><div><p class="text-sm font-medium text-foreground">${t.title}</p><p class="text-xs text-muted-foreground">${t.when} · by ${t.by}</p></div></div>`).join("")}
+        </div></div>
+      </div>
+    </div>`;
+  }
+  function wireRequest() {
+    const decide = (status) => { req1.status = status; req1.decidedAt = "11/11/2026, 10:15:32 AM"; toast(status === "approved" ? "Request approved." : "Request rejected."); render(false); };
+    const a = $("approveBtn"), r = $("rejectBtn");
+    if (a) a.onclick = () => decide("approved");
+    if (r) r.onclick = () => decide("rejected");
+  }
+
+  // ---------- Slack screens ----------
+  function slackWindow(active, title, body) {
+    const item = (key, label, icon) => `<div class="flex items-center gap-2 px-4 py-1 text-[15px] ${key === active ? "s-active font-bold" : ""}">${icon}<span class="truncate">${label}</span></div>`;
+    const hashI = svg(P.hash, "h-3.5 w-3.5 shrink-0 opacity-80");
+    const appI = `<span class="h-4 w-4 rounded-sm slack-icon inline-flex items-center justify-center shrink-0">${svg(P.calendar, "h-2.5 w-2.5")}</span>`;
+    return `
+    <div class="gutter py-6">
+      <div class="max-w-4xl mx-auto slack rounded-lg overflow-hidden flex shadow-sm">
+        <aside class="hidden md:flex w-56 shrink-0 flex-col slack-side py-3">
+          <p class="px-4 pb-3 text-[17px] font-black">Company workspace</p>
+          <p class="px-4 pt-2 pb-1 text-[13px] opacity-80">Channels</p>
+          ${item("general", "general", hashI)}${item("office", "office", hashI)}${item("announcements", "announcements", hashI)}
+          <p class="px-4 pt-4 pb-1 text-[13px] opacity-80">Apps</p>
+          ${item("app", "Time Off Manager", appI)}
+        </aside>
+        <div class="flex-1 min-w-0 flex flex-col">
+          <div class="px-4 py-3 border-b s-border font-black text-[17px] flex items-center gap-2">${title}</div>
+          <div class="px-4 py-5 space-y-5">${body}</div>
+          <div class="px-4 pb-4"><div class="rounded-lg border s-border px-3 py-2.5 text-[15px] s-muted">Message ${title.replace(/<[^>]+>/g, "")}</div></div>
+        </div>
+      </div>
+    </div>`;
+  }
+  function slackMsg(time, inner, focus) {
+    return `
+    <div class="flex gap-2"${focus ? " data-focus" : ""}>
+      <div class="h-9 w-9 rounded-md slack-icon shrink-0 flex items-center justify-center">${svg(P.calendar, "h-5 w-5")}</div>
+      <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-baseline gap-x-2"><span class="font-black text-[15px]">Time Off Manager</span><span class="slack-tag">APP</span><span class="text-xs s-muted">${time}</span></div>
+        <div class="text-[15px] leading-[22px] break-words">${inner}</div>
+      </div>
+    </div>`;
+  }
+
+  const slack1 = { decided: null };
+  function slackApproval() {
+    const w = whoElse(JORDAN);
+    const also = w.others.map((en) => `• ${en.n}: Vacation, ${en.pending ? "pending" : "approved"} (${fmtShort(en.s)} → ${fmtShort(en.e)})`).join("<br>");
+    const actions = slack1.decided
+      ? `<p class="mt-2 text-[13px] s-muted">${slack1.decided === "approved" ? "✅ Approved" : "❌ Rejected"} by David Chen</p>`
+      : `<div class="mt-2 flex flex-wrap gap-2"><button id="slackApprove" type="button" class="slack-btn slack-green">✅ Approve</button><button id="slackReject" type="button" class="slack-btn slack-red">❌ Reject</button></div>`;
+    const inner = `
+      <b>New 🏖️ Vacation Request</b><br>
+      <b>From:</b> Jordan Lee<br>
+      <b>Date(s):</b> 2026-12-21 → 2026-12-24<br>
+      <b>Note:</b> Visiting family in Vancouver
+      <div class="mt-2" data-focus>
+        <b>Also off those days:</b><br>${also}<br>
+        <i class="s-muted">Busiest: ${w.most} of ${PEOPLE.length} people off on ${joinAnd(w.busiest)} if you approve.</i>
+      </div>
+      ${actions}`;
+    return slackWindow("app", `<span class="slack-icon h-5 w-5 rounded inline-flex items-center justify-center">${svg(P.calendar, "h-3 w-3")}</span>Time Off Manager`,
+      `<div class="slack-day s-muted">Monday, November 9th</div>` + slackMsg("3:42 PM", inner, false));
+  }
+  function wireSlackApproval() {
+    const a = $("slackApprove"), r = $("slackReject");
+    if (a) a.onclick = () => { slack1.decided = "approved"; render(false); };
+    if (r) r.onclick = () => { slack1.decided = "rejected"; render(false); };
+  }
+
+  // Idea 4: daily post.
+  const post = { on: true, channel: "#general", time: "8:00 AM", later: true };
+  function slackChannel() {
+    const ch = post.channel.replace(/^#/, "") || "general";
+    const later = (txt) => post.later ? `<div class="mt-2"><b>Later this week</b><br>${txt}</div>` : "";
+    const ctx = `<p class="mt-2 text-[13px] s-muted">Posted every weekday at ${esc(post.time)} · approved time off only</p>`;
+    const yesterday = `<b>Out today · Tuesday, November 10</b><br>• Priya Shah: Vacation, back Monday, November 16${later("• David Chen: Friday, November 13, afternoon off")}${ctx}`;
+    const today = `<b>Out today · Wednesday, November 11</b><br>• Priya Shah: Vacation, back Monday, November 16<br>• Sam Patel: Sick day, morning<br>• Jordan Lee: Flexible time, 1:00 – 3:00 PM${later("• David Chen: Friday, November 13, afternoon off")}${ctx}`;
+    const human = `
+      <div class="flex gap-2">
+        <div class="h-9 w-9 rounded-md bg-primary/10 text-primary shrink-0 flex items-center justify-center text-sm font-bold">N</div>
+        <div class="min-w-0 flex-1"><div class="flex flex-wrap items-baseline gap-x-2"><span class="font-black text-[15px]">Nadia Rahman</span><span class="text-xs s-muted">4:51 PM</span></div>
+        <div class="text-[15px] leading-[22px]">Reminder: the kitchen gets cleaned out Friday at 3.</div></div>
+      </div>`;
+    const body = post.on
+      ? `<div class="slack-day s-muted">Tuesday, November 10th</div>${slackMsg(esc(post.time), yesterday, false)}${human}<div class="slack-day s-muted">Today</div>${slackMsg(esc(post.time), today, true)}`
+      : `<div class="slack-day s-muted">Tuesday, November 10th</div>${human}<p class="text-[15px] s-muted" data-focus>No "Out today" posts. The daily post is turned off in Admin Settings.</p>`;
+    return slackWindow("general", `${svg(P.hash, "h-4 w-4")}${esc(ch)}`, body);
+  }
+
+  // ---------- Admin Settings ----------
+  const adminState = { calId: "c_9f2e1a7b3d@group.calendar.google.com", calTest: false, anchor: "2025-01-06", slackTest: false };
+  function sw(id, on, label) { return `<button id="${id}" type="button" role="switch" aria-checked="${on}" class="switch" aria-label="${label}"></button>`; }
+  function postCard() {
+    const times = ["7:00 AM", "7:30 AM", "8:00 AM", "8:30 AM", "9:00 AM"].map((t) => [t, t]);
+    return `
+    <div class="${CARD}" data-focus>
+      ${cardHead('Daily "Out today" post', "Post who's away in a Slack channel every weekday morning")}
+      <div class="p-6 pt-0 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div><p class="text-sm font-medium text-foreground">Post every weekday</p><p class="text-xs text-muted-foreground">Monday to Friday, approved time off only</p></div>
+          ${sw("postOn", post.on, "Post every weekday")}
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="space-y-2 min-w-0"><label class="${LABEL}" for="postChannel">Channel</label><input id="postChannel" class="${INPUT}" value="${esc(post.channel)}"></div>
+          <div class="space-y-2 min-w-0"><label class="${LABEL}" for="postTime">Time</label>${selectBox("postTime", times, post.time)}</div>
+        </div>
+        <div class="flex items-center gap-3"><input id="postLater" type="checkbox" class="cbx"${post.later ? " checked" : ""}><label for="postLater" class="text-sm font-medium leading-none cursor-pointer">Also list time off later this week</label></div>
+        <div class="flex flex-wrap gap-2">
+          <button id="postSave" type="button" class="${BTN_PRIMARY}">Save</button>
+          <button id="postTest" type="button" class="${BTN_OUTLINE}">Send a test post</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  function blockedRows() {
+    if (!limits.blocked.length) return `<p class="text-sm text-muted-foreground">No blocked dates.</p>`;
+    return limits.blocked.map((b, i) => `
+      <div class="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border border-border bg-card">
+        <div class="min-w-0"><p class="text-sm font-medium text-foreground">${fmtRange(b.s, b.e)}</p><p class="text-xs text-muted-foreground">${esc(b.reason)}</p></div>
+        <button type="button" data-remove="${i}" class="${BTN} h-9 px-3 hover:bg-accent hover:text-accent-foreground">Remove</button>
+      </div>`).join("");
+  }
+  function limitsCard() {
+    return `
+    <div class="${CARD}" data-focus>
+      ${cardHead("Team limits", "Stop too many people from being off at the same time")}
+      <div class="p-6 pt-0 space-y-5">
+        <div class="space-y-2">
+          <label class="${LABEL}" for="maxOff">Most people off at once</label>
+          <div class="flex items-center gap-2"><input id="maxOff" type="number" min="1" max="50" inputmode="numeric" class="${INPUT} w-24" value="${limits.max || ""}"><span class="text-sm text-muted-foreground">people</span></div>
+          <p class="text-xs text-muted-foreground">Counts approved and pending vacation. Leave empty for no limit.</p>
+        </div>
+        <div class="space-y-2">
+          <p class="${LABEL}">Blocked dates</p>
+          <div id="blockedList" class="space-y-2">${blockedRows()}</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[1fr_1fr_1.5fr_auto] gap-2 items-end pt-1">
+            <div class="space-y-1 min-w-0"><label class="text-xs text-muted-foreground" for="blkFrom">From</label><input id="blkFrom" type="date" class="${INPUT}"></div>
+            <div class="space-y-1 min-w-0"><label class="text-xs text-muted-foreground" for="blkTo">To</label><input id="blkTo" type="date" class="${INPUT}"></div>
+            <div class="space-y-1 min-w-0"><label class="text-xs text-muted-foreground" for="blkReason">Reason</label><input id="blkReason" class="${INPUT}" placeholder="e.g. Trade show week"></div>
+            <button id="blkAdd" type="button" class="${BTN_OUTLINE}">${svg(P.plus)}Add</button>
+          </div>
+          <p id="blkErr" class="text-sm text-destructive" hidden></p>
+        </div>
+        <div class="space-y-2">
+          <label class="text-sm font-medium leading-snug block" for="limitMode" data-changed>When a request hits a blocked date or the limit</label>
+          ${selectBox("limitMode", [["warn", "Warn them, manager decides"], ["block", "Don't let them submit"]], limits.mode)}
+        </div>
+        <button id="limitsSave" type="button" class="${BTN_PRIMARY}">Save</button>
+      </div>
+    </div>`;
+  }
+  function adminPage(variant) {
+    return `
+    <div class="max-w-3xl mx-auto space-y-6">
+      <div>
+        <h1 class="text-2xl font-bold text-foreground">Admin Settings</h1>
+        <p class="text-muted-foreground">Configure integrations and app behavior</p>
+      </div>
+      <div class="${CARD}">
+        ${cardHead("Google Calendar", "Configure the shared Google Calendar for approved time off")}
+        <div class="p-6 pt-0 space-y-4">
+          <div class="space-y-2">
+            <label class="${LABEL}" for="calId">Shared Calendar ID</label>
+            <div class="flex flex-wrap gap-2"><input id="calId" class="${INPUT} flex-1 min-w-0" value="${esc(adminState.calId)}" placeholder="example@group.calendar.google.com"><button type="button" data-save="google_calendar_id" class="${BTN_PRIMARY}">Save</button></div>
+          </div>
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div><p class="text-sm font-medium text-foreground">Test Mode</p><p class="text-xs text-muted-foreground">Log calendar actions without actually syncing</p></div>
+            ${sw("calTest", adminState.calTest, "Calendar test mode")}
+          </div>
+        </div>
+      </div>
+      <div class="${CARD}">
+        ${cardHead("Pay Period", "Configure bi-weekly pay period anchor for flexible time requests")}
+        <div class="p-6 pt-0 space-y-4"><div class="space-y-2">
+          <label class="${LABEL}" for="anchor">Anchor Date (start of any known pay period)</label>
+          <div class="flex flex-wrap gap-2"><input id="anchor" type="date" class="${INPUT} flex-1 min-w-0" value="${adminState.anchor}"><button type="button" data-save="pay_period_anchor_date" class="${BTN_PRIMARY}">Save</button></div>
+          <p class="text-xs text-muted-foreground">Example: 2025-01-06. The system calculates all 2-week pay periods from this anchor date.</p>
+        </div></div>
+      </div>
+      <div class="${CARD}">
+        ${cardHead("Slack Integration", "Configure Slack notifications and approvals")}
+        <div class="p-6 pt-0 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div><p class="text-sm font-medium text-foreground">Test Mode</p><p class="text-xs text-muted-foreground">Log Slack messages without sending</p></div>
+            ${sw("slackTest", adminState.slackTest, "Slack test mode")}
+          </div>
+          <p class="text-xs text-muted-foreground">Slack bot token and signing secret are configured via environment secrets. User Slack IDs are managed in User Management.</p>
+        </div>
+      </div>
+      ${variant === "post" ? postCard() : ""}
+      ${variant === "limits" ? limitsCard() : ""}
+    </div>`;
+  }
+  function wireSwitch(id, get, set, key) {
+    const el = $(id);
+    if (!el) return;
+    el.onclick = () => { const on = !get(); set(on); el.setAttribute("aria-checked", String(on)); if (key) toast(`Setting "${key}" saved.`); };
+  }
+  function wireAdmin(variant) {
+    document.querySelectorAll("[data-save]").forEach((b) => { b.onclick = () => toast(`Setting "${b.dataset.save}" saved.`); });
+    $("calId").oninput = (e) => { adminState.calId = e.target.value; };
+    $("anchor").onchange = (e) => { adminState.anchor = e.target.value; };
+    wireSwitch("calTest", () => adminState.calTest, (v) => { adminState.calTest = v; }, "calendar_test_mode");
+    wireSwitch("slackTest", () => adminState.slackTest, (v) => { adminState.slackTest = v; }, "slack_test_mode");
+    if (variant === "post") {
+      wireSwitch("postOn", () => post.on, (v) => { post.on = v; }, null);
+      $("postChannel").oninput = (e) => { post.channel = e.target.value.trim(); };
+      $("postTime").onchange = (e) => { post.time = e.target.value; };
+      $("postLater").onchange = (e) => { post.later = e.target.checked; };
+      $("postSave").onclick = () => toast('Setting "out_today_post" saved.');
+      $("postTest").onclick = () => toast(`Test post sent to ${post.channel || "#general"}.`);
+    }
+    if (variant === "limits") {
+      const wireRemove = () => document.querySelectorAll("[data-remove]").forEach((b) => {
+        b.onclick = () => { limits.blocked.splice(Number(b.dataset.remove), 1); $("blockedList").innerHTML = blockedRows(); wireRemove(); };
+      });
+      wireRemove();
+      $("maxOff").oninput = (e) => { const n = parseInt(e.target.value, 10); limits.max = n > 0 ? n : 0; };
+      $("limitMode").onchange = (e) => { limits.mode = e.target.value; };
+      $("blkAdd").onclick = () => {
+        const s = $("blkFrom").value, e = $("blkTo").value, reason = $("blkReason").value.trim();
+        const err = !s || !e ? "Pick a start and end date." : s > e ? "The end date must be on or after the start date." : !reason ? "Add a reason so people know why." : "";
+        setErr("blkErr", err);
+        if (err) return;
+        limits.blocked.push({ s, e, reason });
+        limits.blocked.sort((a, b) => a.s.localeCompare(b.s));
+        $("blockedList").innerHTML = blockedRows(); wireRemove();
+        $("blkFrom").value = ""; $("blkTo").value = ""; $("blkReason").value = "";
+      };
+      $("limitsSave").onclick = () => toast('Setting "team_limits" saved.');
+    }
+  }
+
+  // ---------- Idea 6: Manager View + export ----------
+  let mgrFilter = "pending_approval";
+  function mgrRows() {
+    return ENTRIES.map((en) => ({
+      name: en.n,
+      typeLabel: en.k === "vac" ? "Vacation" : en.k === "sick" ? "Sick Day" : "Flexible Time",
+      status: en.pending ? "pending_approval" : "approved",
+      auto: en.k === "sick",
+      detail: en.k === "vac" ? `${en.s} → ${en.e}` : en.k === "sick" ? en.s : `${en.s} · ${en.st} – ${en.et} · ${en.h}h`,
+      sub: en.sub,
+    })).filter((r) => mgrFilter === "all" || r.status === mgrFilter).sort((a, b) => b.sub.localeCompare(a.sub));
+  }
+  function managerPage() {
+    const rows = mgrRows();
+    const list = rows.length ? `<div class="space-y-2">${rows.map((r) => `
+      <a href="#" onclick="return false" class="flex items-center justify-between gap-2 p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2 mb-1"><span class="font-medium text-foreground">${r.name}</span><span class="text-sm text-muted-foreground">· ${r.typeLabel}</span>${badge(r.status, r.auto)}</div>
+          <p class="text-sm text-muted-foreground">${r.detail}</p>
+        </div>
+        <span class="text-xs text-muted-foreground shrink-0">${shortDate(r.sub)}</span>
+      </a>`).join("")}</div>` : `<p class="text-sm text-muted-foreground">No requests found.</p>`;
+    const filters = [["pending_approval", "Pending Approval"], ["approved", "Approved"], ["rejected", "Rejected"], ["cancelled", "Cancelled"], ["completed", "Completed"], ["incomplete", "Incomplete"], ["all", "All Statuses"]];
+    return `
+    <div class="max-w-5xl mx-auto space-y-6">
+      <div><div class="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 class="text-2xl font-bold text-foreground">Manager Dashboard</h1>
+          <p class="text-muted-foreground">Review team time off requests. Open a request to approve or reject it, or use the buttons in your Slack message.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button id="exportBtn" type="button" class="${BTN_OUTLINE}" data-focus>${svg(P.download)}Export CSV</button>
+          <button type="button" class="${BTN_PRIMARY}">${svg(P.userPlus)}Submit for Staff</button>
+        </div>
+      </div></div>
+      <div class="flex flex-wrap gap-3">${selectBox("statusFilter", filters, mgrFilter, "w-48")}</div>
+      <div class="${CARD}"><div class="p-6 pt-6">${list}</div></div>
+    </div>`;
+  }
+
+  const exp = { period: "this", from: "", to: "", vac: true, sick: true, flex: true, approvedOnly: true };
+  function payPeriod(offset) {
+    const anchor = parse(adminState.anchor || "2025-01-06");
+    const days = Math.round((parse(TODAY) - anchor) / 86400000);
+    const s = addDays(anchor, (Math.floor(days / 14) + offset) * 14);
+    return [iso(s), iso(addDays(s, 13))];
+  }
+  function expRange() {
+    if (exp.period === "this") return payPeriod(0);
+    if (exp.period === "last") return payPeriod(-1);
+    if (exp.period === "month") return ["2026-11-01", "2026-11-30"];
+    if (exp.period === "year") return ["2026-01-01", "2026-12-31"];
+    return [exp.from, exp.to];
+  }
+  function expTable() {
+    const [from, to] = expRange();
+    if (!from || !to || from > to) return { err: "Pick a start date on or before the end date." };
+    const rows = PEOPLE.map((name) => ({ name, vac: 0, sick: 0, flex: 0 }));
+    for (const en of ENTRIES) {
+      if (exp.approvedOnly && en.pending) continue;
+      const row = rows.find((r) => r.name === en.n);
+      entryDays(en, from, to, (s, a) => { row[en.k] += a; });
+    }
+    // [key, short header for phones, full header]
+    const cols = [["vac", "Vacation", "Vacation days"], ["sick", "Sick", "Sick days"], ["flex", "Flex hrs", "Flexible hours"]].filter(([k]) => exp[k]);
+    const total = (k) => rows.reduce((t, r) => t + r[k], 0);
+    const th = "px-2 sm:px-3 py-2 font-medium text-muted-foreground whitespace-nowrap";
+    const td = "px-2 sm:px-3 py-2";
+    const html = `
+      <table class="w-full text-sm tabular-nums">
+        <thead class="border-b border-border"><tr><th class="${th} text-left">Name</th>${cols.map(([, s, l]) => `<th class="${th} text-right"><span class="sm:hidden">${s}</span><span class="hidden sm:inline">${l}</span></th>`).join("")}</tr></thead>
+        <tbody>${rows.map((r) => `<tr class="border-b border-border"><td class="${td} text-foreground">${r.name}</td>${cols.map(([k]) => `<td class="${td} text-right ${r[k] ? "text-foreground" : "text-muted-foreground"}">${num(r[k])}</td>`).join("")}</tr>`).join("")}</tbody>
+        <tfoot><tr><td class="${td} font-semibold text-foreground">Total</td>${cols.map(([k]) => `<td class="${td} text-right font-semibold text-foreground">${num(total(k))}</td>`).join("")}</tr></tfoot>
+      </table>`;
+    return { html, file: `time-off-${from}-to-${to}.csv`, cols: cols.length };
+  }
+  function openExport() {
+    const [ts, te] = payPeriod(0), [ls, le] = payPeriod(-1);
+    if (!exp.from) { exp.from = ts; exp.to = te; }
+    const periods = [
+      ["this", `This pay period (${fmtShort(ts)} – ${fmtShort(te)})`],
+      ["last", `Last pay period (${fmtShort(ls)} – ${fmtShort(le)})`],
+      ["month", "This month (November 2026)"],
+      ["year", "This year (2026)"],
+      ["custom", "Custom dates"],
+    ];
+    const cb = (id, key, label) => `<div class="flex items-center gap-2"><input id="${id}" type="checkbox" class="cbx"${exp[key] ? " checked" : ""}><label for="${id}" class="text-sm font-medium leading-none cursor-pointer">${label}</label></div>`;
+    $("dialogRoot").innerHTML = `
+      <div id="dlgOverlay" class="fixed inset-0 z-50 bg-black/80"></div>
+      <div role="dialog" aria-modal="true" aria-labelledby="dlgTitle" class="fixed left-1/2 top-1/2 z-50 grid grid-cols-1 w-[calc(100%-32px)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 border border-border bg-background p-4 sm:p-6 shadow-lg rounded-lg max-h-[calc(100dvh-32px)] overflow-y-auto" data-changed>
+        <div class="flex flex-col space-y-1.5 text-center sm:text-left px-6 sm:px-0 sm:pr-6 min-w-0">
+          <h2 id="dlgTitle" class="text-lg font-semibold leading-none tracking-tight text-foreground">Export time off</h2>
+          <p class="text-sm text-muted-foreground">Download days used per person as a CSV file for payroll.</p>
+        </div>
+        <div class="space-y-2 min-w-0"><label class="${LABEL}" for="expPeriod">Period</label>${selectBox("expPeriod", periods, exp.period)}</div>
+        <div id="expCustom" class="grid grid-cols-1 sm:grid-cols-2 gap-3"${exp.period === "custom" ? "" : " hidden"}>
+          <div class="space-y-2 min-w-0"><label class="${LABEL}" for="expFrom">From</label><input id="expFrom" type="date" class="${INPUT}" value="${exp.from}"></div>
+          <div class="space-y-2 min-w-0"><label class="${LABEL}" for="expTo">To</label><input id="expTo" type="date" class="${INPUT}" value="${exp.to}"></div>
+        </div>
+        <div class="space-y-2 min-w-0"><p class="${LABEL}">Include</p><div class="flex flex-wrap gap-x-5 gap-y-3">${cb("expVac", "vac", "Vacation")}${cb("expSick", "sick", "Sick days")}${cb("expFlex", "flex", "Flexible time")}</div></div>
+        ${cb("expApproved", "approvedOnly", "Only approved requests")}
+        <div id="expPreview" class="min-w-0"></div>
+        <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+          <button id="expCancel" type="button" class="${BTN_GHOST}">Cancel</button>
+          <button id="expDownload" type="button" class="${BTN_PRIMARY}">${svg(P.download)}Download CSV</button>
+        </div>
+        <button id="expClose" type="button" class="absolute right-3 top-3 sm:right-4 sm:top-4 h-8 w-8 inline-flex items-center justify-center rounded-sm opacity-70 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Close">${svg(P.x)}</button>
+      </div>`;
+    const refresh = () => {
+      const t = expTable();
+      $("expCustom").hidden = exp.period !== "custom";
+      const ok = !t.err && t.cols > 0;
+      $("expPreview").innerHTML = t.err
+        ? `<p class="text-sm text-destructive">${t.err}</p>`
+        : t.cols === 0 ? `<p class="text-sm text-destructive">Tick at least one type to include.</p>`
+        : `<div class="rounded-md border border-border overflow-x-auto">${t.html}</div><p class="text-xs text-muted-foreground mt-2 break-all">${t.file}</p>`;
+      $("expDownload").disabled = !ok;
+      $("expDownload").dataset.file = ok ? t.file : "";
+    };
+    const close = () => { $("dialogRoot").innerHTML = ""; document.removeEventListener("keydown", onKey); const b = $("exportBtn"); if (b) b.focus(); };
+    const onKey = (e) => { if (e.key === "Escape") close(); };
+    document.addEventListener("keydown", onKey);
+    $("dlgOverlay").onclick = close;
+    $("expClose").onclick = close;
+    $("expCancel").onclick = close;
+    $("expPeriod").onchange = (e) => { exp.period = e.target.value; refresh(); };
+    $("expFrom").onchange = (e) => { exp.from = e.target.value; refresh(); };
+    $("expTo").onchange = (e) => { exp.to = e.target.value; refresh(); };
+    [["expVac", "vac"], ["expSick", "sick"], ["expFlex", "flex"], ["expApproved", "approvedOnly"]].forEach(([id, key]) => { $(id).onchange = (e) => { exp[key] = e.target.checked; refresh(); }; });
+    $("expDownload").onclick = () => { const f = $("expDownload").dataset.file; close(); toast(`Downloaded ${f}`); };
+    refresh();
+    $("expPeriod").focus();
+  }
+  function wireManager() {
+    $("statusFilter").onchange = (e) => { mgrFilter = e.target.value; render(false); };
+    $("exportBtn").onclick = openExport;
+  }
+
+  // ---------- Ideas and screens ----------
+  const PROPOSALS = [
+    { id: "who-is-off", name: "Who else is off", line: "Managers see who else is off on those dates, on the request page and in the Slack approval message.",
+      screens: [
+        { id: "request", label: "Request page", hint: "Try it: approve or reject. The “Who else is off” card is the idea." },
+        { id: "slack-approval", label: "Slack approval message", hint: "Try it: tap Approve. The “Also off those days” part is the idea." },
+      ] },
+    { id: "holidays", name: "Stat holidays", line: "Ontario stat holidays aren't counted as vacation days, and the return date skips them.",
+      screens: [{ id: "form-holidays", label: "New Request form", hint: "Try it: change the dates. Today the app counts Dec 21 – Jan 4 as 11 days and asks for special approval. With holidays left out it's 8." }] },
+    { id: "days-left", name: "Days left", line: "Each person sees how many vacation days they have used, booked and left this year.",
+      screens: [{ id: "days-left", label: "Time Off page", hint: "Try it: change the dates or submit. Sample allowance: 15 vacation days a year." }] },
+    { id: "slack-post", name: "Daily Slack post", line: "Every weekday morning, Slack gets an “Out today” post listing who's away.",
+      screens: [
+        { id: "slack-channel", label: "Slack channel", hint: "Sample posts for Tuesday and today, Wednesday, November 11." },
+        { id: "admin-post", label: "Admin Settings", hint: "Try it: change the time or channel, or switch it off, then open the Slack channel screen." },
+      ] },
+    { id: "team-limits", name: "Team limits", line: "Admins block busy dates and set the most people off at once. The request form warns before submit.",
+      screens: [
+        { id: "form-limits", label: "New Request form", hint: "Try it: change the dates. Dec 14 – 18 is blocked, and 2 people are already off on Dec 16 and 17." },
+        { id: "admin-limits", label: "Admin Settings", hint: "Try it: add or remove blocked dates, change the limit or the rule, then open the New Request form." },
+      ] },
+    { id: "payroll-export", name: "Payroll export", line: "Managers download a CSV of days used per person for any pay period.",
+      screens: [{ id: "export", label: "Manager View", hint: "Try it: tap Export CSV and switch the period." }] },
+  ];
+  const SCREENS = {
+    "request": { html: () => shell(ADMIN, "manager", requestPage()), wire: wireRequest },
+    "slack-approval": { html: slackApproval, wire: wireSlackApproval },
+    "form-holidays": { html: () => shell(STAFF, "timeoff", timeOffPage("holidays")), wire: () => wireForm("holidays") },
+    "days-left": { html: () => shell(STAFF, "timeoff", timeOffPage("days-left")), wire: () => wireForm("days-left") },
+    "slack-channel": { html: slackChannel },
+    "admin-post": { html: () => shell(ADMIN, "settings", adminPage("post"), { adminBg: true }), wire: () => wireAdmin("post") },
+    "form-limits": { html: () => shell(STAFF, "timeoff", timeOffPage("limits")), wire: () => wireForm("limits") },
+    "admin-limits": { html: () => shell(ADMIN, "settings", adminPage("limits"), { adminBg: true }), wire: () => wireAdmin("limits") },
+    "export": { html: () => shell(ADMIN, "manager", managerPage()), wire: wireManager },
+  };
+  const screenIdx = {};
+  function fromHash() { const h = (location.hash || "").slice(1); return PROPOSALS.some((p) => p.id === h) ? h : PROPOSALS[0].id; }
+  let current = fromHash();
+
+  function renderStrip() {
+    // Desktop list
+    $("propList").innerHTML = PROPOSALS.map((p, i) => {
+      const on = p.id === current;
+      return `<button type="button" data-prop="${p.id}" ${on ? 'aria-current="true"' : ""} class="flex items-start gap-2 w-full text-left rounded-md px-2 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${on ? "bg-accent" : "hover:bg-accent/60"}">
+        <span class="mt-0.5 h-5 w-5 shrink-0 rounded-full text-xs font-semibold inline-flex items-center justify-center ${on ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}">${i + 1}</span>
+        <span class="min-w-0"><span class="font-medium text-foreground">${p.name}</span><span class="text-muted-foreground"> · ${p.line}</span></span>
+      </button>`;
+    }).join("");
+    document.querySelectorAll("[data-prop]").forEach((b) => { b.onclick = () => go(b.dataset.prop); });
+    // Phone dropdown
+    const p = PROPOSALS.find((x) => x.id === current);
+    const sel = $("ideaSelect");
+    sel.innerHTML = PROPOSALS.map((x, i) => `<option value="${x.id}"${x.id === current ? " selected" : ""}>${i + 1} · ${x.name}</option>`).join("");
+    sel.onchange = (e) => go(e.target.value);
+    $("ideaLine").textContent = p.line;
+    // Screens
+    const idx = screenIdx[p.id] || 0;
+    $("screenRow").innerHTML = p.screens.length > 1
+      ? `<span class="text-muted-foreground">Screen:</span><div class="inline-flex flex-wrap items-center rounded-md bg-muted p-1 text-muted-foreground gap-1">${p.screens.map((s, i) => `<button type="button" data-screen="${i}" class="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${i === idx ? "bg-background text-foreground shadow-sm" : "hover:text-foreground"}" aria-pressed="${i === idx}">${s.label}</button>`).join("")}</div>`
+      : `<span class="text-muted-foreground">Screen:</span><span class="font-medium text-foreground">${p.screens[0].label}</span>`;
+    document.querySelectorAll("[data-screen]").forEach((b) => { b.onclick = () => { screenIdx[p.id] = Number(b.dataset.screen); render(true); }; });
+    $("tryHint").textContent = p.screens[idx].hint;
+  }
+
+  function render(scroll) {
+    renderStrip();
+    $("dialogRoot").innerHTML = "";
+    const p = PROPOSALS.find((x) => x.id === current);
+    const scr = p.screens[screenIdx[p.id] || 0];
+    const s = SCREENS[scr.id];
+    $("app").innerHTML = s.html();
+    if (s.wire) s.wire();
+    if (scroll) {
+      // Jump to where the idea lives on this screen.
+      const el = $("app").querySelector("[data-focus]:not([hidden])");
+      if (el) {
+        const tall = el.getBoundingClientRect().height > window.innerHeight * 0.6;
+        el.scrollIntoView({ block: tall ? "start" : "center", behavior: REDUCED ? "auto" : "smooth" });
+      }
+    }
+  }
+  function go(id) {
+    if (id !== current) { current = id; render(true); }
+    else render(true);
+    try { if (location.hash.slice(1) !== id) location.hash = id; } catch (e) { /* hash not available */ }
+  }
+  window.addEventListener("hashchange", () => { const h = fromHash(); if (h !== current) { current = h; render(true); } });
+
+  let toastTimer;
+  function toast(msg) {
+    $("toastText").textContent = msg;
+    $("toast").classList.remove("hide");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => $("toast").classList.add("hide"), 3500);
+  }
+
+  $("outlineToggle").onclick = () => {
+    const on = $("outlineToggle").getAttribute("aria-checked") !== "true";
+    $("outlineToggle").setAttribute("aria-checked", String(on));
+    document.body.classList.toggle("show-changes", on);
+  };
+  document.body.classList.add("show-changes");
+  // "What changed" starts open on wide screens and folded on phones.
+  if (window.matchMedia && window.matchMedia("(min-width: 768px)").matches) $("changesBox").open = true;
+
+  render(false);
+</script>

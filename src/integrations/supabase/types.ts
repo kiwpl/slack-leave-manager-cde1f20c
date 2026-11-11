@@ -62,6 +62,33 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_dates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          end_date: string
+          id: string
+          reason: string
+          start_date: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          end_date: string
+          id?: string
+          reason: string
+          start_date: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          end_date?: string
+          id?: string
+          reason?: string
+          start_date?: string
+        }
+        Relationships: []
+      }
       calendar_sync_logs: {
         Row: {
           action_type: Database["public"]["Enums"]["calendar_action_type"]
@@ -461,6 +488,13 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      people_off_per_day: {
+        Args: { _end: string; _start: string }
+        Returns: {
+          day: string
+          people: number
+        }[]
       }
     }
     Enums: {

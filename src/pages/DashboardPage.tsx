@@ -20,6 +20,8 @@ import { AlertCircle, AlertTriangle, Plus, ChevronDown, ChevronUp, Clock } from 
 import type { Tables } from "@/integrations/supabase/types";
 import { isWithin30Days } from "@/lib/specialApproval";
 import SpecialApprovalBadge from "@/components/SpecialApprovalBadge";
+import TimeOffSummaryCard, { dayAmounts, fmtDays, yearTotals } from "@/components/TimeOffSummaryCard";
+import TeamLimitsAlert, { useTeamLimitCheck } from "@/components/TeamLimitsAlert";
 
 type Request = Tables<"time_off_requests">;
 
@@ -60,6 +62,12 @@ export default function DashboardPage() {
   const hasSlackId = !!profile?.slack_user_id;
   const isOneDay = !!startDate && startDate === (endDate || startDate);
 
+  // Blocked dates and how full the team is (vacation only).
+  const limitCheck = useTeamLimitCheck(
+    requestType === "vacation" ? startDate : "",
+    requestType === "vacation" ? endDate : ""
+  );
+
   // A single day can't be both a morning off and an afternoon off.
   useEffect(() => {
     if (isOneDay && startHalfDay && endHalfDay) setStartHalfDay(false);
@@ -98,6 +106,9 @@ export default function DashboardPage() {
         newErrors.endDate = "End date must be on or after start date.";
       }
       if (!note.trim()) newErrors.note = "Please provide a reason for your vacation request.";
+      if (limitCheck.mode === "block" && limitCheck.hasIssues && !newErrors.endDate) {
+        newErrors.endDate = "These dates are blocked or the team is full. Pick other dates.";
+      }
     }
 
     if (requestType === "sick") {
@@ -270,6 +281,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Vacation, sick days and flexible time this year */}
+        {!loading && <TimeOffSummaryCard requests={requests} flexRequests={flexRequests} today={today} />}
+
         {/* Submit form */}
         {showForm && (
           <>
@@ -344,6 +358,26 @@ export default function DashboardPage() {
                         endDayPortion={endDayPortion}
                       />
 
+                      {/* Running total for the year this request starts in */}
+                      {requestType === "vacation" && startDate && endDate && startDate <= endDate && (() => {
+                        const year = Number(startDate.slice(0, 4));
+                        const thisRequest = dayAmounts(startDate, endDate, startDayPortion, endDayPortion)
+                          .filter((d) => d.date.startsWith(`${year}-`))
+                          .reduce((sum, d) => sum + d.amount, 0);
+                        if (!thisRequest) return null;
+                        const t = yearTotals(requests, year, today);
+                        const after = t.used + t.booked + t.waiting + thisRequest;
+                        return (
+                          <p className="text-sm text-muted-foreground">
+                            With this request, your vacation in {year} comes to{" "}
+                            <strong className="text-foreground">{fmtDays(after)} {after === 1 ? "day" : "days"}</strong>.
+                          </p>
+                        );
+                      })()}
+
+                      {/* Blocked dates / team limit */}
+                      {requestType === "vacation" && <TeamLimitsAlert check={limitCheck} />}
+
                       {requestType === "vacation" && startDate && endDate && (() => {
                         const biz = countBusinessDays(startDate, endDate);
                         const total = calcTotal(biz, startDayPortion, endDayPortion, startDate === endDate);
@@ -412,10 +446,10 @@ export default function DashboardPage() {
                       <Link
                         key={req.id}
                         to={`/flexible-time/${req.id}`}
-                        className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                        className="flex items-start md:items-center justify-between gap-3 p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
                       >
-                        <div>
-                          <div className="flex items-center gap-2 mb-0.5">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">
                             <span className="font-medium text-sm text-foreground">
                               <Clock className="h-3.5 w-3.5 inline mr-1" />
                               Flexible Time
@@ -424,7 +458,7 @@ export default function DashboardPage() {
                           </div>
                           <p className="text-xs text-muted-foreground">{formatFlexDates(req)}</p>
                         </div>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground shrink-0">
                           {new Date(req.submitted_at).toLocaleDateString()}
                         </span>
                       </Link>
@@ -435,10 +469,10 @@ export default function DashboardPage() {
                     <Link
                       key={req.id}
                       to={`/requests/${req.id}`}
-                      className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                      className="flex items-start md:items-center justify-between gap-3 p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
                     >
-                      <div>
-                        <div className="flex items-center gap-2 mb-0.5">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">
                           <span className="font-medium text-sm text-foreground capitalize">
                             {req.request_type === "vacation" ? "Vacation" : "Sick Day"}
                           </span>
@@ -447,7 +481,7 @@ export default function DashboardPage() {
                         </div>
                         <p className="text-xs text-muted-foreground">{formatRequestDates(req)}</p>
                       </div>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-muted-foreground shrink-0">
                         {new Date(req.submitted_at).toLocaleDateString()}
                       </span>
                     </Link>

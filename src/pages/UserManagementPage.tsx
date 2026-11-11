@@ -195,7 +195,7 @@ export default function UserManagementPage() {
                   <div className="flex flex-col md:flex-row md:items-center gap-4">
                     <div className="flex-1">
                       <p className="font-medium text-foreground">{u.full_name}</p>
-                      <p className="text-sm text-muted-foreground">{u.email}</p>
+                      <p className="text-sm text-muted-foreground break-all">{u.email}</p>
                       <div className="flex flex-wrap gap-1 mt-2">
                         {u.roles.map((role) => (
                           <Badge key={role} variant="outline" className="text-xs">{role}</Badge>
@@ -206,7 +206,7 @@ export default function UserManagementPage() {
                       <div className="flex items-center gap-2">
                         <Label className="text-xs whitespace-nowrap">Slack ID:</Label>
                         <Input
-                          className="w-36 h-8 text-xs"
+                          className="w-40 h-10 text-base md:w-36 md:h-8 md:text-xs"
                           defaultValue={u.slack_user_id || ""}
                           placeholder="U12345..."
                           onBlur={(e) => {
@@ -220,15 +220,15 @@ export default function UserManagementPage() {
                         {(["manager", "admin"] as Enums<"app_role">[]).map((role) => {
                           const has = u.roles.includes(role);
                           return (
-                            <Button key={role} size="sm" variant={has ? "default" : "outline"} className="text-xs h-7" onClick={() => toggleRole(u.id, role, has)}>
+                            <Button key={role} size="sm" variant={has ? "default" : "outline"} className="text-xs h-9 md:h-7" onClick={() => toggleRole(u.id, role, has)}>
                               {has ? `✓ ${role}` : `+ ${role}`}
                             </Button>
                           );
                         })}
-                        <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => openResetDialog(u)}>
+                        <Button size="sm" variant="outline" className="text-xs h-9 md:h-7" onClick={() => openResetDialog(u)}>
                           <KeyRound className="h-3 w-3 mr-1" /> Reset Password
                         </Button>
-                        <Button size="sm" variant="destructive" className="text-xs h-7" onClick={() => openDeleteDialog(u)} disabled={u.id === user?.id}>
+                        <Button size="sm" variant="destructive" className="text-xs h-9 md:h-7" onClick={() => openDeleteDialog(u)} disabled={u.id === user?.id}>
                           <Trash2 className="h-3 w-3 mr-1" /> Delete
                         </Button>
                       </div>
