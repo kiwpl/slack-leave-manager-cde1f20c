@@ -1,3 +1,4 @@
+// v5 – vacation approval requests and reminders list who else is off those days
 // v4 – include morning off (end_day_portion "am") in all notification messages
 // v3 – spell out flexible time make-up plans in working hours, and retire the
 //      Approve/Reject buttons in Slack when a decision is made inside the app.
@@ -167,6 +168,7 @@ Deno.serve(async (req) => {
       }
 
       case "approval_request": {
+        const alsoOff = await alsoOffText(supabase, request);
         // Send to all managers
         const { data: managerRoles } = await supabase
           .from("user_roles")
@@ -195,7 +197,7 @@ Deno.serve(async (req) => {
                   type: "section",
                   text: {
                     type: "mrkdwn",
-                    text: `*New ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${halfDayLabel ? `\n*Half Day:* ${halfDayLabel}` : ""}${request.note ? `\n*Note:* ${request.note}` : ""}${specialApprovalNote}`,
+                    text: `*New ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${halfDayLabel ? `\n*Half Day:* ${halfDayLabel}` : ""}${request.note ? `\n*Note:* ${request.note}` : ""}${specialApprovalNote}${alsoOff}`,
                   },
                 },
                 {
@@ -354,6 +356,7 @@ Deno.serve(async (req) => {
       }
 
       case "approval_reminder": {
+        const reminderAlsoOff = await alsoOffText(supabase, request);
         // Send reminder to all managers with approve/reject buttons
         const { data: reminderManagerRoles } = await supabase
           .from("user_roles")
@@ -378,7 +381,7 @@ Deno.serve(async (req) => {
                   type: "section",
                   text: {
                     type: "mrkdwn",
-                    text: `🔔 *Reminder: Pending ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${halfDayLabel ? `\n*Half Day:* ${halfDayLabel}` : ""}${request.note ? `\n*Note:* ${request.note}` : ""}${specialApprovalNote}`,
+                    text: `🔔 *Reminder: Pending ${typeLabel} Request*\n*From:* ${employee.full_name}\n*Date(s):* ${dateRange}${halfDayLabel ? `\n*Half Day:* ${halfDayLabel}` : ""}${request.note ? `\n*Note:* ${request.note}` : ""}${specialApprovalNote}${reminderAlsoOff}`,
                   },
                 },
                 {
@@ -709,6 +712,98 @@ async function updateSlackMessage(
     },
     body: JSON.stringify({ channel, ts, text, blocks: [] }),
   });
+}
+
+// ── Who else is off ─────────────────────────────────────────────────
+// Managers decide a vacation request with the team's coverage in front of
+// them: everyone else with approved or pending vacation on those days, and the
+// busiest day if this one is approved. Mirrors src/components/WhoElseIsOff.tsx.
+
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "2026-12-22" → "Dec 22" (no time zone involved). */
+function shortDay(iso: string): string {
+  const [, m, d] = iso.split("-").map(Number);
+  return `${MONTHS_SHORT[m - 1]} ${d}`;
+}
+
+/** Weekdays (Mon–Fri) from start to end, inclusive, as "YYYY-MM-DD". */
+function weekdaysBetween(start: string, end: string): string[] {
+  const out: string[] = [];
+  const d = new Date(`${start}T00:00:00Z`);
+  const last = new Date(`${end}T00:00:00Z`);
+  while (d <= last) {
+    const w = d.getUTCDay();
+    if (w !== 0 && w !== 6) out.push(d.toISOString().slice(0, 10));
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  return out;
+}
+
+function joinAnd(list: string[]): string {
+  if (list.length <= 1) return list.join("");
+  return `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
+}
+
+async function alsoOffText(supabase: any, request: any): Promise<string> {
+  if (request?.request_type !== "vacation" || !request.start_date || !request.end_date) return "";
+
+  const { data: others, error } = await supabase
+    .from("time_off_requests")
+    .select("employee_id, start_date, end_date, status")
+    .eq("request_type", "vacation")
+    .in("status", ["approved", "pending_approval", "cancel_requested"])
+    .neq("id", request.id)
+    .neq("employee_id", request.employee_id)
+    .lte("start_date", request.end_date)
+    .gte("end_date", request.start_date)
+    .order("start_date");
+
+  if (error) {
+    console.error("[slack-notify] Could not look up who else is off:", error);
+    return "";
+  }
+  if (!others || others.length === 0) return "\n\n*Also off those days:* No one else.";
+
+  const ids = [...new Set(others.map((o: any) => o.employee_id))];
+  const { data: people } = await supabase.from("profiles").select("id, full_name").in("id", ids);
+  const nameOf = (id: string) =>
+    people?.find((p: any) => p.id === id)?.full_name || `Unknown employee (id ${id.slice(0, 8)})`;
+
+  // A person with two identical requests (same dates, same status) is listed once.
+  const seenKeys = new Set<string>();
+  const lines = others
+    .filter((o: any) => o.start_date && o.end_date)
+    .filter((o: any) => {
+      const key = `${o.employee_id}|${o.start_date}|${o.end_date}|${o.status}`;
+      if (seenKeys.has(key)) return false;
+      seenKeys.add(key);
+      return true;
+    })
+    .map((o: any) =>
+      `• ${nameOf(o.employee_id)}: Vacation, ${o.status === "pending_approval" ? "pending" : "approved"} (${shortDay(o.start_date)} → ${shortDay(o.end_date)})`
+    );
+
+  // Busiest weekday, counting this request and one entry per person.
+  let most = 0;
+  let busiest: string[] = [];
+  for (const day of weekdaysBetween(request.start_date, request.end_date)) {
+    const off = new Set<string>([request.employee_id]);
+    for (const o of others) if (o.start_date <= day && o.end_date >= day) off.add(o.employee_id);
+    if (off.size > most) { most = off.size; busiest = [shortDay(day)]; }
+    else if (off.size === most) busiest.push(shortDay(day));
+  }
+
+  const { count: teamSize } = await supabase
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "active");
+
+  const busiestLine = most > 0
+    ? `\n_Busiest: ${most}${teamSize ? ` of ${teamSize}` : ""} ${most === 1 ? "person" : "people"} off on ${joinAnd(busiest)}${request.status === "pending_approval" ? " if you approve" : ""}._`
+    : "";
+
+  return `\n\n*Also off those days:*\n${lines.join("\n")}${busiestLine}`;
 }
 
 // ── Working-hours helpers ───────────────────────────────────────────

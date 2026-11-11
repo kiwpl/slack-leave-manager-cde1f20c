@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Bell, Calendar, CheckCircle2, Edit, Trash2, XCircle } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import SpecialApprovalBadge from "@/components/SpecialApprovalBadge";
+import WhoElseIsOff from "@/components/WhoElseIsOff";
 
 type Request = Tables<"time_off_requests">;
 type AuditLog = Tables<"audit_logs">;
@@ -381,6 +382,22 @@ export default function RequestDetailPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Who else is off on these days (managers, vacation only) */}
+        {isManager &&
+          request.request_type === "vacation" &&
+          request.start_date &&
+          request.end_date &&
+          ["pending_approval", "approved", "cancel_requested"].includes(request.status as string) && (
+            <WhoElseIsOff
+              requestId={request.id}
+              employeeId={request.employee_id}
+              employeeName={employeeName}
+              startDate={request.start_date}
+              endDate={request.end_date}
+              status={request.status as string}
+            />
+          )}
 
         {/* Manager decision */}
         {canDecide && (
