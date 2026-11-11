@@ -302,11 +302,11 @@ export default function RequestDetailPage() {
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto space-y-6">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="flex-1">
+          <div className="flex-1 min-w-[calc(100%-3.25rem)] md:min-w-0">
             <h1 className="text-2xl font-bold text-foreground capitalize">
               {request.request_type === "vacation" ? "Vacation Request" : "Sick Day Request"}
             </h1>
@@ -356,25 +356,25 @@ export default function RequestDetailPage() {
                 <p className="font-medium text-foreground">{new Date(request.submitted_at).toLocaleString()}</p>
               </div>
               {request.note && (
-                <div className="col-span-2">
+                <div className="md:col-span-2">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Note</p>
                   <p className="text-foreground">{request.note}</p>
                 </div>
               )}
               {request.rejection_reason && (
-                <div className="col-span-2">
+                <div className="md:col-span-2">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Rejection Reason</p>
                   <p className="text-destructive">{request.rejection_reason}</p>
                 </div>
               )}
               {request.cancellation_reason && (
-                <div className="col-span-2">
+                <div className="md:col-span-2">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Cancellation Reason</p>
                   <p className="text-muted-foreground">{request.cancellation_reason}</p>
                 </div>
               )}
               {request.google_calendar_event_id && (
-                <div className="col-span-2">
+                <div className="md:col-span-2">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Calendar Sync</p>
                   <p className="text-sm text-success">✓ Synced to Google Calendar</p>
                 </div>
@@ -532,9 +532,9 @@ export default function RequestDetailPage() {
             ) : (
               <div className="space-y-4">
                 {auditLogs.map((log) => (
-                  <div key={log.id} className="flex flex-wrap gap-3">
+                  <div key={log.id} className="flex gap-3">
                     <div className="w-2 h-2 mt-2 rounded-full bg-primary shrink-0" />
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground">
                         {formatActionType(log.action_type)}
                       </p>

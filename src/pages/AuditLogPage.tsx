@@ -52,10 +52,10 @@ export default function AuditLogPage() {
             placeholder="Search logs..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-64"
+            className="w-full sm:w-64"
           />
           <Select value={actionFilter} onValueChange={setActionFilter}>
-            <SelectTrigger className="w-56">
+            <SelectTrigger className="w-full sm:w-56">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -91,9 +91,9 @@ export default function AuditLogPage() {
                 {filtered.map((log) => (
                   <div
                     key={log.id}
-                    className="flex items-start justify-between p-3 rounded-lg border border-border"
+                    className="flex flex-col gap-1 p-3 rounded-lg border border-border md:flex-row md:items-start md:justify-between md:gap-3"
                   >
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground">
                         {log.action_type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
                       </p>
@@ -101,7 +101,7 @@ export default function AuditLogPage() {
                         Actor: {log.actor_type} · Request: {log.request_id?.substring(0, 8) || "N/A"}
                       </p>
                       {log.details && (
-                        <p className="text-xs text-muted-foreground mt-1 font-mono">
+                        <p className="text-xs text-muted-foreground mt-1 font-mono break-all">
                           {JSON.stringify(log.details).substring(0, 120)}
                         </p>
                       )}

@@ -87,7 +87,7 @@ export default function PolicyEditorPage() {
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   rows={20}
-                  className="font-mono text-sm"
+                  className="font-mono text-base md:text-sm"
                 />
               </div>
               <Button onClick={handleSave} disabled={saving}>

@@ -206,18 +206,18 @@ export default function ManagerDashboardPage() {
                   <Link
                     key={row.id}
                     to={row.href}
-                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                    className="flex items-start md:items-center justify-between gap-3 p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors"
                   >
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-foreground">{row.employeeName}</span>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
+                        <span className="font-medium text-foreground min-w-0 break-words">{row.employeeName}</span>
                         <span className="text-sm text-muted-foreground">· {row.typeLabel}</span>
                         <StatusBadge status={row.status as any} approvalSource={row.approvalSource as any} />
                         {row.requiresSpecialApproval && <SpecialApprovalBadge />}
                       </div>
                       <p className="text-sm text-muted-foreground">{row.detail}</p>
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground shrink-0">
                       {new Date(row.submittedAt).toLocaleDateString()}
                     </span>
                   </Link>

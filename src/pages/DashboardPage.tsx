@@ -446,10 +446,10 @@ export default function DashboardPage() {
                       <Link
                         key={req.id}
                         to={`/flexible-time/${req.id}`}
-                        className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                        className="flex items-start md:items-center justify-between gap-3 p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
                       >
-                        <div>
-                          <div className="flex items-center gap-2 mb-0.5">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">
                             <span className="font-medium text-sm text-foreground">
                               <Clock className="h-3.5 w-3.5 inline mr-1" />
                               Flexible Time
@@ -458,7 +458,7 @@ export default function DashboardPage() {
                           </div>
                           <p className="text-xs text-muted-foreground">{formatFlexDates(req)}</p>
                         </div>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground shrink-0">
                           {new Date(req.submitted_at).toLocaleDateString()}
                         </span>
                       </Link>
@@ -469,10 +469,10 @@ export default function DashboardPage() {
                     <Link
                       key={req.id}
                       to={`/requests/${req.id}`}
-                      className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                      className="flex items-start md:items-center justify-between gap-3 p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
                     >
-                      <div>
-                        <div className="flex items-center gap-2 mb-0.5">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">
                           <span className="font-medium text-sm text-foreground capitalize">
                             {req.request_type === "vacation" ? "Vacation" : "Sick Day"}
                           </span>
@@ -481,7 +481,7 @@ export default function DashboardPage() {
                         </div>
                         <p className="text-xs text-muted-foreground">{formatRequestDates(req)}</p>
                       </div>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-muted-foreground shrink-0">
                         {new Date(req.submitted_at).toLocaleDateString()}
                       </span>
                     </Link>

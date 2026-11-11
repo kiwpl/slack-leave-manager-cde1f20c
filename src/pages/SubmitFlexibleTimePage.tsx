@@ -497,7 +497,8 @@ export default function SubmitFlexibleTimePage() {
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7"
+                            className="h-9 w-9 md:h-7 md:w-7"
+                            aria-label={`Remove entry ${i + 1}`}
                             onClick={() => removeMakeupEntry(entry.id)}
                           >
                             <Trash2 className="h-3.5 w-3.5" />

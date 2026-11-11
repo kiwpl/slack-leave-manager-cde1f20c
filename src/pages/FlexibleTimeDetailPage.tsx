@@ -335,7 +335,7 @@ export default function FlexibleTimeDetailPage() {
                   </p>
                 )}
               </div>
-              <div className="col-span-2">
+              <div className="md:col-span-2">
                 <p className="text-muted-foreground">Pay Period</p>
                 <p className="font-medium text-foreground">
                   {request.pay_period_start} → {request.pay_period_end}
@@ -402,9 +402,9 @@ export default function FlexibleTimeDetailPage() {
               {entries.map((entry) => (
                 <div
                   key={entry.id}
-                  className="flex items-center justify-between p-3 rounded-lg border border-border"
+                  className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border"
                 >
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground">
                       {entry.makeup_date}
                     </p>
