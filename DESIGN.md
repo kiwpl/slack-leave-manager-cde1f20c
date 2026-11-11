@@ -18,8 +18,9 @@ Frozen UI decisions. Do not change anything listed here unless Phil asks.
 - Slack approval message adds "Also off those days:" with one bullet per person ("<name>: Vacation, approved|pending (<start> → <end>)") and an italic "Busiest" line, above the Approve / Reject buttons.
 - Ontario stat holidays are not counted as vacation days, and the return date skips them.
 - Request summary adds a grey line: "Not counted as days off: <holiday (date)>…" and/or "Your return date skips <holiday (date)>…". Observed holidays read "Boxing Day (observed, Dec 28)".
-- Time Off page: "Your time off in <year>" card above the policy: Vacation "<left> of <allowance> days left", a bar (used / booked / waiting for approval / left) with a legend, then two boxes (Sick days, Flexible time) with a big number and a small label under it, then "Vacation days reset on January 1, <next year>."
-- Request form (vacation): under the summary, "After this request you will have N days of vacation left this year", or a yellow warning when the request is more than what's left.
+- Time Off page: "Your time off in <year>" card under the page title: Vacation "<N> days this year" with a Used / Booked / Waiting for approval legend, then two boxes (Sick days, Flexible time) with a big number and a small label under it.
+- No yearly vacation limit for now (Phil, 2026-11-11: Kelvin or Wilfred decide), so no "days left", no bar and no carry-over.
+- Request form (vacation): under the summary, "With this request, your vacation in <year> comes to N days."
 - Slack: weekday "Out today · <weekday, month day>" post in a channel, one bullet per person, then "Later this week", then "Posted every weekday at <time> · approved time off only".
 - Admin Settings: new card 'Daily "Out today" post' after Slack Integration: "Post every weekday" switch, Channel, Time (7:00 to 9:00 AM), "Also list time off later this week" checkbox, Save, Send a test post.
 - Admin Settings: new "Team limits" card: "Most people off at once" number, Blocked dates list (dates, reason, Remove), From / To / Reason / Add row, "When a request hits a blocked date or the limit" with "Warn them, manager decides" or "Don't let them submit", Save.

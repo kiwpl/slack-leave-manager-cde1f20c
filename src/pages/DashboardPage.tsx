@@ -20,6 +20,7 @@ import { AlertCircle, AlertTriangle, Plus, ChevronDown, ChevronUp, Clock } from 
 import type { Tables } from "@/integrations/supabase/types";
 import { isWithin30Days } from "@/lib/specialApproval";
 import SpecialApprovalBadge from "@/components/SpecialApprovalBadge";
+import TimeOffSummaryCard, { dayAmounts, fmtDays, yearTotals } from "@/components/TimeOffSummaryCard";
 
 type Request = Tables<"time_off_requests">;
 
@@ -270,6 +271,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Vacation, sick days and flexible time this year */}
+        {!loading && <TimeOffSummaryCard requests={requests} flexRequests={flexRequests} today={today} />}
+
         {/* Submit form */}
         {showForm && (
           <>
@@ -343,6 +347,23 @@ export default function DashboardPage() {
                         startDayPortion={startDayPortion}
                         endDayPortion={endDayPortion}
                       />
+
+                      {/* Running total for the year this request starts in */}
+                      {requestType === "vacation" && startDate && endDate && startDate <= endDate && (() => {
+                        const year = Number(startDate.slice(0, 4));
+                        const thisRequest = dayAmounts(startDate, endDate, startDayPortion, endDayPortion)
+                          .filter((d) => d.date.startsWith(`${year}-`))
+                          .reduce((sum, d) => sum + d.amount, 0);
+                        if (!thisRequest) return null;
+                        const t = yearTotals(requests, year, today);
+                        const after = t.used + t.booked + t.waiting + thisRequest;
+                        return (
+                          <p className="text-sm text-muted-foreground">
+                            With this request, your vacation in {year} comes to{" "}
+                            <strong className="text-foreground">{fmtDays(after)} {after === 1 ? "day" : "days"}</strong>.
+                          </p>
+                        );
+                      })()}
 
                       {requestType === "vacation" && startDate && endDate && (() => {
                         const biz = countBusinessDays(startDate, endDate);
