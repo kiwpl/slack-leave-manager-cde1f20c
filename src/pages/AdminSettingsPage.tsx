@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import OutTodayPostCard from "@/components/OutTodayPostCard";
 
 export default function AdminSettingsPage() {
   const { user } = useAuth();
@@ -148,6 +149,9 @@ export default function AdminSettingsPage() {
                 </p>
               </CardContent>
             </Card>
+
+            {/* Weekday "Out today" Slack post */}
+            <OutTodayPostCard />
           </>
         )}
       </div>
