@@ -1,18 +1,22 @@
+// v2 – send the "Out today" message to managers and admins in their Time Off
+//      Manager app chat (no channel), and send nothing on a day nobody is off.
 // v1 – weekday "Out today" post in a Slack channel.
 //
 // Called two ways:
-//  1. By pg_cron every 15 minutes on weekday mornings (body {}). It posts at
-//     most once a day, after the time set in Admin Settings, and never on a
-//     weekend or Ontario stat holiday.
+//  1. By pg_cron every 15 minutes on weekday mornings (body {}). Once a day,
+//     after the time set in Admin Settings, it looks at who is off today. If
+//     anyone is, every manager and admin with a Slack ID gets the message as a
+//     direct message from the app. If nobody is, nothing is sent. Never runs
+//     on a weekend or Ontario stat holiday.
 //  2. By an admin pressing "Send a test post" in Admin Settings (body
-//     { test: true } with the admin's sign-in token). That posts right away.
+//     { test: true } with the admin's sign-in token). That sends the message
+//     right away, to that admin only.
 //
 // Settings live in app_settings:
 //   out_today_enabled  "true" | "false" (off until an admin turns it on)
-//   out_today_channel  "#general" (a channel name or ID; the bot must be in it)
 //   out_today_time     "08:00" (Toronto time, 24h)
 //   out_today_later    "true" | "false" (also list time off later this week)
-//   out_today_last_posted  "YYYY-MM-DD" (written by this function)
+//   out_today_last_posted  "YYYY-MM-DD" (written by this function: today is done)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -21,6 +25,7 @@ const corsHeaders = {
 };
 
 const TZ = "America/Toronto";
+const MANAGER_ROLES = ["manager", "admin", "superadmin"];
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -41,7 +46,8 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const isTest = body?.test === true;
 
-    // A test post must come from a signed-in admin.
+    // A test goes only to the signed-in admin who asked for it.
+    let testSlackId = "";
     if (isTest) {
       const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
       const { data: userData } = await supabase.auth.getUser(token);
@@ -50,13 +56,17 @@ Deno.serve(async (req) => {
       const { data: roles } = await supabase
         .from("user_roles").select("role").eq("user_id", userId).in("role", ["admin", "superadmin"]);
       if (!roles || roles.length === 0) return json({ ok: false, error: "Only admins can send a test post." }, 403);
+      const { data: me } = await supabase.from("profiles").select("slack_user_id").eq("id", userId).maybeSingle();
+      if (!me?.slack_user_id) {
+        return json({ ok: false, error: "Your profile has no Slack ID yet. Add it in User Management, then try again." });
+      }
+      testSlackId = me.slack_user_id;
     }
 
     const { data: settingRows } = await supabase.from("app_settings").select("key, value");
     const s = new Map<string, string>((settingRows ?? []).map((r: any) => [r.key, r.value]));
     // Off until an admin switches it on in Admin Settings.
     const enabled = s.get("out_today_enabled") === "true";
-    const channel = (s.get("out_today_channel") || "#general").trim();
     const postTime = s.get("out_today_time") || "08:00";
     const includeLater = (s.get("out_today_later") ?? "true") === "true";
     const testMode = s.get("slack_test_mode") === "true";
@@ -68,39 +78,71 @@ Deno.serve(async (req) => {
       if (now.weekday === 0 || now.weekday === 6) return json({ ok: true, skipped: "weekend" });
       if (ontarioHolidayDates(now.year).has(now.date)) return json({ ok: true, skipped: "stat holiday" });
       if (now.time < postTime) return json({ ok: true, skipped: "too early" });
-      if (s.get("out_today_last_posted") === now.date) return json({ ok: true, skipped: "already posted today" });
+      if (s.get("out_today_last_posted") === now.date) return json({ ok: true, skipped: "already done today" });
     }
 
-    const text = await buildPost(supabase, now, includeLater, postTime, isTest);
+    const { text, anyoneOff } = await buildPost(supabase, now, includeLater, postTime, isTest);
 
-    if (testMode) {
-      console.log(`[TEST MODE] Would post to ${channel}:\n${text}`);
+    // Today is decided once: nobody off means no message, and no second look later.
+    const markDone = () =>
+      supabase
+        .from("app_settings")
+        .upsert({ key: "out_today_last_posted", value: now.date, updated_at: new Date().toISOString() }, { onConflict: "key" });
+
+    if (!isTest && !anyoneOff) {
+      await markDone();
+      return json({ ok: true, skipped: "nobody off today" });
+    }
+
+    // Who gets it: the admin testing, or every active manager and admin with a Slack ID.
+    let recipients: string[] = [];
+    if (isTest) {
+      recipients = [testSlackId];
     } else {
+      const { data: roleRows } = await supabase.from("user_roles").select("user_id").in("role", MANAGER_ROLES);
+      const ids = [...new Set((roleRows ?? []).map((r: any) => r.user_id))];
+      if (ids.length) {
+        const { data: people } = await supabase
+          .from("profiles").select("slack_user_id").in("id", ids).eq("status", "active");
+        recipients = [...new Set((people ?? []).map((p: any) => p.slack_user_id).filter(Boolean))] as string[];
+      }
+    }
+    if (recipients.length === 0) {
+      if (!isTest) await markDone();
+      return json({ ok: false, error: "No active manager or admin has a Slack ID." });
+    }
+
+    let sent = 0;
+    const failed: { slackUserId: string; error: string }[] = [];
+    for (const slackUserId of recipients) {
+      if (testMode) {
+        console.log(`[TEST MODE] Would send to ${slackUserId}:\n${text}`);
+        sent++;
+        continue;
+      }
       const res = await fetch("https://slack.com/api/chat.postMessage", {
         method: "POST",
         headers: { Authorization: `Bearer ${SLACK_BOT_TOKEN}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ channel, text, unfurl_links: false, unfurl_media: false }),
+        body: JSON.stringify({ channel: slackUserId, text, unfurl_links: false, unfurl_media: false }),
       });
       const data = await res.json();
-      if (!data.ok) {
-        console.error("[out-today] Slack refused the post:", data.error);
-        return json({ ok: false, error: data.error });
+      if (data.ok) {
+        sent++;
+      } else {
+        console.error(`[out-today] Slack refused the message to ${slackUserId}:`, data.error);
+        failed.push({ slackUserId, error: data.error });
       }
     }
 
-    if (!isTest) {
-      await supabase
-        .from("app_settings")
-        .upsert({ key: "out_today_last_posted", value: now.date, updated_at: new Date().toISOString() }, { onConflict: "key" });
-    }
-    return json({ ok: true, channel, testMode });
+    if (!isTest) await markDone();
+    return json({ ok: sent > 0, sent, failed, testMode, error: sent > 0 ? undefined : failed[0]?.error });
   } catch (error) {
     console.error("[out-today] Failed:", error);
     return json({ ok: false, error: error instanceof Error ? error.message : "Unknown error" }, 500);
   }
 });
 
-// ── Building the post ───────────────────────────────────────────────
+// ── Building the message ────────────────────────────────────────────
 
 async function buildPost(supabase: any, now: TorontoNow, includeLater: boolean, postTime: string, isTest: boolean) {
   const today = now.date;
@@ -166,10 +208,12 @@ async function buildPost(supabase: any, now: TorontoNow, includeLater: boolean, 
   const later = laterLines.filter((l) => !offToday.has(l.employeeId));
 
   let text = `*Out today · ${longDay(today)}*\n`;
-  text += todayLines.length ? todayLines.map((l) => l.line).join("\n") : "Everyone is in today.";
+  text += todayLines.length
+    ? todayLines.map((l) => l.line).join("\n")
+    : "No one is off today. On a normal day like this, no message is sent.";
   if (includeLater && later.length) text += `\n\n*Later this week*\n${later.map((l) => l.line).join("\n")}`;
-  text += `\n\n_${isTest ? "Test post · " : ""}Posted every weekday at ${clock(postTime)} · approved time off only_`;
-  return text;
+  text += `\n\n_${isTest ? "Test · " : ""}Sent to managers and admins every weekday at ${clock(postTime)} · approved time off only_`;
+  return { text, anyoneOff: todayLines.length > 0 };
 }
 
 // ── Dates and times (Toronto) ───────────────────────────────────────

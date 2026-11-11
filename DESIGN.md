@@ -21,8 +21,7 @@ Frozen UI decisions. Do not change anything listed here unless Phil asks.
 - Time Off page: "Your time off in <year>" card under the page title: Vacation "<N> days this year" with a Used / Booked / Waiting for approval legend, then two boxes (Sick days, Flexible time) with a big number and a small label under it.
 - No yearly vacation limit for now (Phil, 2026-11-11: Kelvin or Wilfred decide), so no "days left", no bar and no carry-over.
 - Request form (vacation): under the summary, "With this request, your vacation in <year> comes to N days."
-- Slack: weekday "Out today · <weekday, month day>" post in a channel, one bullet per person, then "Later this week", then "Posted every weekday at <time> · approved time off only".
-- Admin Settings: new card 'Daily "Out today" post' after Slack Integration: "Post every weekday" switch, Channel, Time (7:00 to 9:00 AM), "Also list time off later this week" checkbox, Save, Send a test post.
+- Daily "Out today" message: replaced by round 4 below (app chat, no channel).
 - Admin Settings: new "Team limits" card: "Most people off at once" number, Blocked dates list (dates, reason, Remove), From / To / Reason / Add row, "When a request hits a blocked date or the limit" with "Warn them, manager decides" or "Don't let them submit", Save.
 - Request form (vacation): team limits box under the summary, yellow when warning and red when blocking, one line per problem with space between lines, ending "You can still submit, but your manager may decline it." or "Pick other dates to submit."
 - Manager View: "Export CSV" outline button with a download icon, left of "Submit for Staff".
@@ -37,3 +36,10 @@ Frozen UI decisions. Do not change anything listed here unless Phil asks.
 - Pop-ups keep a 16px margin from the screen edge, rounded corners, scroll when taller than the screen, and stacked buttons have space between them.
 - Text boxes use 16px text on phones (14px on desktop) so iPhones don't zoom in.
 - Small buttons (User Management, flexible time "remove entry") are at least 36px tall on phones.
+
+## 2026-11-11 · Out today in the app chat (mockup round 4 approved)
+- The weekday "Out today · <weekday, month day>" message goes to managers and admins as a direct message in their Time Off Manager app chat. No Slack channel.
+- Message: one bullet per person, then "Later this week" (when ticked), then "Sent to managers and admins every weekday at <time> · approved time off only".
+- No message at all on a day when nobody is off (and none on weekends or stat holidays).
+- Admin Settings card 'Daily "Out today" post': description "Send who's away to managers and admins in their Time Off Manager app chat every weekday morning"; "Post every weekday" switch on the right with "Monday to Friday, skips stat holidays and days when nobody is off"; Time (7:00 to 9:00 AM); "Also list time off later this week"; Save; Send a test post; then "The test goes only to you, in your Time Off Manager app chat."
+- No Channel box and no /invite note.
