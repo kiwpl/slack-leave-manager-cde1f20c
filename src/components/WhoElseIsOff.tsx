@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { eachDayOfInterval, format, isWeekend, parseISO } from "date-fns";
+import { eachDayOfInterval, format, parseISO } from "date-fns";
+import { isDayOff } from "@/lib/holidays";
 import { Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -147,7 +148,7 @@ export default function WhoElseIsOff({
   let days: { iso: string; date: Date; people: { name: string; pending: boolean }[] }[] = [];
   try {
     days = eachDayOfInterval({ start: parseISO(startDate), end: parseISO(endDate) })
-      .filter((d) => !isWeekend(d))
+      .filter((d) => !isDayOff(d))
       .map((d) => {
         const iso = format(d, "yyyy-MM-dd");
         const seen = new Set<string>([employeeId]);

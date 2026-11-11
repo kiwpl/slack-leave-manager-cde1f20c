@@ -1,4 +1,5 @@
-import { format, parseISO, eachDayOfInterval, isWeekend, addDays } from "date-fns";
+import { format, parseISO, eachDayOfInterval, addDays } from "date-fns";
+import { holidayLabel, holidayOn, holidaysBetween, isDayOff, type Holiday } from "@/lib/holidays";
 
 interface RequestSummaryProps {
   requestType: "vacation" | "sick" | "";
@@ -16,10 +17,11 @@ function formatDate(dateStr: string): string {
   }
 }
 
+/** Working days from start to end: weekends and Ontario stat holidays don't count. */
 export function countBusinessDays(start: string, end: string): number {
   try {
     const days = eachDayOfInterval({ start: parseISO(start), end: parseISO(end) });
-    return days.filter((d) => !isWeekend(d)).length;
+    return days.filter((d) => !isDayOff(d)).length;
   } catch {
     return 0;
   }
@@ -40,11 +42,32 @@ function getReturnDate(endDate: string): string {
   try {
     const end = parseISO(endDate);
     let next = addDays(end, 1);
-    while (isWeekend(next)) next = addDays(next, 1);
+    while (isDayOff(next)) next = addDays(next, 1);
     return format(next, "MMMM d, yyyy");
   } catch {
     return "";
   }
+}
+
+/** Stat holidays between the last day off and the return date. */
+function holidaysSkippedAfter(endDate: string): Holiday[] {
+  const out: Holiday[] = [];
+  try {
+    let next = addDays(parseISO(endDate), 1);
+    while (isDayOff(next)) {
+      const h = holidayOn(format(next, "yyyy-MM-dd"));
+      if (h) out.push(h);
+      next = addDays(next, 1);
+    }
+  } catch {
+    /* ignore bad dates */
+  }
+  return out;
+}
+
+function joinAnd(list: string[]): string {
+  if (list.length <= 1) return list.join("");
+  return `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
 }
 
 export default function RequestSummary({
@@ -110,9 +133,24 @@ export default function RequestSummary({
     return incomplete;
   };
 
+  // Vacation only: say which stat holidays were left out, and which ones the
+  // return date jumps over.
+  const getHolidayNote = (): string => {
+    if (requestType !== "vacation" || !startDate || !endDate || startDate > endDate) return "";
+    const parts: string[] = [];
+    const inside = holidaysBetween(startDate, endDate);
+    if (inside.length) parts.push(`Not counted as days off: ${joinAnd(inside.map(holidayLabel))}.`);
+    const skipped = endDayPortion === "am" ? [] : holidaysSkippedAfter(endDate);
+    if (skipped.length) parts.push(`Your return date skips ${joinAnd(skipped.map(holidayLabel))}.`);
+    return parts.join(" ");
+  };
+
+  const holidayNote = getHolidayNote();
+
   return (
     <div className="p-3 rounded-lg bg-accent/50 border border-border">
       <p className="text-sm text-foreground">{getSummary()}</p>
+      {holidayNote && <p className="text-sm text-muted-foreground mt-1">{holidayNote}</p>}
     </div>
   );
 }

@@ -727,17 +727,52 @@ function shortDay(iso: string): string {
   return `${MONTHS_SHORT[m - 1]} ${d}`;
 }
 
-/** Weekdays (Mon–Fri) from start to end, inclusive, as "YYYY-MM-DD". */
+/** Working days (Mon–Fri, not a stat holiday) from start to end, inclusive, as "YYYY-MM-DD". */
 function weekdaysBetween(start: string, end: string): string[] {
   const out: string[] = [];
   const d = new Date(`${start}T00:00:00Z`);
   const last = new Date(`${end}T00:00:00Z`);
   while (d <= last) {
     const w = d.getUTCDay();
-    if (w !== 0 && w !== 6) out.push(d.toISOString().slice(0, 10));
+    const day = d.toISOString().slice(0, 10);
+    if (w !== 0 && w !== 6 && !ontarioHolidayDates(d.getUTCFullYear()).has(day)) out.push(day);
     d.setUTCDate(d.getUTCDate() + 1);
   }
   return out;
+}
+
+// Ontario stat holidays (observed dates). Mirrors src/lib/holidays.ts.
+const holidayCache = new Map<number, Set<string>>();
+function ontarioHolidayDates(year: number): Set<string> {
+  const hit = holidayCache.get(year);
+  if (hit) return hit;
+  const utc = (m: number, d: number) => new Date(Date.UTC(year, m, d));
+  const nthMonday = (m: number, n: number) => {
+    const first = utc(m, 1);
+    return utc(m, 1 + ((8 - first.getUTCDay()) % 7) + (n - 1) * 7);
+  };
+  // Easter Sunday (anonymous Gregorian algorithm)
+  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+  const dd = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - dd - g + 15) % 30, i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const easter = utc(Math.floor((h + l - 7 * m + 114) / 31) - 1, ((h + l - 7 * m + 114) % 31) + 1);
+  const goodFriday = new Date(easter.getTime() - 2 * 86400000);
+  const victoria = utc(4, 24);
+  while (victoria.getUTCDay() !== 1) victoria.setUTCDate(victoria.getUTCDate() - 1);
+  const actual = [utc(0, 1), nthMonday(1, 3), goodFriday, victoria, utc(6, 1), nthMonday(8, 1), nthMonday(9, 2), utc(11, 25), utc(11, 26)];
+  const isWknd = (x: Date) => x.getUTCDay() === 0 || x.getUTCDay() === 6;
+  const key = (x: Date) => x.toISOString().slice(0, 10);
+  const taken = new Set<string>();
+  for (const x of actual) if (!isWknd(x)) taken.add(key(x));
+  for (const x of actual) {
+    if (!isWknd(x)) continue;
+    const y = new Date(x.getTime());
+    do { y.setUTCDate(y.getUTCDate() + 1); } while (isWknd(y) || taken.has(key(y)));
+    taken.add(key(y));
+  }
+  holidayCache.set(year, taken);
+  return taken;
 }
 
 function joinAnd(list: string[]): string {
