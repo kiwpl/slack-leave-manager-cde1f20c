@@ -28,3 +28,12 @@ Frozen UI decisions. Do not change anything listed here unless Phil asks.
 - Manager View: "Export CSV" outline button with a download icon, left of "Submit for Staff".
 - Export pop-up "Export time off": Period (this pay period, last pay period, this month, this year, custom dates), Include (Vacation, Sick days, Flexible time), "Only approved requests", a preview table with a Total row and the file name, Cancel and Download CSV.
 - Export pop-up on phones fits the screen; columns read Vacation / Sick / Flex hrs (Vacation days / Sick days / Flexible hours on wider screens).
+
+## 2026-11-11 · Phone layout on every page (approved)
+- Phone menu under the header is a 3-across grid, icon above the label, so every page shows in at most 2 rows. Desktop sidebar unchanged.
+- Request page on phones: title on its own line, status badges on the row below; Request Details is one column (only wider screens use 2).
+- List rows (My Requests, Manager View): badges wrap onto their own line, the submitted date stays top right inside the row.
+- Audit Log on phones: each entry stacks (action, actor, details, then time); search and filter are full width.
+- Pop-ups keep a 16px margin from the screen edge, rounded corners, scroll when taller than the screen, and stacked buttons have space between them.
+- Text boxes use 16px text on phones (14px on desktop) so iPhones don't zoom in.
+- Small buttons (User Management, flexible time "remove entry") are at least 36px tall on phones.
