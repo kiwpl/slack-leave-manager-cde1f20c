@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import OutTodayPostCard from "@/components/OutTodayPostCard";
+import TeamLimitsCard from "@/components/TeamLimitsCard";
 
 export default function AdminSettingsPage() {
   const { user } = useAuth();
@@ -152,6 +153,9 @@ export default function AdminSettingsPage() {
 
             {/* Weekday "Out today" Slack post */}
             <OutTodayPostCard />
+
+            {/* Blocked dates and most people off at once */}
+            <TeamLimitsCard />
           </>
         )}
       </div>

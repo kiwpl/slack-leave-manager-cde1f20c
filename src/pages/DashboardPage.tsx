@@ -21,6 +21,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { isWithin30Days } from "@/lib/specialApproval";
 import SpecialApprovalBadge from "@/components/SpecialApprovalBadge";
 import TimeOffSummaryCard, { dayAmounts, fmtDays, yearTotals } from "@/components/TimeOffSummaryCard";
+import TeamLimitsAlert, { useTeamLimitCheck } from "@/components/TeamLimitsAlert";
 
 type Request = Tables<"time_off_requests">;
 
@@ -61,6 +62,12 @@ export default function DashboardPage() {
   const hasSlackId = !!profile?.slack_user_id;
   const isOneDay = !!startDate && startDate === (endDate || startDate);
 
+  // Blocked dates and how full the team is (vacation only).
+  const limitCheck = useTeamLimitCheck(
+    requestType === "vacation" ? startDate : "",
+    requestType === "vacation" ? endDate : ""
+  );
+
   // A single day can't be both a morning off and an afternoon off.
   useEffect(() => {
     if (isOneDay && startHalfDay && endHalfDay) setStartHalfDay(false);
@@ -99,6 +106,9 @@ export default function DashboardPage() {
         newErrors.endDate = "End date must be on or after start date.";
       }
       if (!note.trim()) newErrors.note = "Please provide a reason for your vacation request.";
+      if (limitCheck.mode === "block" && limitCheck.hasIssues && !newErrors.endDate) {
+        newErrors.endDate = "These dates are blocked or the team is full. Pick other dates.";
+      }
     }
 
     if (requestType === "sick") {
@@ -364,6 +374,9 @@ export default function DashboardPage() {
                           </p>
                         );
                       })()}
+
+                      {/* Blocked dates / team limit */}
+                      {requestType === "vacation" && <TeamLimitsAlert check={limitCheck} />}
 
                       {requestType === "vacation" && startDate && endDate && (() => {
                         const biz = countBusinessDays(startDate, endDate);
