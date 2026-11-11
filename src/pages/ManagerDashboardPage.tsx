@@ -6,8 +6,9 @@ import StatusBadge from "@/components/StatusBadge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { UserPlus } from "lucide-react";
+import { Download, UserPlus } from "lucide-react";
 import SpecialApprovalBadge from "@/components/SpecialApprovalBadge";
+import ExportTimeOffDialog from "@/components/ExportTimeOffDialog";
 
 /**
  * Vacation/sick day requests and flexible time requests live in two different
@@ -49,6 +50,7 @@ export default function ManagerDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("pending_approval");
+  const [exportOpen, setExportOpen] = useState(false);
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -159,12 +161,19 @@ export default function ManagerDashboardPage() {
                 or use the buttons in your Slack message.
               </p>
             </div>
-            <Button onClick={() => navigate("/manager/submit-for-staff")} className="gap-2">
-              <UserPlus className="h-4 w-4" />
-              Submit for Staff
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => setExportOpen(true)} className="gap-2">
+                <Download className="h-4 w-4" />
+                Export CSV
+              </Button>
+              <Button onClick={() => navigate("/manager/submit-for-staff")} className="gap-2">
+                <UserPlus className="h-4 w-4" />
+                Submit for Staff
+              </Button>
+            </div>
           </div>
         </div>
+        <ExportTimeOffDialog open={exportOpen} onOpenChange={setExportOpen} />
 
         <div className="flex flex-wrap gap-3">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
