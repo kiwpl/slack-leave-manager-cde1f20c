@@ -55,11 +55,17 @@ Deno.serve(async (req) => {
       const userId = userData?.user?.id;
       if (!userId) return json({ ok: false, error: "Please sign in again." }, 401);
       const { data: roles } = await supabase
-        .from("user_roles").select("role").eq("user_id", userId).in("role", ["admin", "superadmin"]);
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .in("role", ["admin", "superadmin"]);
       if (!roles || roles.length === 0) return json({ ok: false, error: "Only admins can send a test post." }, 403);
       const { data: me } = await supabase.from("profiles").select("slack_user_id").eq("id", userId).maybeSingle();
       if (!me?.slack_user_id) {
-        return json({ ok: false, error: "Your profile has no Slack ID yet. Add it in User Management, then try again." });
+        return json({
+          ok: false,
+          error: "Your profile has no Slack ID yet. Add it in User Management, then try again.",
+        });
       }
       testSlackId = me.slack_user_id;
     }
@@ -88,7 +94,10 @@ Deno.serve(async (req) => {
     const markDone = () =>
       supabase
         .from("app_settings")
-        .upsert({ key: "out_today_last_posted", value: now.date, updated_at: new Date().toISOString() }, { onConflict: "key" });
+        .upsert(
+          { key: "out_today_last_posted", value: now.date, updated_at: new Date().toISOString() },
+          { onConflict: "key" },
+        );
 
     if (!isTest && !anyoneOff) {
       await markDone();
@@ -104,7 +113,10 @@ Deno.serve(async (req) => {
       const ids = [...new Set((roleRows ?? []).map((r: any) => r.user_id))];
       if (ids.length) {
         const { data: people } = await supabase
-          .from("profiles").select("slack_user_id").in("id", ids).eq("status", "active");
+          .from("profiles")
+          .select("slack_user_id")
+          .in("id", ids)
+          .eq("status", "active");
         recipients = [...new Set((people ?? []).map((p: any) => p.slack_user_id).filter(Boolean))] as string[];
       }
     }
@@ -162,7 +174,9 @@ async function buildPost(supabase: any, now: TorontoNow, includeLater: boolean, 
     .in("status", ["approved", "completed", "incomplete"])
     .eq("date_off", today);
 
-  const ids = [...new Set([...(timeOff ?? []).map((r: any) => r.employee_id), ...(flex ?? []).map((r: any) => r.employee_id)])];
+  const ids = [
+    ...new Set([...(timeOff ?? []).map((r: any) => r.employee_id), ...(flex ?? []).map((r: any) => r.employee_id)]),
+  ];
   const names = new Map<string, string>();
   if (ids.length) {
     const { data: people } = await supabase.from("profiles").select("id, full_name, email").in("id", ids);
@@ -186,11 +200,19 @@ async function buildPost(supabase: any, now: TorontoNow, includeLater: boolean, 
       else if (start === today && r.start_day_portion === "pm") detail = "from this afternoon";
       else if (end === today && r.end_day_portion === "am") detail = "morning, back this afternoon";
       if (!detail && r.request_type !== "sick") detail = `back ${longDay(returnDay(end))}`;
-      todayLines.push({ name: nameOf(r.employee_id), line: `• ${nameOf(r.employee_id)}: ${kind}${detail ? `, ${detail}` : ""}` });
+      todayLines.push({
+        name: nameOf(r.employee_id),
+        line: `• ${nameOf(r.employee_id)}: ${kind}${detail ? `, ${detail}` : ""}`,
+      });
       offToday.add(r.employee_id);
     } else if (r.request_type === "vacation" && start > today && start <= friday) {
       const oneDay = start === end;
-      const half = oneDay && r.start_day_portion === "pm" ? ", afternoon off" : oneDay && r.end_day_portion === "am" ? ", morning off" : "";
+      const half =
+        oneDay && r.start_day_portion === "pm"
+          ? ", afternoon off"
+          : oneDay && r.end_day_portion === "am"
+            ? ", morning off"
+            : "";
       laterLines.push({
         employeeId: r.employee_id,
         name: nameOf(r.employee_id),
@@ -200,7 +222,10 @@ async function buildPost(supabase: any, now: TorontoNow, includeLater: boolean, 
     }
   }
   for (const f of flex ?? []) {
-    todayLines.push({ name: nameOf(f.employee_id), line: `• ${nameOf(f.employee_id)}: Flexible time, ${clock(f.start_time)} – ${clock(f.end_time)}` });
+    todayLines.push({
+      name: nameOf(f.employee_id),
+      line: `• ${nameOf(f.employee_id)}: Flexible time, ${clock(f.start_time)} – ${clock(f.end_time)}`,
+    });
   }
 
   todayLines.sort((a, b) => a.name.localeCompare(b.name));
@@ -229,12 +254,23 @@ interface TorontoNow {
 
 function torontoNow(): TorontoNow {
   const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
+    timeZone: TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
   }).formatToParts(new Date());
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
   const date = `${get("year")}-${get("month")}-${get("day")}`;
   const hour = get("hour") === "24" ? "00" : get("hour");
-  return { date, time: `${hour}:${get("minute")}`, weekday: new Date(`${date}T12:00:00Z`).getUTCDay(), year: Number(get("year")) };
+  return {
+    date,
+    time: `${hour}:${get("minute")}`,
+    weekday: new Date(`${date}T12:00:00Z`).getUTCDay(),
+    year: Number(get("year")),
+  };
 }
 
 function addDaysIso(iso: string, n: number): string {
@@ -254,7 +290,20 @@ function returnDay(end: string): string {
 }
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 
 /** "2026-11-16" → "Monday, November 16" */
 function longDay(iso: string): string {
@@ -280,15 +329,33 @@ function ontarioHolidayDates(year: number): Set<string> {
     return utc(m, 1 + ((8 - first.getUTCDay()) % 7) + (n - 1) * 7);
   };
   // Easter Sunday (anonymous Gregorian algorithm)
-  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
-  const dd = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
-  const h = (19 * a + b - dd - g + 15) % 30, i = Math.floor(c / 4), k = c % 4;
-  const l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const a = year % 19,
+    b = Math.floor(year / 100),
+    c = year % 100;
+  const dd = Math.floor(b / 4),
+    e = b % 4,
+    f = Math.floor((b + 8) / 25),
+    g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - dd - g + 15) % 30,
+    i = Math.floor(c / 4),
+    k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7,
+    m = Math.floor((a + 11 * h + 22 * l) / 451);
   const easter = utc(Math.floor((h + l - 7 * m + 114) / 31) - 1, ((h + l - 7 * m + 114) % 31) + 1);
   const goodFriday = new Date(easter.getTime() - 2 * 86400000);
   const victoria = utc(4, 24);
   while (victoria.getUTCDay() !== 1) victoria.setUTCDate(victoria.getUTCDate() - 1);
-  const actual = [utc(0, 1), nthMonday(1, 3), goodFriday, victoria, utc(6, 1), nthMonday(8, 1), nthMonday(9, 2), utc(11, 25), utc(11, 26)];
+  const actual = [
+    utc(0, 1),
+    nthMonday(1, 3),
+    goodFriday,
+    victoria,
+    utc(6, 1),
+    nthMonday(8, 1),
+    nthMonday(9, 2),
+    utc(11, 25),
+    utc(11, 26),
+  ];
   const isWknd = (x: Date) => x.getUTCDay() === 0 || x.getUTCDay() === 6;
   const key = (x: Date) => x.toISOString().slice(0, 10);
   const taken = new Set<string>();
@@ -296,7 +363,9 @@ function ontarioHolidayDates(year: number): Set<string> {
   for (const x of actual) {
     if (!isWknd(x)) continue;
     const y = new Date(x.getTime());
-    do { y.setUTCDate(y.getUTCDate() + 1); } while (isWknd(y) || taken.has(key(y)));
+    do {
+      y.setUTCDate(y.getUTCDate() + 1);
+    } while (isWknd(y) || taken.has(key(y)));
     taken.add(key(y));
   }
   holidayCache.set(year, taken);
