@@ -1,3 +1,4 @@
+// v3 – drop the "Sent to managers and admins every weekday at …" footer line.
 // v2 – send the "Out today" message to managers and admins in their Time Off
 //      Manager app chat (no channel), and send nothing on a day nobody is off.
 // v1 – weekday "Out today" post in a Slack channel.
@@ -212,7 +213,8 @@ async function buildPost(supabase: any, now: TorontoNow, includeLater: boolean, 
     ? todayLines.map((l) => l.line).join("\n")
     : "No one is off today. On a normal day like this, no message is sent.";
   if (includeLater && later.length) text += `\n\n*Later this week*\n${later.map((l) => l.line).join("\n")}`;
-  text += `\n\n_${isTest ? "Test · " : ""}Sent to managers and admins every weekday at ${clock(postTime)} · approved time off only_`;
+  // No footer line on the real message; a test is marked so it can be told apart.
+  if (isTest) text += `\n\n_Test_`;
   return { text, anyoneOff: todayLines.length > 0 };
 }
 

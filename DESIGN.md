@@ -39,7 +39,7 @@ Frozen UI decisions. Do not change anything listed here unless Phil asks.
 
 ## 2026-11-11 · Out today in the app chat (mockup round 4 approved)
 - The weekday "Out today · <weekday, month day>" message goes to managers and admins as a direct message in their Time Off Manager app chat. No Slack channel.
-- Message: one bullet per person, then "Later this week" (when ticked), then "Sent to managers and admins every weekday at <time> · approved time off only".
+- Message: one bullet per person, then "Later this week" (when ticked). No footer line (Phil, 2026-11-19: the "Sent to managers and admins every weekday at <time> · approved time off only" line is removed). A test message ends with "Test".
 - No message at all on a day when nobody is off (and none on weekends or stat holidays).
 - Admin Settings card 'Daily "Out today" post': description "Send who's away to managers and admins in their Time Off Manager app chat every weekday morning"; "Post every weekday" switch on the right with "Monday to Friday, skips stat holidays and days when nobody is off"; Time (7:00 to 9:00 AM); "Also list time off later this week"; Save; Send a test post; then "The test goes only to you, in your Time Off Manager app chat."
 - No Channel box and no /invite note.
