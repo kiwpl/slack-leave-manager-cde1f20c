@@ -1,0 +1,2175 @@
+<title>Time Off Matching Lists</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ["Inter", "system-ui", "sans-serif"] },
+        colors: {
+          border: "hsl(var(--border))",
+          input: "hsl(var(--input))",
+          ring: "hsl(var(--ring))",
+          background: "hsl(var(--background))",
+          foreground: "hsl(var(--foreground))",
+          primary: { DEFAULT: "hsl(var(--primary))", foreground: "hsl(var(--primary-foreground))" },
+          secondary: { DEFAULT: "hsl(var(--secondary))", foreground: "hsl(var(--secondary-foreground))" },
+          destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
+          muted: { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
+          accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
+          card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
+          success: { DEFAULT: "hsl(var(--success))", foreground: "hsl(var(--success-foreground))" },
+          warning: { DEFAULT: "hsl(var(--warning))", foreground: "hsl(var(--warning-foreground))" },
+          info: { DEFAULT: "hsl(var(--info))", foreground: "hsl(var(--info-foreground))" },
+        },
+        borderRadius: { lg: "var(--radius)", md: "calc(var(--radius) - 2px)", sm: "calc(var(--radius) - 4px)" },
+      },
+    },
+  };
+</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  /* Layout: the real app (sidebar + centred column; phone header + 3-across menu) under a mockup strip.
+     Base tokens are the app's src/index.css and give "Today's app".
+     Round 6 adds the --a-* / --at-* tokens and the #stage.look-apple rules: the Apple-style look,
+     as a skin over the same markup. Nothing in the skin runs while the screen is still. */
+  :root {
+    /* ---- today's app (src/index.css) ---- */
+    --background: 210 20% 98%;
+    --foreground: 220 20% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 10%;
+    --primary: 220 70% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 94%;
+    --secondary-foreground: 220 20% 20%;
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 10% 46%;
+    --accent: 220 14% 94%;
+    --accent-foreground: 220 20% 20%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 90%;
+    --input: 220 13% 90%;
+    --ring: 220 70% 50%;
+    --radius: 0.5rem;
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+    --warn-bg: #fefce8;
+    --warn-border: rgb(234 179 8 / 0.5);
+    --warn-icon: #ca8a04;
+    --warn-text: #854d0e;
+    --warn-badge: #a16207;
+    --admin-bg: #fefce8;
+    --changed: #f97316;
+
+    /* ---- round 6: Apple-style look ---- */
+    /* Tailwind-shaped values (h s l) the skin swaps in */
+    --at-background: 240 24% 96%;
+    --at-foreground: 240 3% 12%;
+    --at-card: 0 0% 100%;
+    --at-primary: 210 100% 42%;
+    --at-muted: 240 5% 93%;
+    --at-muted-foreground: 240 2% 43%;
+    --at-destructive: 3 74% 46%;
+    --at-border: 240 6% 88%;
+    --at-success: 135 59% 40%;
+    --at-warning: 36 100% 50%;
+    --at-info: 204 90% 36%;
+    /* surfaces */
+    --a-bg: #f2f2f7;
+    --a-glow-sky: rgba(10, 132, 255, 0.16);
+    --a-glow-sun: rgba(255, 170, 90, 0.14);
+    --a-glow-admin: rgba(255, 204, 0, 0.22);
+    --a-card: rgba(255, 255, 255, 0.82);
+    --a-solid: #ffffff;
+    --a-side: rgba(255, 255, 255, 0.55);
+    --a-bar: rgba(246, 246, 250, 0.72);
+    --a-toast: rgba(255, 255, 255, 0.82);
+    --a-nav-on: #ffffff;
+    --a-well: rgba(118, 118, 128, 0.08);
+    --a-well-2: rgba(118, 118, 128, 0.14);
+    --a-field: rgba(118, 118, 128, 0.11);
+    --a-track: rgba(120, 120, 128, 0.26);
+    --a-sep: rgba(60, 60, 67, 0.18);
+    --a-cbx: rgba(60, 60, 67, 0.34);
+    --a-info-tint: rgba(0, 122, 255, 0.06);
+    /* text */
+    --a-fg: #1d1d1f;
+    --a-fg-2: #6b6b70;
+    /* accent */
+    --a-accent-1: #0a74e6;
+    --a-accent-2: #0064cf;
+    --a-accent-text: #0068d6;
+    --a-accent-glow: rgba(0, 104, 214, 0.5);
+    --a-on-accent: #ffffff;
+    --a-red-1: #de2d24;
+    --a-red-2: #c81e16;
+    --a-red-glow: rgba(200, 30, 22, 0.42);
+    --a-focus: rgba(0, 122, 255, 0.5);
+    --a-focus-soft: rgba(0, 122, 255, 0.2);
+    --a-on: #34c759;
+    --a-thumb: #ffffff;
+    /* status */
+    --a-ok-fg: #1b7a36;
+    --a-ok-bg: rgba(52, 199, 89, 0.16);
+    --a-wait-fg: #8a5000;
+    --a-wait-bg: rgba(255, 159, 10, 0.18);
+    --a-bad-fg: #c4201a;
+    --a-bad-bg: rgba(255, 59, 48, 0.12);
+    --a-bad-border: rgba(255, 59, 48, 0.3);
+    --a-mute-fg: #5f5f66;
+    --a-mute-bg: rgba(118, 118, 128, 0.14);
+    --a-yellow-bg: rgba(255, 204, 0, 0.16);
+    --a-yellow-border: rgba(214, 158, 0, 0.35);
+    --a-yellow-fg: #6b4a00;
+    --a-yellow-icon: #b97a00;
+    /* depth */
+    --a-shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 0.5px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(15, 23, 42, 0.04), 0 14px 32px -16px rgba(15, 23, 42, 0.18);
+    --a-shadow-pop: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 24px 60px -12px rgba(15, 23, 42, 0.35);
+    --a-shadow-pill: 0 0 0 0.5px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(15, 23, 42, 0.12);
+    --a-shadow-thumb: 0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.16);
+    --a-scrim: rgba(0, 0, 0, 0.32);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --background: 220 20% 7%;
+      --foreground: 210 20% 95%;
+      --card: 220 20% 10%;
+      --card-foreground: 210 20% 95%;
+      --primary: 220 70% 55%;
+      --primary-foreground: 0 0% 100%;
+      --secondary: 220 14% 16%;
+      --secondary-foreground: 210 20% 95%;
+      --muted: 220 14% 16%;
+      --muted-foreground: 220 10% 60%;
+      --accent: 220 14% 16%;
+      --accent-foreground: 210 20% 95%;
+      --destructive: 0 62% 40%;
+      --border: 220 14% 18%;
+      --input: 220 14% 18%;
+      --ring: 220 70% 55%;
+      --success: 142 71% 40%;
+      --warning: 38 92% 45%;
+      --info: 199 89% 42%;
+      --warn-bg: rgb(66 32 6 / 0.2);
+      --warn-border: rgb(234 179 8 / 0.5);
+      --warn-icon: #ca8a04;
+      --warn-text: #fef08a;
+      --warn-badge: #fde047;
+      --admin-bg: rgb(66 32 6 / 0.25);
+      --changed: #fb923c;
+
+      --at-background: 240 10% 3%;
+      --at-foreground: 240 6% 96%;
+      --at-card: 240 3% 11%;
+      --at-primary: 211 100% 65%;
+      --at-muted: 240 4% 18%;
+      --at-muted-foreground: 240 3% 64%;
+      --at-destructive: 3 100% 70%;
+      --at-border: 240 4% 22%;
+      --at-success: 135 64% 55%;
+      --at-warning: 36 100% 55%;
+      --at-info: 204 100% 66%;
+      --a-bg: #060608;
+      --a-glow-sky: rgba(10, 132, 255, 0.22);
+      --a-glow-sun: rgba(255, 140, 60, 0.1);
+      --a-glow-admin: rgba(255, 204, 0, 0.13);
+      --a-card: rgba(28, 28, 30, 0.82);
+      --a-solid: #1c1c1e;
+      --a-side: rgba(22, 22, 24, 0.6);
+      --a-bar: rgba(18, 18, 20, 0.7);
+      --a-toast: rgba(44, 44, 46, 0.82);
+      --a-nav-on: rgba(118, 118, 128, 0.32);
+      --a-well: rgba(118, 118, 128, 0.16);
+      --a-well-2: rgba(118, 118, 128, 0.26);
+      --a-field: rgba(118, 118, 128, 0.22);
+      --a-track: rgba(120, 120, 128, 0.4);
+      --a-sep: rgba(120, 120, 128, 0.36);
+      --a-cbx: rgba(235, 235, 245, 0.4);
+      --a-info-tint: rgba(10, 132, 255, 0.12);
+      --a-fg: #f5f5f7;
+      --a-fg-2: #a1a1a6;
+      --a-accent-1: #0a74e6;
+      --a-accent-2: #0064cf;
+      --a-accent-text: #4da3ff;
+      --a-accent-glow: rgba(10, 132, 255, 0.45);
+      --a-on-accent: #ffffff;
+      --a-red-1: #de2d24;
+      --a-red-2: #c81e16;
+      --a-red-glow: rgba(255, 69, 58, 0.35);
+      --a-focus: rgba(77, 163, 255, 0.65);
+      --a-focus-soft: rgba(77, 163, 255, 0.28);
+      --a-on: #30d158;
+      --a-thumb: #ffffff;
+      --a-ok-fg: #5edc7f;
+      --a-ok-bg: rgba(48, 209, 88, 0.2);
+      --a-wait-fg: #ffc052;
+      --a-wait-bg: rgba(255, 159, 10, 0.22);
+      --a-bad-fg: #ff7b72;
+      --a-bad-bg: rgba(255, 69, 58, 0.18);
+      --a-bad-border: rgba(255, 69, 58, 0.4);
+      --a-mute-fg: #b0b0b8;
+      --a-mute-bg: rgba(118, 118, 128, 0.24);
+      --a-yellow-bg: rgba(255, 204, 0, 0.14);
+      --a-yellow-border: rgba(255, 204, 0, 0.3);
+      --a-yellow-fg: #ffe08a;
+      --a-yellow-icon: #ffcc00;
+      --a-shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 14px 32px -16px rgba(0, 0, 0, 0.6);
+      --a-shadow-pop: 0 0 0 0.5px rgba(255, 255, 255, 0.12), 0 24px 60px -12px rgba(0, 0, 0, 0.7);
+      --a-shadow-pill: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.4);
+      --a-shadow-thumb: 0 3px 8px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.3);
+      --a-scrim: rgba(0, 0, 0, 0.55);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --background: 220 20% 7%;
+    --foreground: 210 20% 95%;
+    --card: 220 20% 10%;
+    --card-foreground: 210 20% 95%;
+    --primary: 220 70% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 16%;
+    --secondary-foreground: 210 20% 95%;
+    --muted: 220 14% 16%;
+    --muted-foreground: 220 10% 60%;
+    --accent: 220 14% 16%;
+    --accent-foreground: 210 20% 95%;
+    --destructive: 0 62% 40%;
+    --border: 220 14% 18%;
+    --input: 220 14% 18%;
+    --ring: 220 70% 55%;
+    --success: 142 71% 40%;
+    --warning: 38 92% 45%;
+    --info: 199 89% 42%;
+    --warn-bg: rgb(66 32 6 / 0.2);
+    --warn-border: rgb(234 179 8 / 0.5);
+    --warn-icon: #ca8a04;
+    --warn-text: #fef08a;
+    --warn-badge: #fde047;
+    --admin-bg: rgb(66 32 6 / 0.25);
+    --changed: #fb923c;
+
+    --at-background: 240 10% 3%;
+    --at-foreground: 240 6% 96%;
+    --at-card: 240 3% 11%;
+    --at-primary: 211 100% 65%;
+    --at-muted: 240 4% 18%;
+    --at-muted-foreground: 240 3% 64%;
+    --at-destructive: 3 100% 70%;
+    --at-border: 240 4% 22%;
+    --at-success: 135 64% 55%;
+    --at-warning: 36 100% 55%;
+    --at-info: 204 100% 66%;
+    --a-bg: #060608;
+    --a-glow-sky: rgba(10, 132, 255, 0.22);
+    --a-glow-sun: rgba(255, 140, 60, 0.1);
+    --a-glow-admin: rgba(255, 204, 0, 0.13);
+    --a-card: rgba(28, 28, 30, 0.82);
+    --a-solid: #1c1c1e;
+    --a-side: rgba(22, 22, 24, 0.6);
+    --a-bar: rgba(18, 18, 20, 0.7);
+    --a-toast: rgba(44, 44, 46, 0.82);
+    --a-nav-on: rgba(118, 118, 128, 0.32);
+    --a-well: rgba(118, 118, 128, 0.16);
+    --a-well-2: rgba(118, 118, 128, 0.26);
+    --a-field: rgba(118, 118, 128, 0.22);
+    --a-track: rgba(120, 120, 128, 0.4);
+    --a-sep: rgba(120, 120, 128, 0.36);
+    --a-cbx: rgba(235, 235, 245, 0.4);
+    --a-info-tint: rgba(10, 132, 255, 0.12);
+    --a-fg: #f5f5f7;
+    --a-fg-2: #a1a1a6;
+    --a-accent-1: #0a74e6;
+    --a-accent-2: #0064cf;
+    --a-accent-text: #4da3ff;
+    --a-accent-glow: rgba(10, 132, 255, 0.45);
+    --a-on-accent: #ffffff;
+    --a-red-1: #de2d24;
+    --a-red-2: #c81e16;
+    --a-red-glow: rgba(255, 69, 58, 0.35);
+    --a-focus: rgba(77, 163, 255, 0.65);
+    --a-focus-soft: rgba(77, 163, 255, 0.28);
+    --a-on: #30d158;
+    --a-thumb: #ffffff;
+    --a-ok-fg: #5edc7f;
+    --a-ok-bg: rgba(48, 209, 88, 0.2);
+    --a-wait-fg: #ffc052;
+    --a-wait-bg: rgba(255, 159, 10, 0.22);
+    --a-bad-fg: #ff7b72;
+    --a-bad-bg: rgba(255, 69, 58, 0.18);
+    --a-bad-border: rgba(255, 69, 58, 0.4);
+    --a-mute-fg: #b0b0b8;
+    --a-mute-bg: rgba(118, 118, 128, 0.24);
+    --a-yellow-bg: rgba(255, 204, 0, 0.14);
+    --a-yellow-border: rgba(255, 204, 0, 0.3);
+    --a-yellow-fg: #ffe08a;
+    --a-yellow-icon: #ffcc00;
+    --a-shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 14px 32px -16px rgba(0, 0, 0, 0.6);
+    --a-shadow-pop: 0 0 0 0.5px rgba(255, 255, 255, 0.12), 0 24px 60px -12px rgba(0, 0, 0, 0.7);
+    --a-shadow-pill: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.4);
+    --a-shadow-thumb: 0 3px 8px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.3);
+    --a-scrim: rgba(0, 0, 0, 0.55);
+    color-scheme: dark;
+  }
+
+  [hidden] { display: none !important; }
+  * { border-color: hsl(var(--border)); }
+  body {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: "Inter", system-ui, sans-serif;
+  }
+  /* Paints the band above the page on phones with a status bar. */
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: hsl(var(--card)); }
+  .gutter {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  @media (min-width: 768px) {
+    .gutter-md {
+      padding-left: max(32px, env(safe-area-inset-left, 0px));
+      padding-right: max(32px, env(safe-area-inset-right, 0px));
+    }
+  }
+  @media (max-width: 767px) {
+    input[type="date"] { width: 100%; max-width: 100%; min-width: 0; }
+  }
+
+  /* ---------- today's app: the pieces Tailwind classes can't draw ---------- */
+  .cbx {
+    appearance: none; -webkit-appearance: none;
+    height: 1rem; width: 1rem; flex-shrink: 0; margin: 0;
+    border-radius: calc(var(--radius) - 4px);
+    border: 1px solid hsl(var(--primary));
+    background: transparent; cursor: pointer; display: grid; place-content: center;
+  }
+  .cbx:checked {
+    background: hsl(var(--primary));
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+    background-size: 1rem 1rem; background-position: center; background-repeat: no-repeat;
+  }
+  .cbx:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring)); }
+
+  .warn-alert { border-color: var(--warn-border); background: var(--warn-bg); }
+  .warn-alert .warn-icon { color: var(--warn-icon); }
+  .warn-alert .warn-text { color: var(--warn-text); }
+  .warn-badge { border-color: var(--warn-border); background: var(--warn-bg); color: var(--warn-badge); }
+  .admin-bg { background: var(--admin-bg); }
+
+  .switch { position: relative; width: 44px; height: 24px; border-radius: 999px; border: 2px solid transparent; background: hsl(var(--input)); transition: background-color .15s; flex-shrink: 0; cursor: pointer; }
+  .switch::after { content: ""; position: absolute; top: 0; left: 0; width: 20px; height: 20px; border-radius: 999px; background: hsl(var(--background)); box-shadow: 0 4px 6px -1px rgb(0 0 0 / .1), 0 2px 4px -2px rgb(0 0 0 / .1); transition: transform .15s; }
+  .switch[aria-checked="true"] { background: hsl(var(--primary)); }
+  .switch[aria-checked="true"]::after { transform: translateX(20px); }
+  .switch:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring)); }
+
+  #toast { transition: opacity .2s, transform .2s; }
+  #toast.hide { opacity: 0; transform: translateY(8px); pointer-events: none; }
+
+  /* ---------- mockup strip ---------- */
+  #strip { position: relative; z-index: 5; }
+  #changesBox > summary { list-style: none; }
+  #changesBox > summary::-webkit-details-marker { display: none; }
+  #changesBox[open] .chev { transform: rotate(180deg); }
+  #changesBox > summary:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--ring)); border-radius: calc(var(--radius) - 2px); }
+  /* "Outline what changed": only this round's changes. */
+  body.show-changes [data-changed] {
+    outline: 2px dashed var(--changed);
+    outline-offset: 4px;
+  }
+
+  /* =====================================================================
+     Round 6: the Apple-style look. Only inside #stage.look-apple.
+     Depth comes from a still backdrop, soft shadows and light edges.
+     Blur is used twice: the phone top bar and the small toast.
+     Movement is transform/opacity only, and only after a tap or a screen change.
+     ===================================================================== */
+  #stage.look-apple {
+    --background: var(--at-background);
+    --foreground: var(--at-foreground);
+    --card: var(--at-card);
+    --card-foreground: var(--at-foreground);
+    --primary: var(--at-primary);
+    --secondary: var(--at-muted);
+    --secondary-foreground: var(--at-foreground);
+    --muted: var(--at-muted);
+    --muted-foreground: var(--at-muted-foreground);
+    --accent: var(--at-muted);
+    --accent-foreground: var(--at-foreground);
+    --destructive: var(--at-destructive);
+    --border: var(--at-border);
+    --input: var(--at-border);
+    --ring: var(--at-primary);
+    --success: var(--at-success);
+    --warning: var(--at-warning);
+    --info: var(--at-info);
+    --radius: 0.75rem;
+    --ease: cubic-bezier(.32, .72, 0, 1);
+    --ease-pop: cubic-bezier(.34, 1.45, .64, 1);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Backdrop: one still layer of sky and sunlight. Admin pages cross-fade to a warm glow. */
+  #stage.look-apple .app-root { position: relative; isolation: isolate; background: var(--a-bg); }
+  #stage.look-apple .app-root::before,
+  #stage.look-apple .app-root::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+  #stage.look-apple .app-root::before {
+    background:
+      radial-gradient(70% 55% at 8% 0%, var(--a-glow-sky), transparent 70%),
+      radial-gradient(60% 50% at 100% 6%, var(--a-glow-sun), transparent 70%),
+      var(--a-bg);
+  }
+  #stage.look-apple .app-root::after {
+    background:
+      radial-gradient(85% 60% at 50% 0%, var(--a-glow-admin), transparent 72%),
+      radial-gradient(60% 50% at 100% 100%, var(--a-glow-sun), transparent 70%),
+      var(--a-bg);
+    opacity: 0; transition: opacity .5s ease;
+  }
+  #stage.look-apple .app-root.is-admin::after { opacity: 1; }
+  #stage.look-apple .app-main.admin-bg { background: transparent; }
+
+  /* Focus */
+  #stage.look-apple :is(a, button, summary):focus-visible { outline: 3px solid var(--a-focus); outline-offset: 2px; }
+
+  /* Sidebar (desktop) */
+  #stage.look-apple .app-side { background: var(--a-side); border-right-width: 0; box-shadow: inset -0.5px 0 0 var(--a-sep); }
+  #stage.look-apple .app-side-head { border-bottom-width: 0; padding-bottom: 0.5rem; }
+  #stage.look-apple .app-side-foot { border-top-width: 0; box-shadow: inset 0 0.5px 0 var(--a-sep); }
+  #stage.look-apple .app-name { font-size: 1.0625rem; font-weight: 700; letter-spacing: -0.02em; }
+  #stage.look-apple .nav-item {
+    border-radius: 10px; background: transparent; color: var(--a-fg); font-weight: 500; letter-spacing: -0.005em;
+    transition: background-color .2s, box-shadow .2s, transform .14s var(--ease);
+  }
+  #stage.look-apple .nav-item svg { color: var(--a-accent-text); }
+  #stage.look-apple .nav-item[aria-current="page"] { background: var(--a-nav-on); box-shadow: var(--a-shadow-pill); font-weight: 600; }
+  #stage.look-apple .nav-item:active { transform: scale(.98); }
+  #stage.look-apple .me-dot { background: linear-gradient(160deg, var(--a-accent-1), var(--a-accent-2)); color: var(--a-on-accent); }
+
+  /* Phone top bar: frosted, stays put, content scrolls under it */
+  #stage.look-apple .app-header {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30;
+    padding-top: 8px; padding-bottom: 8px;
+    background: var(--a-bar); border-bottom-width: 0;
+    -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+    transition: box-shadow .25s;
+  }
+  #stage.look-apple .app-header.is-stuck { box-shadow: 0 0.5px 0 var(--a-sep); }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    #stage.look-apple .app-header { background: var(--a-bg); }
+  }
+
+  /* Phone menu: still 3 across with the icon above the label, drawn as a rounded tray */
+  #stage.look-apple .app-mobnav {
+    margin: 10px max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
+    padding: 4px; gap: 2px; border-bottom-width: 0; border-radius: 16px; background: var(--a-well-2);
+  }
+  #stage.look-apple .mob-item {
+    border-bottom-width: 0; border-radius: 12px; padding: 8px 4px; color: var(--a-fg-2);
+    transition: background-color .2s, color .2s, box-shadow .2s, transform .14s var(--ease);
+  }
+  #stage.look-apple .mob-item[aria-current="page"] { background: var(--a-nav-on); color: var(--a-accent-text); box-shadow: var(--a-shadow-pill); }
+  #stage.look-apple .mob-item:active { transform: scale(.96); }
+
+  /* Type */
+  #stage.look-apple .ui-title { font-size: clamp(1.75rem, 1.55rem + 0.9vw, 2.125rem); line-height: 1.1; letter-spacing: -0.025em; font-weight: 700; }
+  #stage.look-apple .ui-card-title { font-size: 1.0625rem; line-height: 1.2; letter-spacing: -0.015em; }
+  #stage.look-apple .ui-cap { font-size: 0.71875rem; font-weight: 600; letter-spacing: 0.04em; }
+  #stage.look-apple .ui-num { font-size: 2.25rem; line-height: 1; letter-spacing: -0.03em; }
+  #stage.look-apple .ui-num-sm { font-size: 1.5rem; letter-spacing: -0.02em; }
+
+  /* Cards: a light, slightly see-through sheet that floats on a soft shadow */
+  #stage.look-apple .ui-card { background: var(--a-card); border-width: 0; border-radius: 22px; box-shadow: var(--a-shadow-card); }
+  #stage.look-apple .ui-card-info { background: linear-gradient(var(--a-info-tint), var(--a-info-tint)), var(--a-card); }
+  #stage.look-apple .ui-card-accent { box-shadow: var(--a-shadow-card), 0 0 0 1.5px var(--a-focus-soft); }
+  #stage.look-apple .ui-card-hero { position: relative; overflow: hidden; }
+  #stage.look-apple .ui-card-hero::after {
+    content: ""; position: absolute; top: -45%; right: -18%; width: 70%; height: 150%; pointer-events: none;
+    background: radial-gradient(closest-side, var(--a-glow-sky), transparent);
+  }
+  #stage.look-apple .ui-card-hero > * { position: relative; z-index: 1; }
+
+  /* Wells: the small boxes inside a card sit slightly sunk in */
+  #stage.look-apple .ui-well { background: var(--a-well); border-width: 0; border-radius: 14px; }
+  /* Round 7: text boxes inside a well are white, so they stand out from the grey box around them. */
+  #stage.look-apple .ui-well :is(.ui-input, .ui-select) { background: var(--a-solid); }
+
+  /* Lists: grouped rows with hairline dividers */
+  #stage.look-apple .ui-list { background: var(--a-well); border-radius: 16px; overflow: hidden; }
+  #stage.look-apple .ui-list > * { position: relative; margin-top: 0; margin-bottom: 0; }
+  #stage.look-apple .ui-list > * + *::before {
+    content: ""; position: absolute; top: 0; left: 16px; right: 0; height: 1px;
+    background: var(--a-sep); transform: scaleY(.5); transform-origin: top;
+  }
+  #stage.look-apple .ui-row { border-width: 0; border-radius: 0; background: transparent; padding: 13px 16px; transition: background-color .3s; }
+  #stage.look-apple a.ui-row:active { background: var(--a-well-2); transition-duration: 0s; }
+  #stage.look-apple .ui-list > .ui-btn { border-radius: 0; height: 44px; }
+  #stage.look-apple .ui-list > .ui-btn:active { transform: none; background: var(--a-well-2); }
+
+  /* Buttons: press in under the finger */
+  #stage.look-apple .ui-btn {
+    border-radius: 12px; font-weight: 600; letter-spacing: -0.01em; touch-action: manipulation;
+    transition: transform .2s var(--ease), filter .2s, background-color .2s;
+  }
+  #stage.look-apple .ui-btn:active:not(:disabled) { transform: scale(.97); transition-duration: .06s; }
+  #stage.look-apple .ui-btn-primary {
+    background: linear-gradient(180deg, var(--a-accent-1), var(--a-accent-2)); color: var(--a-on-accent); border-width: 0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 1px 2px rgba(0, 50, 120, 0.25), 0 8px 16px -8px var(--a-accent-glow);
+  }
+  #stage.look-apple .ui-btn-destructive {
+    background: linear-gradient(180deg, var(--a-red-1), var(--a-red-2)); color: var(--a-on-accent); border-width: 0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(120, 20, 10, 0.25), 0 8px 16px -8px var(--a-red-glow);
+  }
+  #stage.look-apple :is(.ui-btn-primary, .ui-btn-destructive):active:not(:disabled) { filter: brightness(.93); }
+  #stage.look-apple .ui-btn-outline { background: var(--a-field); border-color: transparent; color: var(--a-accent-text); box-shadow: none; }
+  #stage.look-apple .ui-btn-ghost { background: transparent; color: var(--a-accent-text); box-shadow: none; }
+  #stage.look-apple .ui-btn-quiet { color: var(--a-fg-2); font-weight: 500; }
+  #stage.look-apple .ui-btn-icon { border-radius: 999px; background: var(--a-well); }
+  #stage.look-apple :is(.ui-btn-outline, .ui-btn-ghost, .ui-btn-icon):active:not(:disabled) { background: var(--a-well-2); }
+
+  /* Text boxes and dropdowns: soft filled fields that light up on focus */
+  #stage.look-apple :is(.ui-input, .ui-select, .ui-textarea) {
+    background: var(--a-field); border: 1px solid transparent; border-radius: 12px; color: var(--a-fg);
+    transition: background-color .2s, box-shadow .2s, border-color .2s;
+  }
+  #stage.look-apple :is(.ui-input, .ui-select, .ui-textarea):focus {
+    outline: none; background: var(--a-solid); border-color: var(--a-accent-text); box-shadow: 0 0 0 4px var(--a-focus-soft);
+  }
+
+  /* Checkboxes */
+  #stage.look-apple .cbx {
+    height: 1.25rem; width: 1.25rem; border-radius: 6px; border: 1.5px solid var(--a-cbx); background-color: var(--a-solid);
+    transition: background-color .15s, border-color .15s, transform .25s var(--ease-pop);
+  }
+  #stage.look-apple .cbx:checked {
+    border-color: transparent; background-color: var(--a-accent-2);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+    background-size: 0.875rem 0.875rem; background-position: center; background-repeat: no-repeat;
+  }
+  #stage.look-apple .cbx:active { transform: scale(.86); transition-duration: .06s; }
+  #stage.look-apple .cbx:focus-visible { outline: 3px solid var(--a-focus); outline-offset: 2px; box-shadow: none; }
+
+  /* Switches: green when on, the knob stretches while pressed */
+  #stage.look-apple .switch { width: 51px; height: 31px; border-width: 0; background: var(--a-track); transition: background-color .25s; }
+  #stage.look-apple .switch::after {
+    top: 2px; left: 2px; width: 27px; height: 27px; background: var(--a-thumb); box-shadow: var(--a-shadow-thumb);
+    transition: transform .32s var(--ease-pop), width .2s var(--ease);
+  }
+  #stage.look-apple .switch[aria-checked="true"] { background: var(--a-on); }
+  #stage.look-apple .switch[aria-checked="true"]::after { transform: translateX(20px); }
+  #stage.look-apple .switch:active::after { width: 32px; }
+  #stage.look-apple .switch[aria-checked="true"]:active::after { transform: translateX(15px); }
+  #stage.look-apple .switch:focus-visible { outline: 3px solid var(--a-focus); outline-offset: 2px; box-shadow: none; }
+
+  /* Status badges: tinted capsules */
+  #stage.look-apple .ui-badge { border-color: transparent; padding: 3px 10px; font-weight: 600; letter-spacing: -0.005em; }
+  #stage.look-apple .ui-badge.is-ok { background: var(--a-ok-bg); color: var(--a-ok-fg); }
+  #stage.look-apple .ui-badge.is-wait { background: var(--a-wait-bg); color: var(--a-wait-fg); }
+  #stage.look-apple .ui-badge.is-bad { background: var(--a-bad-bg); color: var(--a-bad-fg); }
+  #stage.look-apple .ui-badge.is-mute { background: var(--a-mute-bg); color: var(--a-mute-fg); }
+  #stage.look-apple .ui-badge.is-special { background: var(--a-yellow-bg); color: var(--a-yellow-fg); }
+  /* Who else is off: still blue = approved, amber = pending */
+  #stage.look-apple .who-dot.is-wait { background: var(--a-wait-bg); color: var(--a-wait-fg); }
+
+  /* Yellow warning box and red blocking box keep their colours */
+  #stage.look-apple .warn-alert { background: var(--a-yellow-bg); border-color: var(--a-yellow-border); border-radius: 14px; }
+  #stage.look-apple .warn-alert .warn-icon { color: var(--a-yellow-icon); }
+  #stage.look-apple .warn-alert .warn-text { color: var(--a-yellow-fg); }
+  #stage.look-apple .err-alert { background: var(--a-bad-bg); border-color: var(--a-bad-border); color: var(--a-bad-fg); border-radius: 14px; }
+
+  /* Pop-ups: dim behind, scale in, scale out the way they came */
+  #stage.look-apple .dlg-scrim { background: var(--a-scrim); animation: a-fade .22s ease-out backwards; transition: opacity .16s; }
+  #stage.look-apple .dlg {
+    background: var(--a-solid); border-width: 0; border-radius: 22px; box-shadow: var(--a-shadow-pop);
+    animation: a-dlg .34s var(--ease) backwards; transition: opacity .16s;
+  }
+  #stage.look-apple .dlg-x { border-radius: 999px; background: var(--a-well); opacity: 1; color: var(--a-fg-2); }
+  #stage.look-apple .dlg-title { font-size: 1.0625rem; letter-spacing: -0.015em; }
+  #stage.look-apple #dialogRoot.is-closing :is(.dlg, .dlg-scrim) { opacity: 0; }
+
+  /* Toast: a small frosted pill */
+  #stage.look-apple #toast {
+    background: var(--a-toast); border-width: 0; border-radius: 16px; box-shadow: var(--a-shadow-pop); font-weight: 500; color: var(--a-fg);
+    -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+    transition: opacity .25s, transform .45s var(--ease-pop);
+  }
+  #stage.look-apple #toast.hide { opacity: 0; transform: translateY(14px) scale(.96); }
+  #stage.look-apple #toast .toast-icon { color: var(--a-on); }
+
+  /* Screen changes: cards ease up one after another; opening a request slides in from the right and back out the same way */
+  @keyframes a-fade { from { opacity: 0; } }
+  @keyframes a-rise { from { opacity: 0; transform: translateY(14px) scale(.985); } }
+  @keyframes a-push { from { opacity: 0; transform: translateX(28px); } }
+  @keyframes a-pop { from { opacity: 0; transform: translateX(-28px); } }
+  @keyframes a-dlg { from { opacity: 0; transform: translate(-50%, -50%) scale(.94); } }
+  @keyframes a-bump { 0% { opacity: .3; transform: scale(.8); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
+  #stage.look-apple .page.anim-tab > * { animation: a-rise .5s var(--ease) backwards; animation-delay: calc(var(--i, 0) * 50ms); }
+  #stage.look-apple .page.anim-push { animation: a-push .42s var(--ease) backwards; }
+  #stage.look-apple .page.anim-pop { animation: a-pop .42s var(--ease) backwards; }
+  #stage.look-apple .reveal { animation: a-rise .42s var(--ease) backwards; }
+  #stage.look-apple .bump { animation: a-bump .42s var(--ease) backwards; }
+
+  /* Hover only where there is a mouse */
+  @media (hover: hover) {
+    #stage.look-apple .nav-item:not([aria-current="page"]):hover { background: var(--a-well); }
+    #stage.look-apple .mob-item:not([aria-current="page"]):hover { color: var(--a-fg); }
+    #stage.look-apple a.ui-row:hover { background: var(--a-well); }
+    #stage.look-apple :is(.ui-btn-primary, .ui-btn-destructive):hover { filter: brightness(1.07); }
+    #stage.look-apple :is(.ui-btn-outline, .ui-btn-icon):hover { background: var(--a-well-2); }
+    #stage.look-apple .ui-btn-ghost:hover { background: var(--a-well); }
+  }
+
+  /* People who ask for less movement get a short fade, and nothing shifts. */
+  @media (prefers-reduced-motion: reduce) {
+    #toast, .switch, .switch::after, #changesBox .chev { transition: none; }
+    #stage.look-apple .page.anim-tab > *,
+    #stage.look-apple .page.anim-push,
+    #stage.look-apple .page.anim-pop,
+    #stage.look-apple .reveal,
+    #stage.look-apple .bump,
+    #stage.look-apple .dlg { animation: a-fade .18s ease-out backwards; animation-delay: 0s; }
+    #stage.look-apple :is(.ui-btn, .nav-item, .mob-item, .cbx):active { transform: none; }
+    #stage.look-apple .switch::after { transition: none; }
+    #stage.look-apple #toast { transition: opacity .2s; }
+    #stage.look-apple #toast.hide { transform: none; }
+  }
+  /* People who ask for less see-through get solid surfaces and no blur. */
+  @media (prefers-reduced-transparency: reduce) {
+    #stage.look-apple { --a-card: var(--a-solid); --a-side: var(--a-bg); --a-bar: var(--a-bg); --a-toast: var(--a-solid); }
+    #stage.look-apple .app-header, #stage.look-apple #toast { -webkit-backdrop-filter: none; backdrop-filter: none; }
+  }
+  @media (prefers-contrast: more) {
+    #stage.look-apple { --a-card: var(--a-solid); --a-sep: var(--a-fg-2); }
+    #stage.look-apple .ui-card { box-shadow: 0 0 0 1px var(--a-fg-2); }
+  }
+</style>
+
+<!-- Mockup strip (not part of the app) -->
+<div id="strip" class="border-b border-border bg-card">
+  <div class="gutter py-3 max-w-5xl mx-auto flex flex-col gap-3">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2 min-w-0">
+        <span class="inline-flex items-center rounded-full border border-border px-2.5 py-0.5 text-xs font-semibold text-muted-foreground shrink-0">Mockup · Round 7</span>
+        <span class="text-sm font-semibold text-foreground">Lists that match</span>
+      </div>
+      <label class="flex items-center gap-2 text-sm text-foreground cursor-pointer select-none" for="outlineToggle">
+        <button id="outlineToggle" type="button" role="switch" aria-checked="true" class="switch" aria-label="Outline what changed"></button>
+        Outline what changed
+      </label>
+    </div>
+    <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+      <div class="flex flex-wrap items-center gap-2"><span class="text-muted-foreground">Rows:</span><div id="rowsRow" class="inline-flex flex-wrap items-center rounded-md bg-muted p-1 text-muted-foreground gap-1"></div></div>
+      <div class="flex flex-wrap items-center gap-2"><span class="text-muted-foreground">Screen:</span><div id="screenRow" class="inline-flex flex-wrap items-center rounded-md bg-muted p-1 text-muted-foreground gap-1"></div></div>
+    </div>
+    <p id="tryHint" class="text-sm text-muted-foreground"></p>
+    <details id="changesBox" class="text-sm rounded-md border border-border">
+      <summary class="flex items-center justify-between gap-2 px-3 py-2 cursor-pointer font-medium text-foreground">
+        What changed since round 6
+        <svg class="chev h-4 w-4 opacity-60 shrink-0 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </summary>
+      <ul class="list-disc ml-8 mr-3 pb-3 text-muted-foreground space-y-0.5">
+        <li>Audit Log: the entries sit in one grey box with thin lines between them, like My Requests.</li>
+        <li>Flexible Time request page: the Make-Up Schedule rows are grouped the same way, and “Completed” and “Pending” are tinted capsules like the other badges. The two grey note boxes match the other soft grey boxes.</li>
+        <li>New Flexible Time request page: each make-up entry and the total line are soft grey boxes with no outline. Text boxes inside them are white so they stand out.</li>
+        <li>Not changed: every word, the order of things, what each button does, and the four screens from round 6.</li>
+        <li>Mockup only: three new screens (Audit Log and the two Flexible Time pages) and a Rows switch to compare with the live app. The old Look switch is gone because the Apple look is now live.</li>
+      </ul>
+    </details>
+  </div>
+</div>
+
+<div id="stage" class="look-apple">
+  <!-- The app -->
+  <div id="app"></div>
+
+  <!-- Dialog layer -->
+  <div id="dialogRoot"></div>
+
+  <!-- Toast (sonner look, bottom right) -->
+  <div id="toast" class="hide fixed z-[60] flex items-center gap-2 rounded-lg border border-border bg-background text-foreground shadow-lg px-4 py-3 text-sm" style="right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); max-width: calc(100vw - 32px);" role="status" aria-live="polite">
+    <svg class="toast-icon h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm4.7 7.7a1 1 0 0 0-1.4-1.4L11 12.6l-2.3-2.3a1 1 0 0 0-1.4 1.4l3 3a1 1 0 0 0 1.4 0l5-5Z" clip-rule="evenodd"/></svg>
+    <span id="toastText"></span>
+  </div>
+</div>
+
+<script>
+  // "Today" in the mockup, so the sample data stays realistic (same as round 5).
+  const TODAY = "2026-11-11";
+  const ME = "Maria Santos";
+
+  const $ = (id) => document.getElementById(id);
+  const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const MON3 = MONTHS.map((m) => m.slice(0, 3));
+  const WEEKDAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function parse(s) { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); }
+  function iso(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function fmt(s) { const d = parse(s); return MONTHS[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear(); }
+  function fmtShort(s) { const d = parse(s); return MON3[d.getMonth()] + " " + d.getDate(); }
+  function fmtRange(s, e) {
+    const a = parse(s), b = parse(e);
+    if (s === e) return fmtShort(s) + ", " + a.getFullYear();
+    if (a.getFullYear() === b.getFullYear()) return fmtShort(s) + " – " + fmtShort(e) + ", " + a.getFullYear();
+    return fmtShort(s) + ", " + a.getFullYear() + " – " + fmtShort(e) + ", " + b.getFullYear();
+  }
+  function shortDate(s) { const d = parse(s); return (d.getMonth() + 1) + "/" + d.getDate() + "/" + d.getFullYear(); }
+  function isWeekend(d) { const w = d.getDay(); return w === 0 || w === 6; }
+  function addDays(d, n) { const c = new Date(d); c.setDate(c.getDate() + n); return c; }
+  function eachDay(s, e, fn) { let d = parse(s); const end = parse(e); while (d <= end) { fn(d, iso(d)); d = addDays(d, 1); } }
+  function num(n) { return String(Math.round(n * 100) / 100); }
+  function joinAnd(list) { return list.length <= 1 ? list.join("") : list.slice(0, -1).join(", ") + " and " + list[list.length - 1]; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+  // Ontario statutory holidays (observed dates when they fall on a weekend).
+  const HOLIDAYS = {
+    "2026-01-01": ["New Year's Day"], "2026-02-16": ["Family Day"], "2026-04-03": ["Good Friday"],
+    "2026-05-18": ["Victoria Day"], "2026-07-01": ["Canada Day"], "2026-09-07": ["Labour Day"],
+    "2026-10-12": ["Thanksgiving"], "2026-12-25": ["Christmas Day"], "2026-12-28": ["Boxing Day", true],
+    "2027-01-01": ["New Year's Day"], "2027-02-15": ["Family Day"], "2027-03-26": ["Good Friday"],
+    "2027-05-24": ["Victoria Day"], "2027-07-01": ["Canada Day"], "2027-09-06": ["Labour Day"],
+    "2027-10-11": ["Thanksgiving"], "2027-12-27": ["Christmas Day", true], "2027-12-28": ["Boxing Day", true],
+  };
+  // Weekends and stat holidays are never counted as days off.
+  function isOff(d) { return isWeekend(d) || !!HOLIDAYS[iso(d)]; }
+  function countBusinessDays(start, end) {
+    if (parse(start) > parse(end)) return 0;
+    let n = 0; eachDay(start, end, (d) => { if (!isOff(d)) n++; });
+    return n;
+  }
+  function calcTotal(start, end, startP, endP) {
+    const biz = countBusinessDays(start, end);
+    if (start === end) return (startP === "pm" || endP === "am") ? 0.5 : 1;
+    let total = biz;
+    if (startP === "pm" && !isOff(parse(start))) total -= 0.5;
+    if (endP === "am" && !isOff(parse(end))) total -= 0.5;
+    return total;
+  }
+  function nextWorkday(s) { let d = addDays(parse(s), 1); while (isOff(d)) d = addDays(d, 1); return iso(d); }
+  function holidaysBetween(start, end) {
+    const out = [];
+    if (!start || !end || parse(start) > parse(end)) return out;
+    eachDay(start, end, (d, s) => { if (HOLIDAYS[s] && !isWeekend(d)) out.push(s); });
+    return out;
+  }
+  function holidayLabel(s) { const [name, observed] = HOLIDAYS[s]; return observed ? `${name} (observed, ${fmtShort(s)})` : `${name} (${fmtShort(s)})`; }
+  function isWithin30Days(start) { return !!start && parse(start) <= addDays(parse(TODAY), 30); }
+
+  // ---------- Sample team data (round 5's, as one list) ----------
+  const PEOPLE = ["Alex Martin", "Chris Wong", "David Chen", "Jordan Lee", "Maria Santos", "Nadia Rahman", "Priya Shah", "Sam Patel"];
+  // k: vac | sick | flex. sp "pm" = afternoon off on first day, ep "am" = morning off on last day.
+  const ENTRIES = [
+    { n: "Maria Santos", k: "vac", s: "2026-08-03", e: "2026-08-07", sub: "2026-06-30", note: "Cottage week" },
+    { n: "Maria Santos", k: "vac", s: "2026-09-14", e: "2026-09-18", sub: "2026-08-12", status: "cancelled", note: "Trip to Halifax" },
+    { n: "Maria Santos", k: "vac", s: "2026-10-09", e: "2026-10-09", sp: "pm", sub: "2026-09-22", note: "Long weekend" },
+    { n: "Maria Santos", k: "sick", s: "2026-10-21", e: "2026-10-21", sp: "pm", sub: "2026-10-21" },
+    { n: "Maria Santos", k: "flex", s: "2026-10-30", st: "08:30", et: "10:30", h: 2, sub: "2026-10-28", plan: "Staying an hour late on Monday and Wednesday the week after.", makeup: [{ d: "2026-11-02", st: "17:00", et: "18:00", done: true }, { d: "2026-11-04", st: "17:00", et: "18:00", done: true }] },
+    { n: "Maria Santos", k: "sick", s: "2026-11-04", e: "2026-11-04", ep: "am", sub: "2026-11-04" },
+    { n: "Maria Santos", k: "vac", s: "2026-12-22", e: "2027-01-02", sub: "2026-11-03", note: "Holidays with family" },
+    { n: "Priya Shah", k: "vac", s: "2026-07-13", e: "2026-07-24", sub: "2026-05-11", note: "Visiting family in Mumbai" },
+    { n: "Priya Shah", k: "vac", s: "2026-11-09", e: "2026-11-13", sub: "2026-09-28", note: "Trip to Montreal" },
+    { n: "Priya Shah", k: "vac", s: "2026-12-16", e: "2026-12-17", sub: "2026-10-19", note: "Holiday concert and travel" },
+    { n: "Sam Patel", k: "sick", s: "2026-03-03", e: "2026-03-03", sub: "2026-03-03" },
+    { n: "Sam Patel", k: "sick", s: "2026-11-11", e: "2026-11-11", ep: "am", sub: "2026-11-11" },
+    { n: "Sam Patel", k: "vac", s: "2026-12-23", e: "2026-12-24", status: "pending_approval", sub: "2026-11-10", note: "Driving to Ottawa for the holidays" },
+    { n: "Jordan Lee", k: "vac", s: "2026-06-01", e: "2026-06-05", sub: "2026-04-20", note: "Camping trip" },
+    { n: "Jordan Lee", k: "flex", s: "2026-11-11", st: "13:00", et: "15:00", h: 2, sub: "2026-11-06", plan: "Coming in an hour early on Tuesday and staying an hour late on Thursday.", makeup: [{ d: "2026-11-10", st: "07:30", et: "08:30", done: true }, { d: "2026-11-12", st: "17:00", et: "18:00", done: false }] },
+    { n: "Jordan Lee", k: "vac", s: "2026-12-21", e: "2026-12-24", status: "pending_approval", sub: "2026-11-09", subAt: "11/9/2026, 3:42:10 PM", note: "Visiting family in Vancouver" },
+    { n: "Alex Martin", k: "sick", s: "2026-02-09", e: "2026-02-10", sub: "2026-02-10" },
+    { n: "Alex Martin", k: "vac", s: "2026-10-26", e: "2026-10-30", sub: "2026-09-14", note: "Week in Banff" },
+    { n: "Alex Martin", k: "vac", s: "2026-12-15", e: "2026-12-18", sub: "2026-10-05", note: "Ski trip" },
+    { n: "David Chen", k: "vac", s: "2026-09-08", e: "2026-09-11", sub: "2026-07-27", note: "Kids back to school" },
+    { n: "David Chen", k: "vac", s: "2026-11-13", e: "2026-11-13", sp: "pm", sub: "2026-10-30", note: "Appointment" },
+    { n: "Chris Wong", k: "vac", s: "2026-08-17", e: "2026-08-21", sub: "2026-06-15", note: "Family reunion" },
+    { n: "Nadia Rahman", k: "sick", s: "2026-09-29", e: "2026-09-29", sub: "2026-09-29" },
+  ];
+  ENTRIES.forEach((en, i) => { en.id = i; en.status = en.status || "approved"; });
+  const JORDAN = ENTRIES.find((en) => en.n === "Jordan Lee" && en.s === "2026-12-21");
+  function isActive(en) { return en.status === "approved" || en.status === "pending_approval"; }
+  const TIMES = ["9:14:05 AM", "2:05:33 PM", "11:27:48 AM", "4:18:02 PM", "8:51:19 AM", "1:36:27 PM"];
+  function subAt(en) { return en.subAt || `${shortDate(en.sub)}, ${TIMES[en.id % TIMES.length]}`; }
+
+  // Calls cb(date, amount) for each working day of an entry inside [from, to]. Flexible time gives hours.
+  function entryDays(en, from, to, cb) {
+    if (en.k === "flex") { if (en.s >= from && en.s <= to) cb(en.s, en.h); return; }
+    const same = en.s === en.e;
+    eachDay(en.s, en.e, (d, s) => {
+      if (isOff(d) || s < from || s > to) return;
+      let amt = 1;
+      if (same) amt = (en.sp === "pm" || en.ep === "am") ? 0.5 : 1;
+      else { if (s === en.s && en.sp === "pm") amt -= 0.5; if (s === en.e && en.ep === "am") amt -= 0.5; }
+      cb(s, amt);
+    });
+  }
+  // The app's yearTotals: vacation used / booked / waiting and sick days for one year.
+  function yearTotals(year) {
+    const t = { used: 0, booked: 0, waiting: 0, sick: 0 };
+    for (const en of ENTRIES) {
+      if (en.n !== ME || en.k === "flex" || !isActive(en)) continue;
+      entryDays(en, year + "-01-01", year + "-12-31", (s, a) => {
+        if (en.k === "sick") { if (en.status === "approved") t.sick += a; }
+        else if (en.status === "pending_approval") t.waiting += a;
+        else if (s < TODAY) t.used += a;
+        else t.booked += a;
+      });
+    }
+    return t;
+  }
+
+  const TYPES = { vacation: { label: "Vacation" }, sick: { label: "Sick Day" } };
+
+  // ---------- Icons (lucide) ----------
+  const svg = (paths, cls = "h-4 w-4") => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+  const P = {
+    home: '<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+    users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+    shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+    file: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+    activity: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+    logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>',
+    clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+    plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+    chevDown: '<path d="m6 9 6 6 6-6"/>',
+    chevUp: '<path d="m18 15-6-6-6 6"/>',
+    alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+    info: '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+    arrowLeft: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+    calendar: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
+    checkCircle: '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+    xCircle: '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
+    x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+    userPlus: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
+    bell: '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
+    edit: '<path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/>',
+    trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+  };
+
+  // ---------- Shared bits that copy the app's components ----------
+  // The Tailwind classes are the app's own (today's look). The ui-* names are hooks for the round 6 skin.
+  const BTN = "ui-btn inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
+  const V_PRIMARY = "ui-btn-primary bg-primary text-primary-foreground hover:bg-primary/90";
+  const V_OUTLINE = "ui-btn-outline border border-input bg-background hover:bg-accent hover:text-accent-foreground";
+  const V_GHOST = "ui-btn-ghost hover:bg-accent hover:text-accent-foreground";
+  const V_DESTRUCTIVE = "ui-btn-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90";
+  const SZ = "h-10 px-4 py-2";
+  const SZ_SM = "h-9 px-3";
+  const INPUT = "ui-input flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+  const SELECT = "ui-select appearance-none flex h-10 w-full items-center rounded-md border border-input bg-background px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer";
+  const TEXTAREA = "ui-textarea flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+  const LABEL = "text-sm font-medium leading-none";
+  const CARD = "ui-card rounded-lg border bg-card text-card-foreground shadow-sm";
+  const CAP = "ui-cap text-xs text-muted-foreground uppercase tracking-wider";
+  const ROW = "ui-row rounded-lg border border-border";
+
+  function selectBox(id, options, value, extra = "") {
+    return `<div class="relative ${extra}"><select id="${id}" class="${SELECT}">${options.map(([v, l]) => `<option value="${esc(v)}"${v === value ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>${svg(P.chevDown, "h-4 w-4 opacity-50 absolute right-3 top-3 pointer-events-none")}</div>`;
+  }
+  function cardHead(title, { desc = "", cls = "", tight = false } = {}) {
+    return `<div class="flex flex-col space-y-1.5 p-6${tight ? " pb-3" : ""}"><h3 class="ui-card-title font-semibold leading-none tracking-tight text-base ${cls}">${title}</h3>${desc ? `<p class="text-sm text-muted-foreground">${desc}</p>` : ""}</div>`;
+  }
+  const STATUS = {
+    pending_approval: ["Pending Approval", "bg-warning/15 text-warning border-warning/30", "is-wait"],
+    approved: ["Approved", "bg-success/15 text-success border-success/30", "is-ok"],
+    rejected: ["Rejected", "bg-destructive/15 text-destructive border-destructive/30", "is-bad"],
+    cancelled: ["Cancelled", "bg-muted text-muted-foreground border-border", "is-mute"],
+    completed: ["Completed", "bg-success/15 text-success border-success/30", "is-ok"],
+    incomplete: ["Incomplete", "bg-destructive/15 text-destructive border-destructive/30", "is-bad"],
+  };
+  function badge(status, auto, extra = "") {
+    const [label, cls, hook] = STATUS[status];
+    return `<div class="ui-badge ${hook} ${extra} inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${cls}">${status === "approved" && auto ? "Auto-Approved" : label}</div>`;
+  }
+  const specialBadge = `<div class="ui-badge is-special inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold gap-1 text-xs warn-badge">${svg(P.alert, "h-3 w-3")}Special approval</div>`;
+  function warnAlert(id, html, hidden) {
+    return `<div ${id ? `id="${id}"` : ""} class="relative w-full rounded-lg border p-4 warn-alert"${hidden ? " hidden" : ""}>${svg(P.alert, "warn-icon h-4 w-4 absolute left-4 top-4")}<div class="warn-text text-sm pl-7">${html}</div></div>`;
+  }
+  function errorAlert(html) {
+    return `<div class="err-alert relative w-full rounded-lg border border-destructive/50 p-4 text-destructive">${svg(P.alert, "h-4 w-4 absolute left-4 top-4")}<div class="text-sm pl-7">${html}</div></div>`;
+  }
+  function initials(name) { return name.split(" ").map((w) => w[0]).join(""); }
+
+  // ---------- App shell (AppLayout). Built once; only the page inside changes. ----------
+  const NAV = [
+    { key: "timeoff", route: "time-off", label: "Time Off", icon: P.home },
+    { key: "manager", route: "manager", label: "Manager View", icon: P.users },
+    { key: "admin", route: "admin", label: "Admin Settings", icon: P.settings },
+    { key: "users", label: "User Management", icon: P.shield },
+    { key: "policy", label: "Policy Editor", icon: P.file },
+    { key: "audit", route: "audit", label: "Audit Log", icon: P.activity },
+  ];
+  const SIDE_BASE = "nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors";
+  const SIDE_ON = "bg-primary text-primary-foreground";
+  const SIDE_OFF = "text-muted-foreground hover:bg-accent hover:text-accent-foreground";
+  const MOB_BASE = "mob-item flex flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] leading-tight font-medium text-center whitespace-nowrap border-b-2 transition-colors";
+  const MOB_ON = "border-primary text-primary";
+  const MOB_OFF = "border-transparent text-muted-foreground hover:text-foreground";
+
+  function shellHtml() {
+    const link = (it, base) => `<a href="#${it.route || "time-off"}" data-nav="${it.key}" class="${base}">${svg(it.icon)}${it.label}</a>`;
+    return `
+    <div id="appRoot" class="app-root flex min-h-screen bg-background">
+      <aside class="app-side hidden md:flex w-56 shrink-0 flex-col border-r border-border bg-card">
+        <div class="app-side-head p-5 border-b border-border"><h1 class="app-name text-lg font-bold text-foreground">Time Off Manager</h1></div>
+        <nav id="sideNav" class="app-side-nav flex-1 p-3 space-y-1" aria-label="Main">${NAV.map((it) => link(it, SIDE_BASE)).join("")}</nav>
+        <div class="app-side-foot p-4 border-t border-border">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="me-dot h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">${ME.charAt(0)}</div>
+            <div class="flex-1 min-w-0"><p class="text-sm font-medium truncate text-foreground">${ME}</p></div>
+          </div>
+          <button type="button" data-soon="Sign Out" class="ui-btn ui-btn-ghost ui-btn-quiet inline-flex items-center gap-2 whitespace-nowrap rounded-md text-sm font-medium h-9 px-3 w-full justify-start text-muted-foreground hover:bg-accent hover:text-accent-foreground">${svg(P.logout, "h-4 w-4 mr-2")}Sign Out</button>
+        </div>
+      </aside>
+      <div class="flex-1 min-w-0 flex flex-col">
+        <div id="hdrSentinel" class="md:hidden" style="height:1px;margin-bottom:-1px" aria-hidden="true"></div>
+        <header id="appHeader" class="app-header md:hidden flex items-center justify-between py-4 gutter border-b border-border bg-card">
+          <h1 class="app-name text-lg font-bold text-foreground">Time Off Manager</h1>
+          <button type="button" data-soon="Sign Out" class="ui-btn ui-btn-ghost ui-btn-icon ui-btn-quiet inline-flex items-center justify-center rounded-md h-9 px-3 hover:bg-accent" aria-label="Sign out">${svg(P.logout)}</button>
+        </header>
+        <nav id="mobNav" class="app-mobnav md:hidden grid grid-cols-3 border-b border-border bg-card px-2" aria-label="Main">${NAV.map((it) => link(it, MOB_BASE)).join("")}</nav>
+        <main id="appMain" class="app-main flex-1 min-w-0 py-4 md:py-8 gutter gutter-md overflow-x-hidden break-words"></main>
+      </div>
+    </div>`;
+  }
+  function setNav(activeKey) {
+    const paint = (navId, base, on, off) => $(navId).querySelectorAll("[data-nav]").forEach((a) => {
+      const active = a.dataset.nav === activeKey;
+      a.className = `${base} ${active ? on : off}`;
+      if (active) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+    });
+    paint("sideNav", SIDE_BASE, SIDE_ON, SIDE_OFF);
+    paint("mobNav", MOB_BASE, MOB_ON, MOB_OFF);
+  }
+
+  // ---------- Time Off page ----------
+  const POLICY_HTML = `
+    <div class="${CARD} ui-card-info border-info/30 bg-info/5">
+      <div class="flex flex-col space-y-1.5 p-6 pb-3">
+        <h3 class="ui-card-title font-semibold leading-none tracking-tight flex items-center gap-2 text-base text-info">${svg(P.info)}Vacation and Sick Day Policy</h3>
+      </div>
+      <div class="p-6 pt-0"><div class="space-y-0.5">
+        <p class="text-sm text-muted-foreground">Please review this policy before submitting a request.</p><br>
+        <h4 class="font-semibold text-foreground mt-4 mb-1">Vacation Requests</h4><br>
+        <li class="ml-4 text-sm text-muted-foreground">All vacation requests must be submitted through this app.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Vacation requests are not approved until the employee receives an approval confirmation.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Submitting a request does not guarantee approval.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Vacation requests should be submitted as early as possible to support scheduling and coverage.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Approval may depend on staffing needs, timing, and overlapping requests from other employees.</li><br>
+        <h4 class="font-semibold text-foreground mt-4 mb-1">Sick Day Requests</h4><br>
+        <li class="ml-4 text-sm text-muted-foreground">Sick days are intended for unexpected illness-related absences.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Sick day requests may only be submitted for today or a past date.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Future sick day submissions are not allowed.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Eligible sick day requests are automatically recorded in the system.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Misuse of sick day submissions may be reviewed by management.</li><br>
+        <h4 class="font-semibold text-foreground mt-4 mb-1">Changes and Cancellations</h4><br>
+        <li class="ml-4 text-sm text-muted-foreground">Employees may edit or cancel their own requests in the app.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Changes to approved vacation requests will require re-approval.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Employees may cancel approved vacation requests without approval, but management will be notified.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Cancelled approved requests will be removed from the shared calendar.</li><br>
+        <h4 class="font-semibold text-foreground mt-4 mb-1">Employee Responsibility</h4><br>
+        <li class="ml-4 text-sm text-muted-foreground">Employees are responsible for submitting accurate information.</li>
+        <li class="ml-4 text-sm text-muted-foreground">Duplicate, misleading, or overlapping requests may be reviewed, corrected, or denied.</li><br>
+        <h4 class="font-semibold text-foreground mt-4 mb-1">Policy Updates</h4><br>
+        <li class="ml-4 text-sm text-muted-foreground">The company may update this policy from time to time.</li><br>
+        <h4 class="font-semibold text-foreground mt-4 mb-1">Acknowledgment</h4><br>
+        <p class="text-sm text-muted-foreground">By submitting a request, you confirm that the information provided is accurate and that you have read and understood this policy.</p>
+      </div></div>
+    </div>`;
+
+  // The first time the form opens it is filled in, so there is something to look at. After that it starts empty, like the app.
+  const form = { type: "vacation", start: "2026-12-15", end: "2026-12-17", startHalf: false, endHalf: false, note: "Moving apartments", ack: false, showForm: false };
+  let showAll = false;
+  let newestId = null;
+
+  // Team limits (edited on Admin Settings, checked on the form).
+  const limits = {
+    max: 2,
+    mode: "warn",
+    blocked: [
+      { s: "2026-12-14", e: "2026-12-18", reason: "Year-end inventory" },
+      { s: "2027-03-29", e: "2027-04-02", reason: "Spring busy season" },
+    ],
+  };
+  function limitIssues(st) {
+    if (st.type !== "vacation" || !st.start || !st.end || st.start > st.end) return null;
+    const blocked = limits.blocked.filter((b) => b.s <= st.end && b.e >= st.start);
+    const fullDays = []; let most = 0;
+    if (limits.max) {
+      eachDay(st.start, st.end, (d, s) => {
+        if (isOff(d)) return;
+        const n = ENTRIES.filter((en) => en.k === "vac" && en.n !== ME && isActive(en) && en.s <= s && en.e >= s).length;
+        if (n >= limits.max) { fullDays.push(s); most = Math.max(most, n); }
+      });
+    }
+    if (!blocked.length && !fullDays.length) return null;
+    return { blocked, fullDays, most };
+  }
+
+  function summaryInner() {
+    const t = yearTotals("2026");
+    const total = t.used + t.booked + t.waiting;
+    const flexQ = ENTRIES.filter((en) => en.n === ME && en.k === "flex" && en.sub >= "2026-10-01" && en.sub < "2027-01-01" && en.status !== "cancelled" && en.status !== "rejected").length;
+    const dot = (cls, text) => `<span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full ${cls}"></span>${text}</span>`;
+    return `
+      ${cardHead("Your time off in 2026", { tight: true })}
+      <div class="p-6 pt-0 space-y-4">
+        <div>
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <p class="text-sm font-medium text-foreground">Vacation</p>
+            <p class="text-sm text-muted-foreground tabular-nums"><span class="ui-num text-2xl font-bold text-foreground">${num(total)}</span> ${total === 1 ? "day" : "days"} this year</p>
+          </div>
+          <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground tabular-nums">
+            ${dot("bg-primary", "Used " + num(t.used))}
+            ${dot("bg-primary/40", "Booked " + num(t.booked))}
+            ${t.waiting > 0 ? dot("bg-warning/70", "Waiting for approval " + num(t.waiting)) : ""}
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="ui-well rounded-lg border border-border p-3 min-w-0">
+            <p class="${CAP}">Sick days</p>
+            <p class="ui-num-sm mt-1 text-xl font-bold text-foreground tabular-nums">${num(t.sick)}</p>
+            <p class="text-xs text-muted-foreground">used this year</p>
+          </div>
+          <div class="ui-well rounded-lg border border-border p-3 min-w-0">
+            <p class="${CAP}">Flexible time</p>
+            <p class="ui-num-sm mt-1 text-xl font-bold text-foreground tabular-nums">${flexQ} of 1</p>
+            <p class="text-xs text-muted-foreground">used this quarter</p>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function timeOffPage() {
+    const typeOptions = `<option value="">Select type...</option>` + ["vacation", "sick"].map((k) => `<option value="${k}">${TYPES[k].label}</option>`).join("");
+    return `
+    <div class="page max-w-2xl mx-auto space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h1 class="ui-title text-2xl font-bold text-foreground">Time Off</h1>
+        <div class="flex flex-wrap gap-2">
+          <button id="toggleForm" type="button"></button>
+          <button id="flexNewBtn" type="button" class="${BTN} ${SZ_SM} ${V_OUTLINE}">${svg(P.clock, "h-4 w-4 mr-1")}Flexible Time</button>
+        </div>
+      </div>
+      <div id="summaryCard" class="${CARD} ui-card-hero">${summaryInner()}</div>
+      <div id="formArea" class="space-y-6" hidden>
+        ${POLICY_HTML}
+        <div class="${CARD}">
+          ${cardHead("New Request", { tight: true })}
+          <div class="p-6 pt-0">
+            <form id="reqForm" class="space-y-4" novalidate>
+              <div class="space-y-2">
+                <label class="${LABEL}" for="reqType">Type</label>
+                <div class="relative">
+                  <select id="reqType" class="${SELECT}">${typeOptions}</select>
+                  ${svg(P.chevDown, "h-4 w-4 opacity-50 absolute right-3 top-3 pointer-events-none")}
+                </div>
+                <p id="errType" class="text-sm text-destructive" hidden></p>
+              </div>
+              <div id="typeFields" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div class="space-y-2 min-w-0">
+                    <label class="${LABEL}" for="startDate">Start Date</label>
+                    <input id="startDate" type="date" class="${INPUT}">
+                    <p id="errStart" class="text-sm text-destructive" hidden></p>
+                  </div>
+                  <div class="space-y-2 min-w-0">
+                    <label class="${LABEL}" for="endDate">End Date</label>
+                    <input id="endDate" type="date" class="${INPUT}">
+                    <p id="errEnd" class="text-sm text-destructive" hidden></p>
+                  </div>
+                </div>
+                <div class="space-y-3">
+                  <div class="flex items-center gap-3">
+                    <input id="startHalfDay" type="checkbox" class="cbx">
+                    <label for="startHalfDay" class="text-sm font-medium leading-none cursor-pointer">Half day on first day (afternoon off)</label>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <input id="endHalfDay" type="checkbox" class="cbx">
+                    <label for="endHalfDay" class="text-sm font-medium leading-none cursor-pointer">Half day on last day (morning off)</label>
+                  </div>
+                </div>
+                <div class="ui-well p-3 rounded-lg bg-accent/50 border border-border">
+                  <p id="summary" class="text-sm text-foreground"></p>
+                  <p id="holNote" class="text-sm text-muted-foreground mt-1" hidden></p>
+                </div>
+                <p id="afterLine" class="text-sm text-muted-foreground" hidden></p>
+                <div id="limitAlerts" hidden></div>
+                ${warnAlert("alert10", "This request exceeds 10 business days and will require <strong>special approval</strong> from management.", true)}
+                ${warnAlert("alert30", "This vacation is within the next 30 days and requires special approval. It may be declined if coverage is limited.", true)}
+                <div class="space-y-2">
+                  <label id="noteLabel" class="${LABEL}" for="note">Reason</label>
+                  <textarea id="note" rows="2" class="${TEXTAREA}"></textarea>
+                  <p id="errNote" class="text-sm text-destructive" hidden></p>
+                </div>
+                <div class="ui-well flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/50">
+                  <input id="policyAck" type="checkbox" class="cbx">
+                  <label for="policyAck" class="text-sm font-medium leading-snug cursor-pointer">I have read and understand the policy</label>
+                </div>
+                <p id="errPolicy" class="text-sm text-destructive" hidden></p>
+                <button type="submit" class="${BTN} ${SZ} ${V_PRIMARY} w-full">Submit</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div class="${CARD}">
+        ${cardHead("My Requests", { tight: true })}
+        <div class="p-6 pt-0"><div id="reqList" class="ui-list space-y-2"></div></div>
+      </div>
+    </div>`;
+  }
+
+  // The app's formatRequestDates.
+  function formatRequestDates(en) {
+    const startSuffix = en.sp === "pm" ? " (afternoon)" : "";
+    const endSuffix = en.ep === "am" ? " (morning)" : "";
+    const oneDay = en.s === en.e;
+    if (en.k === "vac") {
+      if (oneDay) {
+        if (en.sp === "pm") return `Afternoon off · ${en.s}`;
+        if (en.ep === "am") return `Morning off · ${en.s}`;
+        return en.s;
+      }
+      return `${en.s}${startSuffix} → ${en.e}${endSuffix}`;
+    }
+    if (!oneDay) return `${en.s}${startSuffix} → ${en.e}${endSuffix}`;
+    if (en.sp === "pm") return `Afternoon · ${en.s}`;
+    if (en.ep === "am") return `Morning · ${en.s}`;
+    return en.s;
+  }
+
+  function myEntries() { return ENTRIES.filter((en) => en.n === ME).sort((a, b) => b.sub.localeCompare(a.sub) || b.id - a.id); }
+  function renderList() {
+    const list = $("reqList");
+    if (!list) return;
+    const all = myEntries();
+    const items = showAll ? all : all.slice(0, 5);
+    const rowCls = `${ROW} flex items-start md:items-center justify-between gap-3 p-3 hover:bg-accent/50 transition-colors`;
+    let html = items.map((en) => {
+      const fresh = en.id === newestId ? " reveal" : "";
+      if (en.k === "flex") {
+        return `<a href="#request" data-open="${en.id}" class="${rowCls}${fresh}">
+          <div class="min-w-0"><div class="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5"><span class="font-medium text-sm text-foreground">${svg(P.clock, "h-3.5 w-3.5 inline mr-1 align-[-2px]")}Flexible Time</span>${badge(en.status)}</div>
+          <p class="text-xs text-muted-foreground">${en.s} · ${en.st}–${en.et} (${en.h}h)</p></div>
+          <span class="text-xs text-muted-foreground shrink-0">${shortDate(en.sub)}</span></a>`;
+      }
+      return `<a href="#request" data-open="${en.id}" class="${rowCls}${fresh}">
+        <div class="min-w-0"><div class="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5"><span class="font-medium text-sm text-foreground">${en.k === "vac" ? "Vacation" : "Sick Day"}</span>${badge(en.status, en.k === "sick")}${en.special ? specialBadge : ""}</div>
+        <p class="text-xs text-muted-foreground">${formatRequestDates(en)}</p></div>
+        <span class="text-xs text-muted-foreground shrink-0">${shortDate(en.sub)}</span></a>`;
+    }).join("");
+    if (all.length > 5) {
+      html += `<button type="button" id="showAllBtn" class="${BTN} ${SZ_SM} ${V_GHOST} w-full">
+        ${showAll ? svg(P.chevUp, "h-4 w-4 mr-1") + " Show less" : svg(P.chevDown, "h-4 w-4 mr-1") + ` Show all ${all.length} requests`}</button>`;
+    }
+    list.innerHTML = html;
+    newestId = null;
+    const b = $("showAllBtn");
+    if (b) b.onclick = () => { showAll = !showAll; renderList(); };
+  }
+
+  // The app's RequestSummary.
+  function summaryText(st) {
+    const incomplete = "Please complete the form to see your request summary.";
+    const { type, start } = st;
+    const startP = st.startHalf ? "pm" : "full";
+    const endP = st.endHalf ? "am" : "full";
+    if (!type) return incomplete;
+    const end = type === "sick" ? (st.end || start) : st.end;
+    if (!start || !end) return incomplete;
+    if (countBusinessDays(start, end) === 0) return incomplete;
+    const sameDay = start === end;
+    const total = calcTotal(start, end, startP, endP);
+    const dayLabel = total === 1 ? "1 business day" : `${num(total)} business days`;
+    const startNote = startP === "pm" ? " (afternoon only)" : "";
+    const endNote = endP === "am" ? " (morning only)" : "";
+    if (type === "vacation") {
+      if (sameDay) {
+        if (startP === "pm") return `You will take the afternoon off on ${fmt(start)}.`;
+        if (endP === "am") return `You will take the morning off on ${fmt(start)}.`;
+        return `You will take 1 full day off on ${fmt(start)}.`;
+      }
+      const back = endP === "am" ? `${fmt(end)} (afternoon)` : fmt(nextWorkday(end));
+      return `You will take vacation from ${fmt(start)}${startNote} to ${fmt(end)}${endNote} (${dayLabel}). You return on ${back}.`;
+    }
+    if (sameDay) {
+      if (startP === "pm") return `You were sick in the afternoon on ${fmt(start)}.`;
+      if (endP === "am") return `You were sick in the morning on ${fmt(start)}.`;
+      return `You were sick on ${fmt(start)}.`;
+    }
+    return `You were sick from ${fmt(start)}${startNote} to ${fmt(end)}${endNote} (${dayLabel}).`;
+  }
+
+  function renderForm() {
+    const st = form;
+    const btn = $("toggleForm");
+    if (st.showForm) { btn.className = `${BTN} ${SZ_SM} ${V_OUTLINE}`; btn.textContent = "Cancel"; }
+    else { btn.className = `${BTN} ${SZ_SM} ${V_PRIMARY}`; btn.innerHTML = svg(P.plus, "h-4 w-4 mr-1") + " New Request"; }
+    $("formArea").hidden = !st.showForm;
+    $("typeFields").hidden = !st.type;
+    $("reqType").value = st.type;
+    $("startDate").value = st.start;
+    $("endDate").value = st.end;
+    $("startDate").max = st.type === "sick" ? TODAY : "";
+    $("endDate").max = st.type === "sick" ? TODAY : "";
+    $("endDate").min = st.start || "";
+    $("startHalfDay").checked = st.startHalf;
+    $("endHalfDay").checked = st.endHalf;
+    $("note").value = st.note;
+    $("policyAck").checked = st.ack;
+    $("noteLabel").textContent = st.type === "vacation" ? "Reason" : "Note (optional)";
+    $("note").placeholder = st.type === "vacation" ? "Please provide a reason for your request..." : "Any details...";
+    $("summary").textContent = summaryText(st);
+
+    const startP = st.startHalf ? "pm" : "full";
+    const endP = st.endHalf ? "am" : "full";
+    const validRange = !!st.start && !!st.end && st.start <= st.end;
+    const vac = st.type === "vacation";
+    $("alert10").hidden = !(vac && validRange && calcTotal(st.start, st.end, startP, endP) > 10);
+    $("alert30").hidden = !(vac && isWithin30Days(st.start));
+
+    // Stat holidays left out, and the ones the return date skips.
+    const note = $("holNote");
+    const hols = vac && validRange ? holidaysBetween(st.start, st.end) : [];
+    const skipped = [];
+    if (vac && validRange && !st.endHalf) {
+      let d = addDays(parse(st.end), 1);
+      while (isOff(d)) { if (HOLIDAYS[iso(d)]) skipped.push(iso(d)); d = addDays(d, 1); }
+    }
+    const parts = [];
+    if (hols.length) parts.push(`Not counted as days off: ${joinAnd(hols.map(holidayLabel))}.`);
+    if (skipped.length) parts.push(`Your return date skips ${joinAnd(skipped.map(holidayLabel))}.`);
+    note.textContent = parts.join(" ");
+    note.hidden = !parts.length;
+
+    // Running total for the year this request starts in.
+    const after = $("afterLine");
+    let thisRequest = 0;
+    if (vac && validRange) {
+      const year = st.start.slice(0, 4);
+      entryDays({ k: "vac", s: st.start, e: st.end, sp: st.startHalf ? "pm" : "", ep: st.endHalf ? "am" : "" }, year + "-01-01", year + "-12-31", (s, a) => { thisRequest += a; });
+      if (thisRequest) {
+        const t = yearTotals(year);
+        const sum = t.used + t.booked + t.waiting + thisRequest;
+        after.innerHTML = `With this request, your vacation in ${year} comes to <strong class="text-foreground">${num(sum)} ${sum === 1 ? "day" : "days"}</strong>.`;
+      }
+    }
+    after.hidden = !thisRequest;
+
+    // Blocked dates / team limit: yellow when warning, red when blocking.
+    const el = $("limitAlerts");
+    const iss = limitIssues(st);
+    if (iss) {
+      const lines = [];
+      iss.blocked.forEach((b) => lines.push(`<strong>${fmtRange(b.s, b.e)} is blocked:</strong> ${esc(b.reason)}.`));
+      if (iss.fullDays.length) lines.push(`${iss.most} ${iss.most === 1 ? "person is" : "people are"} already off on ${joinAnd(iss.fullDays.map(fmtShort))}. The team limit is ${limits.max} off at once.`);
+      lines.push(limits.mode === "warn" ? "You can still submit, but your manager may decline it." : "Pick other dates to submit.");
+      const html = `<div class="space-y-2">${lines.map((l) => `<p>${l}</p>`).join("")}</div>`;
+      el.innerHTML = limits.mode === "warn" ? warnAlert("", html, false) : errorAlert(html);
+      el.hidden = false;
+    } else { el.innerHTML = ""; el.hidden = true; }
+  }
+
+  function setErr(id, msg) { const el = $(id); el.textContent = msg || ""; el.hidden = !msg; }
+  function clearErrs() { ["errType", "errStart", "errEnd", "errNote", "errPolicy"].forEach((id) => setErr(id, "")); }
+
+  function validate() {
+    clearErrs();
+    let ok = true;
+    const s = form;
+    if (!s.type) { setErr("errType", "Please select a request type."); ok = false; }
+    if (!s.start) { setErr("errStart", "Start date is required."); ok = false; }
+    if (s.type === "vacation") {
+      if (!s.end) { setErr("errEnd", "End date is required."); ok = false; }
+      if (s.start && s.end && s.start > s.end) { setErr("errEnd", "End date must be on or after start date."); ok = false; }
+      if (!s.note.trim()) { setErr("errNote", "Please provide a reason for your vacation request."); ok = false; }
+    }
+    if (s.type === "sick") {
+      if (s.start && s.start > TODAY) { setErr("errStart", "Future sick days cannot be submitted. Please submit a vacation request or contact your manager."); ok = false; }
+      const effEnd = s.end || s.start;
+      if (effEnd && effEnd > TODAY) { setErr("errEnd", "Sick day end date cannot be in the future."); ok = false; }
+    }
+    if (limits.mode === "block" && limitIssues(s)) { setErr("errEnd", "These dates are blocked or the team is full. Pick other dates."); ok = false; }
+    if (!s.ack) { setErr("errPolicy", "You must acknowledge the policy before submitting."); ok = false; }
+    return ok;
+  }
+
+  function resetForm() {
+    Object.assign(form, { type: "", start: "", end: "", startHalf: false, endHalf: false, note: "", ack: false, showForm: false });
+    clearErrs();
+  }
+  // On a one-day request, a day can't be both morning off and afternoon off.
+  function keepOneHalf(changed) {
+    const st = form;
+    if (st.start && st.start === st.end && st.startHalf && st.endHalf) {
+      if (changed === "start") st.endHalf = false; else st.startHalf = false;
+    }
+  }
+  // Plays an entrance on something that just appeared (new look only; today's look has no rule for it).
+  function replay(el, cls) { if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+
+  function wireTimeOff() {
+    const st = form;
+    $("toggleForm").onclick = () => {
+      if (st.showForm) resetForm(); else st.showForm = true;
+      renderForm();
+      if (st.showForm) replay($("formArea"), "reveal");
+    };
+    $("flexNewBtn").onclick = () => go("flex-new", "push", true);
+    $("reqType").onchange = (e) => { st.type = e.target.value; renderForm(); };
+    $("startDate").onchange = (e) => { st.start = e.target.value; if (!st.end || st.end < st.start) st.end = st.start; keepOneHalf("end"); renderForm(); };
+    $("endDate").onchange = (e) => { st.end = e.target.value; keepOneHalf("end"); renderForm(); };
+    $("startHalfDay").onchange = (e) => { st.startHalf = e.target.checked; keepOneHalf("start"); renderForm(); };
+    $("endHalfDay").onchange = (e) => { st.endHalf = e.target.checked; keepOneHalf("end"); renderForm(); };
+    $("note").oninput = (e) => { st.note = e.target.value; };
+    $("policyAck").onchange = (e) => { st.ack = e.target.checked; };
+    $("reqForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!validate()) return;
+      const sick = st.type === "sick";
+      const en = {
+        n: ME, k: sick ? "sick" : "vac", s: st.start, e: st.end || st.start,
+        sp: st.startHalf ? "pm" : "", ep: st.endHalf ? "am" : "",
+        status: sick ? "approved" : "pending_approval",
+        special: !sick && isWithin30Days(st.start), sub: TODAY, subAt: "11/11/2026, 10:02:41 AM", note: st.note.trim(),
+      };
+      en.id = ENTRIES.length;
+      ENTRIES.push(en);
+      newestId = en.id;
+      toast(sick ? "Sick day recorded and auto-approved." : "Vacation request submitted for approval.");
+      resetForm();
+      renderForm();
+      renderList();
+      $("summaryCard").innerHTML = summaryInner();
+    });
+    renderForm();
+    renderList();
+  }
+
+  // ---------- Request page ----------
+  let reqId = JORDAN.id;
+  let reqBack = "manager";
+  let bumpBadge = false;
+
+  function whoElse(req) {
+    const others = ENTRIES.filter((en) => en.k === "vac" && en !== req && isActive(en) && en.s <= req.e && en.e >= req.s);
+    const days = [];
+    eachDay(req.s, req.e, (d, s) => {
+      if (isOff(d)) return;
+      const seen = new Set([req.n]);
+      const off = [req];
+      for (const en of others) { if (en.s <= s && en.e >= s && !seen.has(en.n)) { seen.add(en.n); off.push(en); } }
+      days.push({ s, d, off });
+    });
+    const most = days.length ? Math.max(...days.map((x) => x.off.length)) : 0;
+    const busiest = days.filter((x) => x.off.length === most).map((x) => fmtShort(x.s));
+    return { others, days, most, busiest };
+  }
+  // Initials in a circle: blue = approved, amber = pending.
+  function whoDot(en) {
+    const pending = en.status === "pending_approval";
+    const cls = pending ? "is-wait bg-warning/15 text-warning" : "bg-primary/10 text-primary";
+    return `<span class="who-dot h-6 w-6 shrink-0 rounded-full ${cls} inline-flex items-center justify-center text-[10px] font-semibold" title="${en.n}">${initials(en.n)}</span>`;
+  }
+  function whoCard(req) {
+    const w = whoElse(req);
+    const pending = req.status === "pending_approval";
+    // Phone: one row per day. Wider screens: 4 boxes side by side.
+    const dayCells = w.days.map((x) => `
+      <div class="ui-well rounded-md border border-border p-2 min-w-0 flex items-center gap-3 sm:block sm:text-center">
+        <div class="w-14 shrink-0 sm:w-auto">
+          <p class="${CAP}">${WEEKDAYS[x.d.getDay()].slice(0, 3)}</p>
+          <p class="text-sm font-medium text-foreground">${fmtShort(x.s)}</p>
+        </div>
+        <div class="flex flex-1 flex-wrap gap-1 sm:justify-center sm:mt-2">${x.off.map(whoDot).join("")}</div>
+        <p class="text-xs text-muted-foreground tabular-nums shrink-0 sm:mt-1">${x.off.length} off</p>
+      </div>`).join("");
+    const rows = w.others.map((en) => `
+      <div class="${ROW} flex flex-wrap items-center justify-between gap-2 p-3">
+        <div class="flex items-center gap-3 min-w-0">
+          ${whoDot(en)}
+          <div class="min-w-0"><p class="text-sm font-medium text-foreground">${en.n}</p><p class="text-xs text-muted-foreground">Vacation · ${fmtShort(en.s)} → ${fmtShort(en.e)}</p></div>
+        </div>
+        ${badge(en.status)}
+      </div>`).join("");
+    return `
+      <div class="${CARD}">
+        ${cardHead(svg(P.users) + "Who else is off", { desc: `Approved and pending vacation from ${fmtShort(req.s)} to ${fmtShort(req.e)}`, cls: "flex items-center gap-2" })}
+        <div class="p-6 pt-0 space-y-4">
+          ${w.days.length ? `<div class="grid grid-cols-1 sm:grid-cols-4 gap-2">${dayCells}</div>` : ""}
+          <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-primary/60"></span>Approved</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-warning"></span>Pending</span>
+          </div>
+          ${w.others.length ? `<div class="ui-list space-y-2">${rows}</div>` : `<p class="text-sm text-muted-foreground">No one else has vacation booked or waiting for approval on these days.</p>`}
+          ${w.days.length ? `<p class="text-sm text-muted-foreground">Busiest: <strong class="text-foreground">${w.most} of ${PEOPLE.length} ${w.most === 1 ? "person" : "people"}</strong> off on ${joinAnd(w.busiest)}${pending ? " if you approve this one" : ""}.</p>` : ""}
+        </div>
+      </div>`;
+  }
+  function timelineFor(en) {
+    const out = [{ title: "Submitted", when: subAt(en), by: "staff" }];
+    if (en.decidedAt) out.push({ title: en.status === "approved" ? "Approved" : "Rejected", when: en.decidedAt, by: "manager" });
+    else if (en.k === "sick") out.push({ title: "Auto Approved", when: subAt(en), by: "system" });
+    else if (en.status === "approved" || en.status === "cancelled") out.push({ title: "Approved", when: `${shortDate(nextWorkday(en.sub))}, 9:30:12 AM`, by: "manager" });
+    if (en.status === "cancelled") out.push({ title: "Cancelled", when: `${shortDate(nextWorkday(nextWorkday(en.sub)))}, 4:02:55 PM`, by: "staff" });
+    return out;
+  }
+
+  function requestPage() {
+    const en = ENTRIES[reqId];
+    const own = en.n === ME;
+    const vac = en.k === "vac";
+    const pending = en.status === "pending_approval";
+    const dates = vac
+      ? `${en.s}${en.sp === "pm" ? " (afternoon)" : ""} → ${en.e}${en.ep === "am" ? " (morning)" : ""}`
+      : `${en.s}${en.sp === "pm" ? " (afternoon)" : ""}${en.e && en.e !== en.s ? " → " + en.e : ""}${en.ep === "am" ? " (morning)" : ""}`;
+    const acts = [];
+    if (own && pending) acts.push(`<button type="button" data-soon="Remind Manager" class="${BTN} ${SZ} ${V_OUTLINE}">${svg(P.bell, "h-4 w-4 mr-2")}Remind Manager</button>`);
+    if (own && isActive(en) && en.s >= TODAY) {
+      acts.push(`<button type="button" data-soon="Edit Request" class="${BTN} ${SZ} ${V_OUTLINE}">${svg(P.edit, "h-4 w-4 mr-2")}Edit Request</button>`);
+      acts.push(`<button type="button" data-soon="Cancel Request" class="${BTN} ${SZ} ${V_DESTRUCTIVE}">${svg(P.trash, "h-4 w-4 mr-2")}Cancel Request</button>`);
+    }
+    const bump = bumpBadge ? "bump" : "";
+    bumpBadge = false;
+    return `
+    <div class="page max-w-3xl mx-auto space-y-6">
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <button id="backBtn" type="button" class="${BTN} ${V_GHOST} ui-btn-icon h-10 w-10" aria-label="Back">${svg(P.arrowLeft)}</button>
+        <div class="flex-1 min-w-[calc(100%-3.25rem)] md:min-w-0">
+          <h1 class="ui-title text-2xl font-bold text-foreground capitalize">${vac ? "Vacation Request" : "Sick Day Request"}</h1>
+          ${own ? "" : `<p class="text-sm text-muted-foreground">${en.n}</p>`}
+        </div>
+        ${badge(en.status, en.k === "sick", bump)}
+        ${en.special ? specialBadge : ""}
+      </div>
+
+      <div class="${CARD}">
+        ${cardHead(svg(P.calendar) + "Request Details", { cls: "flex items-center gap-2" })}
+        <div class="p-6 pt-0 space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><p class="${CAP}">Type</p><p class="font-medium capitalize text-foreground">${vac ? "vacation" : "sick"}</p></div>
+            <div><p class="${CAP}">${vac ? "Dates" : "Sick Date"}</p><p class="font-medium text-foreground">${dates}</p></div>
+            <div><p class="${CAP}">Submitted</p><p class="font-medium text-foreground">${subAt(en)}</p></div>
+            ${en.note ? `<div class="md:col-span-2"><p class="${CAP}">Note</p><p class="text-foreground">${esc(en.note)}</p></div>` : ""}
+            ${en.rejection ? `<div class="md:col-span-2"><p class="${CAP}">Rejection Reason</p><p class="text-destructive">${esc(en.rejection)}</p></div>` : ""}
+          </div>
+        </div>
+      </div>
+
+      ${vac && isActive(en) ? whoCard(en) : ""}
+
+      ${pending && !own ? `
+      <div class="${CARD} ui-card-accent border-primary/30">
+        ${cardHead("Your Decision", { tight: true })}
+        <div class="p-6 pt-0 space-y-3">
+          <p class="text-sm text-muted-foreground">Approving adds this to the shared calendar and notifies ${en.n} in Slack. You can also use the buttons in your Slack message — either place does the same thing.</p>
+          <div class="flex flex-wrap gap-3">
+            <button id="approveBtn" type="button" class="${BTN} ${SZ} ${V_PRIMARY} flex-1">${svg(P.checkCircle, "h-4 w-4 mr-2")}Approve</button>
+            <button id="rejectBtn" type="button" class="${BTN} ${SZ} ${V_DESTRUCTIVE} flex-1">${svg(P.xCircle, "h-4 w-4 mr-2")}Reject</button>
+          </div>
+        </div>
+      </div>` : ""}
+
+      ${acts.length ? `<div class="flex gap-3 flex-wrap">${acts.join("")}</div>` : ""}
+
+      <div class="${CARD}">
+        ${cardHead("Activity Timeline")}
+        <div class="p-6 pt-0"><div class="space-y-4">
+          ${timelineFor(en).map((t) => `<div class="flex gap-3"><div class="w-2 h-2 mt-2 rounded-full bg-primary shrink-0"></div><div class="min-w-0"><p class="text-sm font-medium text-foreground">${t.title}</p><p class="text-xs text-muted-foreground">${t.when} · by ${t.by}</p></div></div>`).join("")}
+        </div></div>
+      </div>
+    </div>`;
+  }
+  function wireRequest() {
+    const en = ENTRIES[reqId];
+    const decide = (status, reason) => {
+      en.status = status; en.decidedAt = "11/11/2026, 10:15:32 AM";
+      if (reason) en.rejection = reason;
+      bumpBadge = true;
+      toast(status === "approved" ? "Request approved." : "Request rejected.");
+      renderPage(null);
+    };
+    $("backBtn").onclick = () => go(reqBack, "pop", true);
+    const a = $("approveBtn"), r = $("rejectBtn");
+    if (a) a.onclick = () => decide("approved");
+    if (r) r.onclick = () => {
+      openDialog(`
+        <div class="flex flex-col space-y-1.5 text-center sm:text-left px-6 sm:px-0 sm:pr-6 min-w-0">
+          <h2 id="dlgTitle" class="dlg-title text-lg font-semibold leading-none tracking-tight text-foreground">Reject Request</h2>
+          <p class="text-sm text-muted-foreground">${en.n} will be told in Slack that this request was rejected, along with any reason you give here.</p>
+        </div>
+        <div class="space-y-2 min-w-0">
+          <label class="${LABEL}" for="rejReason">Reason (optional)</label>
+          <textarea id="rejReason" rows="3" class="${TEXTAREA}" placeholder="Let them know why..."></textarea>
+        </div>
+        <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+          <button id="rejKeep" type="button" class="${BTN} ${SZ} ${V_GHOST}">Keep Pending</button>
+          <button id="rejGo" type="button" class="${BTN} ${SZ} ${V_DESTRUCTIVE}">Reject Request</button>
+        </div>`, { focus: "rejReason", back: "rejectBtn" });
+      $("rejKeep").onclick = () => closeDialog();
+      $("rejGo").onclick = () => { const reason = $("rejReason").value.trim(); closeDialog(true); decide("rejected", reason); };
+    };
+  }
+
+  // ---------- Admin Settings ----------
+  const adminState = { calId: "c_9f2e1a7b3d@group.calendar.google.com", calTest: false, anchor: "2025-01-06", slackTest: false };
+  const post = { on: true, time: "8:00 AM" };
+  function sw(id, on, label) { return `<button id="${id}" type="button" role="switch" aria-checked="${on}" class="switch" aria-label="${label}"></button>`; }
+  function postCard() {
+    const times = ["7:00 AM", "7:30 AM", "8:00 AM", "8:30 AM", "9:00 AM"].map((t) => [t, t]);
+    return `
+    <div class="${CARD}">
+      ${cardHead('Weekly "Off this week" message', { desc: "Send who's off this week to managers and admins in their Time Off Manager app chat on Monday morning, with a short update when someone new is off" })}
+      <div class="p-6 pt-0 space-y-4">
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0"><p class="text-sm font-medium text-foreground">Weekly message on Mondays</p><p class="text-xs text-muted-foreground">Goes out Tuesday when Monday is a stat holiday. Nothing is sent in a week when nobody is off.</p></div>
+          ${sw("postOn", post.on, "Weekly message on Mondays")}
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="space-y-2 min-w-0"><label class="${LABEL}" for="postTime">Time</label>${selectBox("postTime", times, post.time)}</div>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button id="postSave" type="button" class="${BTN} ${SZ} ${V_PRIMARY}">Save</button>
+          <button id="postTest" type="button" class="${BTN} ${SZ} ${V_OUTLINE}">Send a test post</button>
+        </div>
+        <p class="text-xs text-muted-foreground">The test goes only to you, in your Time Off Manager app chat.</p>
+      </div>
+    </div>`;
+  }
+  function blockedRows() {
+    if (!limits.blocked.length) return `<p class="text-sm text-muted-foreground">No blocked dates.</p>`;
+    return `<div class="ui-list space-y-2">${limits.blocked.map((b, i) => `
+      <div class="${ROW} flex flex-wrap items-center justify-between gap-2 p-3 bg-card">
+        <div class="min-w-0"><p class="text-sm font-medium text-foreground">${fmtRange(b.s, b.e)}</p><p class="text-xs text-muted-foreground">${esc(b.reason)}</p></div>
+        <button type="button" data-remove="${i}" class="${BTN} ${SZ_SM} ${V_GHOST}">Remove</button>
+      </div>`).join("")}</div>`;
+  }
+  function limitsCard() {
+    return `
+    <div class="${CARD}">
+      ${cardHead("Team limits", { desc: "Stop too many people from being off at the same time" })}
+      <div class="p-6 pt-0 space-y-5">
+        <div class="space-y-2">
+          <label class="${LABEL}" for="maxOff">Most people off at once</label>
+          <div class="flex items-center gap-2"><input id="maxOff" type="number" min="1" max="50" inputmode="numeric" class="${INPUT} w-24" value="${limits.max || ""}"><span class="text-sm text-muted-foreground">people</span></div>
+          <p class="text-xs text-muted-foreground">Counts approved and pending vacation. Leave empty for no limit.</p>
+        </div>
+        <div class="space-y-2">
+          <p class="${LABEL}">Blocked dates</p>
+          <div id="blockedList">${blockedRows()}</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[1fr_1fr_1.5fr_auto] gap-2 items-end pt-1">
+            <div class="space-y-1 min-w-0"><label class="text-xs text-muted-foreground" for="blkFrom">From</label><input id="blkFrom" type="date" class="${INPUT}"></div>
+            <div class="space-y-1 min-w-0"><label class="text-xs text-muted-foreground" for="blkTo">To</label><input id="blkTo" type="date" class="${INPUT}"></div>
+            <div class="space-y-1 min-w-0"><label class="text-xs text-muted-foreground" for="blkReason">Reason</label><input id="blkReason" class="${INPUT}" placeholder="e.g. Trade show week"></div>
+            <button id="blkAdd" type="button" class="${BTN} ${SZ} ${V_OUTLINE}">${svg(P.plus)}Add</button>
+          </div>
+          <p id="blkErr" class="text-sm text-destructive" hidden></p>
+        </div>
+        <div class="space-y-2">
+          <label class="text-sm font-medium leading-snug block" for="limitMode">When a request hits a blocked date or the limit</label>
+          ${selectBox("limitMode", [["warn", "Warn them, manager decides"], ["block", "Don't let them submit"]], limits.mode)}
+        </div>
+        <button id="limitsSave" type="button" class="${BTN} ${SZ} ${V_PRIMARY}">Save</button>
+      </div>
+    </div>`;
+  }
+  function adminPage() {
+    return `
+    <div class="page max-w-3xl mx-auto space-y-6">
+      <div>
+        <h1 class="ui-title text-2xl font-bold text-foreground">Admin Settings</h1>
+        <p class="text-muted-foreground">Configure integrations and app behavior</p>
+      </div>
+      <div class="${CARD}">
+        ${cardHead("Google Calendar", { desc: "Configure the shared Google Calendar for approved time off" })}
+        <div class="p-6 pt-0 space-y-4">
+          <div class="space-y-2">
+            <label class="${LABEL}" for="calId">Shared Calendar ID</label>
+            <div class="flex flex-wrap gap-2"><input id="calId" class="${INPUT} flex-1 min-w-0" value="${esc(adminState.calId)}" placeholder="example@group.calendar.google.com"><button type="button" data-save="google_calendar_id" class="${BTN} ${SZ} ${V_PRIMARY}">Save</button></div>
+          </div>
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div><p class="text-sm font-medium text-foreground">Test Mode</p><p class="text-xs text-muted-foreground">Log calendar actions without actually syncing</p></div>
+            ${sw("calTest", adminState.calTest, "Calendar test mode")}
+          </div>
+        </div>
+      </div>
+      <div class="${CARD}">
+        ${cardHead("Pay Period", { desc: "Configure bi-weekly pay period anchor for flexible time requests" })}
+        <div class="p-6 pt-0 space-y-4"><div class="space-y-2">
+          <label class="${LABEL}" for="anchor">Anchor Date (start of any known pay period)</label>
+          <div class="flex flex-wrap gap-2"><input id="anchor" type="date" class="${INPUT} flex-1 min-w-0" value="${adminState.anchor}"><button type="button" data-save="pay_period_anchor_date" class="${BTN} ${SZ} ${V_PRIMARY}">Save</button></div>
+          <p class="text-xs text-muted-foreground">Example: 2025-01-06. The system calculates all 2-week pay periods from this anchor date.</p>
+        </div></div>
+      </div>
+      <div class="${CARD}">
+        ${cardHead("Slack Integration", { desc: "Configure Slack notifications and approvals" })}
+        <div class="p-6 pt-0 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div><p class="text-sm font-medium text-foreground">Test Mode</p><p class="text-xs text-muted-foreground">Log Slack messages without sending</p></div>
+            ${sw("slackTest", adminState.slackTest, "Slack test mode")}
+          </div>
+          <p class="text-xs text-muted-foreground">Slack bot token and signing secret are configured via environment secrets. User Slack IDs are managed in User Management.</p>
+        </div>
+      </div>
+      ${postCard()}
+      ${limitsCard()}
+    </div>`;
+  }
+  function wireSwitch(id, get, set, key) {
+    const el = $(id);
+    el.onclick = () => { const on = !get(); set(on); el.setAttribute("aria-checked", String(on)); if (key) toast(`Setting "${key}" saved.`); };
+  }
+  function wireAdmin() {
+    document.querySelectorAll("[data-save]").forEach((b) => { b.onclick = () => toast(`Setting "${b.dataset.save}" saved.`); });
+    $("calId").oninput = (e) => { adminState.calId = e.target.value; };
+    $("anchor").onchange = (e) => { adminState.anchor = e.target.value; };
+    wireSwitch("calTest", () => adminState.calTest, (v) => { adminState.calTest = v; }, "calendar_test_mode");
+    wireSwitch("slackTest", () => adminState.slackTest, (v) => { adminState.slackTest = v; }, "slack_test_mode");
+    wireSwitch("postOn", () => post.on, (v) => { post.on = v; }, null);
+    $("postTime").onchange = (e) => { post.time = e.target.value; };
+    $("postSave").onclick = () => toast("Weekly message settings saved.");
+    $("postTest").onclick = () => toast("Test sent to your Time Off Manager app chat.");
+    const wireRemove = () => document.querySelectorAll("[data-remove]").forEach((b) => {
+      b.onclick = () => { limits.blocked.splice(Number(b.dataset.remove), 1); $("blockedList").innerHTML = blockedRows(); wireRemove(); };
+    });
+    wireRemove();
+    $("maxOff").oninput = (e) => { const n = parseInt(e.target.value, 10); limits.max = n > 0 ? n : 0; };
+    $("limitMode").onchange = (e) => { limits.mode = e.target.value; };
+    $("blkAdd").onclick = () => {
+      const s = $("blkFrom").value, e = $("blkTo").value, reason = $("blkReason").value.trim();
+      const err = !s || !e ? "Pick a start and end date." : s > e ? "The end date must be on or after the start date." : !reason ? "Add a reason so people know why." : "";
+      setErr("blkErr", err);
+      if (err) return;
+      limits.blocked.push({ s, e, reason });
+      limits.blocked.sort((a, b) => a.s.localeCompare(b.s));
+      $("blockedList").innerHTML = blockedRows(); wireRemove();
+      $("blkFrom").value = ""; $("blkTo").value = ""; $("blkReason").value = "";
+    };
+    $("limitsSave").onclick = () => toast('Setting "team_limits" saved.');
+  }
+
+  // ---------- Manager View + export ----------
+  let mgrFilter = "pending_approval";
+  function managerPage() {
+    const rows = ENTRIES.filter((en) => mgrFilter === "all" || en.status === mgrFilter).sort((a, b) => b.sub.localeCompare(a.sub) || b.id - a.id);
+    const list = rows.length ? `<div class="ui-list space-y-2">${rows.map((en) => `
+      <a href="#request" data-open="${en.id}" class="${ROW} flex items-start md:items-center justify-between gap-3 p-4 hover:bg-accent/50 transition-colors">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1"><span class="font-medium text-foreground min-w-0 break-words">${en.n}</span><span class="text-sm text-muted-foreground">· ${en.k === "vac" ? "Vacation" : en.k === "sick" ? "Sick Day" : "Flexible Time"}</span>${badge(en.status, en.k === "sick")}${en.special ? specialBadge : ""}</div>
+          <p class="text-sm text-muted-foreground">${en.k === "vac" ? `${en.s} → ${en.e}` : en.k === "sick" ? en.s : `${en.s} · ${en.st} – ${en.et} · ${en.h}h`}</p>
+        </div>
+        <span class="text-xs text-muted-foreground shrink-0">${shortDate(en.sub)}</span>
+      </a>`).join("")}</div>` : `<p class="text-sm text-muted-foreground">No requests found.</p>`;
+    const filters = [["pending_approval", "Pending Approval"], ["approved", "Approved"], ["rejected", "Rejected"], ["cancelled", "Cancelled"], ["completed", "Completed"], ["incomplete", "Incomplete"], ["all", "All Statuses"]];
+    return `
+    <div class="page max-w-5xl mx-auto space-y-6">
+      <div><div class="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 class="ui-title text-2xl font-bold text-foreground">Manager Dashboard</h1>
+          <p class="text-muted-foreground">Review team time off requests. Open a request to approve or reject it, or use the buttons in your Slack message.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button id="exportBtn" type="button" class="${BTN} ${SZ} ${V_OUTLINE}">${svg(P.download)}Export CSV</button>
+          <button type="button" data-soon="Submit for Staff" class="${BTN} ${SZ} ${V_PRIMARY}">${svg(P.userPlus)}Submit for Staff</button>
+        </div>
+      </div></div>
+      <div class="flex flex-wrap gap-3">${selectBox("statusFilter", filters, mgrFilter, "w-48")}</div>
+      <div class="${CARD}"><div id="mgrList" class="p-6 pt-6">${list}</div></div>
+    </div>`;
+  }
+
+  const exp = { period: "this", from: "", to: "", vac: true, sick: true, flex: true, approvedOnly: true };
+  function payPeriod(offset) {
+    const anchor = parse(adminState.anchor || "2025-01-06");
+    const days = Math.round((parse(TODAY) - anchor) / 86400000);
+    const s = addDays(anchor, (Math.floor(days / 14) + offset) * 14);
+    return [iso(s), iso(addDays(s, 13))];
+  }
+  function expRange() {
+    if (exp.period === "this") return payPeriod(0);
+    if (exp.period === "last") return payPeriod(-1);
+    if (exp.period === "month") return ["2026-11-01", "2026-11-30"];
+    if (exp.period === "year") return ["2026-01-01", "2026-12-31"];
+    return [exp.from, exp.to];
+  }
+  function expTable() {
+    const [from, to] = expRange();
+    if (!from || !to || from > to) return { err: "Pick a start date on or before the end date." };
+    const rows = PEOPLE.map((name) => ({ name, vac: 0, sick: 0, flex: 0 }));
+    for (const en of ENTRIES) {
+      if (!isActive(en) || (exp.approvedOnly && en.status !== "approved")) continue;
+      const row = rows.find((r) => r.name === en.n);
+      entryDays(en, from, to, (s, a) => { row[en.k] += a; });
+    }
+    // [key, short header for phones, full header]
+    const cols = [["vac", "Vacation", "Vacation days"], ["sick", "Sick", "Sick days"], ["flex", "Flex hrs", "Flexible hours"]].filter(([k]) => exp[k]);
+    const total = (k) => rows.reduce((t, r) => t + r[k], 0);
+    const th = "px-2 sm:px-3 py-2 font-medium text-muted-foreground whitespace-nowrap";
+    const td = "px-2 sm:px-3 py-2";
+    const html = `
+      <table class="w-full text-sm tabular-nums">
+        <thead class="border-b border-border"><tr><th class="${th} text-left">Name</th>${cols.map(([, s, l]) => `<th class="${th} text-right"><span class="sm:hidden">${s}</span><span class="hidden sm:inline">${l}</span></th>`).join("")}</tr></thead>
+        <tbody>${rows.map((r) => `<tr class="border-b border-border"><td class="${td} text-foreground">${r.name}</td>${cols.map(([k]) => `<td class="${td} text-right ${r[k] ? "text-foreground" : "text-muted-foreground"}">${num(r[k])}</td>`).join("")}</tr>`).join("")}</tbody>
+        <tfoot><tr><td class="${td} font-semibold text-foreground">Total</td>${cols.map(([k]) => `<td class="${td} text-right font-semibold text-foreground">${num(total(k))}</td>`).join("")}</tr></tfoot>
+      </table>`;
+    return { html, file: `time-off-${from}-to-${to}.csv`, cols: cols.length };
+  }
+  function openExport() {
+    const [ts, te] = payPeriod(0), [ls, le] = payPeriod(-1);
+    if (!exp.from) { exp.from = ts; exp.to = te; }
+    const periods = [
+      ["this", `This pay period (${fmtShort(ts)} – ${fmtShort(te)})`],
+      ["last", `Last pay period (${fmtShort(ls)} – ${fmtShort(le)})`],
+      ["month", "This month (November 2026)"],
+      ["year", "This year (2026)"],
+      ["custom", "Custom dates"],
+    ];
+    const cb = (id, key, label) => `<div class="flex items-center gap-2"><input id="${id}" type="checkbox" class="cbx"${exp[key] ? " checked" : ""}><label for="${id}" class="text-sm font-medium leading-none cursor-pointer">${label}</label></div>`;
+    openDialog(`
+      <div class="flex flex-col space-y-1.5 text-center sm:text-left px-6 sm:px-0 sm:pr-6 min-w-0">
+        <h2 id="dlgTitle" class="dlg-title text-lg font-semibold leading-none tracking-tight text-foreground">Export time off</h2>
+        <p class="text-sm text-muted-foreground">Download days used per person as a CSV file for payroll.</p>
+      </div>
+      <div class="space-y-2 min-w-0"><label class="${LABEL}" for="expPeriod">Period</label>${selectBox("expPeriod", periods, exp.period)}</div>
+      <div id="expCustom" class="grid grid-cols-1 sm:grid-cols-2 gap-3"${exp.period === "custom" ? "" : " hidden"}>
+        <div class="space-y-2 min-w-0"><label class="${LABEL}" for="expFrom">From</label><input id="expFrom" type="date" class="${INPUT}" value="${exp.from}"></div>
+        <div class="space-y-2 min-w-0"><label class="${LABEL}" for="expTo">To</label><input id="expTo" type="date" class="${INPUT}" value="${exp.to}"></div>
+      </div>
+      <div class="space-y-2 min-w-0"><p class="${LABEL}">Include</p><div class="flex flex-wrap gap-x-5 gap-y-3">${cb("expVac", "vac", "Vacation")}${cb("expSick", "sick", "Sick days")}${cb("expFlex", "flex", "Flexible time")}</div></div>
+      ${cb("expApproved", "approvedOnly", "Only approved requests")}
+      <div id="expPreview" class="min-w-0"></div>
+      <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+        <button id="expCancel" type="button" class="${BTN} ${SZ} ${V_GHOST}">Cancel</button>
+        <button id="expDownload" type="button" class="${BTN} ${SZ} ${V_PRIMARY}">${svg(P.download)}Download CSV</button>
+      </div>`, { focus: "expPeriod", back: "exportBtn" });
+    const refresh = () => {
+      const t = expTable();
+      $("expCustom").hidden = exp.period !== "custom";
+      const ok = !t.err && t.cols > 0;
+      $("expPreview").innerHTML = t.err
+        ? `<p class="text-sm text-destructive">${t.err}</p>`
+        : t.cols === 0 ? `<p class="text-sm text-destructive">Tick at least one type to include.</p>`
+        : `<div class="ui-well rounded-md border border-border overflow-x-auto">${t.html}</div><p class="text-xs text-muted-foreground mt-2 break-all">${t.file}</p>`;
+      $("expDownload").disabled = !ok;
+      $("expDownload").dataset.file = ok ? t.file : "";
+    };
+    $("expCancel").onclick = () => closeDialog();
+    $("expPeriod").onchange = (e) => { exp.period = e.target.value; refresh(); };
+    $("expFrom").onchange = (e) => { exp.from = e.target.value; refresh(); };
+    $("expTo").onchange = (e) => { exp.to = e.target.value; refresh(); };
+    [["expVac", "vac"], ["expSick", "sick"], ["expFlex", "flex"], ["expApproved", "approvedOnly"]].forEach(([id, key]) => { $(id).onchange = (e) => { exp[key] = e.target.checked; refresh(); }; });
+    $("expDownload").onclick = () => { const f = $("expDownload").dataset.file; closeDialog(); toast(`Downloaded ${f}`); };
+    refresh();
+  }
+  function wireManager() {
+    $("statusFilter").onchange = (e) => { mgrFilter = e.target.value; renderPage(null); };
+    $("exportBtn").onclick = openExport;
+  }
+
+  // ---------- Round 7: rows on Audit Log and the Flexible Time pages ----------
+  // grouped = this round's change: one grey box with thin lines, like My Requests.
+  // Off = the separate outlined boxes the live app has on these pages today.
+  let grouped = true;
+  const CHG = "data-changed";
+  const listCls = (today) => (grouped ? "ui-list" : today);
+  const rowCls = (layout, today) => (grouped ? `ui-row ${layout}` : `${layout} ${today}`);
+  const wellCls = (rest, today) => (grouped ? `ui-well ${rest}` : `${rest} ${today}`);
+  function infoAlert(icon, html, cls = "border-primary/30 bg-primary/5", textCls = "text-sm") {
+    return `<div class="relative w-full rounded-[14px] border p-4 ${cls}">${svg(icon, "h-4 w-4 absolute left-4 top-4 text-foreground")}<div class="${textCls} pl-7">${html}</div></div>`;
+  }
+
+  // The app's working-hours maths: the 12:00–13:00 lunch break never counts.
+  const hrs = (n) => `${Number(n.toFixed(2))}h`;
+  const mins = (t) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+  function lunchHours(st, et) { if (!st || !et) return 0; return Math.max(0, Math.min(mins(et), 780) - Math.max(mins(st), 720)) / 60; }
+  function workHours(st, et) {
+    if (!st || !et) return 0;
+    const raw = mins(et) - mins(st);
+    if (raw <= 0) return 0;
+    return Math.round(((raw - lunchHours(st, et) * 60) / 60) * 100) / 100;
+  }
+  function payPeriodOf(dateStr) {
+    const anchor = parse(adminState.anchor || "2025-01-06");
+    const days = Math.round((parse(dateStr) - anchor) / 86400000);
+    const s = addDays(anchor, Math.floor(days / 14) * 14);
+    return [iso(s), iso(addDays(s, 13))];
+  }
+
+  // ----- Audit Log -----
+  const AUDIT = [
+    { a: "sick_day_auto_approved", actor: "staff", req: "9c9c0c4e", details: { request_type: "sick" }, at: "11/11/2026, 9:46:40 AM" },
+    { a: "request_submitted", actor: "staff", req: "5d1e77a0", details: { request_type: "vacation" }, at: "11/10/2026, 4:12:09 PM" },
+    { a: "approved", actor: "manager", req: "42840c29", details: { via: "slack", approver_name: "David Chen" }, at: "11/9/2026, 7:40:28 PM" },
+    { a: "request_submitted", actor: "staff", req: "4b859e76", details: { request_type: "vacation" }, at: "11/9/2026, 3:42:10 PM" },
+    { a: "flexible_time_approved", actor: "manager", req: "", details: { via: "app" }, at: "11/6/2026, 4:31:55 PM" },
+    { a: "flexible_time_submitted", actor: "staff", req: "", details: { total_hours: 2 }, at: "11/6/2026, 2:20:18 PM" },
+    { a: "cancellation_approved", actor: "manager", req: "3ca3ff32", details: { via: "slack", approver_name: "David Chen" }, at: "11/5/2026, 2:59:39 PM" },
+    { a: "cancellation_requested", actor: "staff", req: "3ca3ff32", details: { reason: null }, at: "11/5/2026, 2:52:04 PM" },
+    { a: "request_edited", actor: "staff", req: "7f02b6d1", details: { changed: ["end_date"] }, at: "11/4/2026, 11:08:47 AM" },
+    { a: "rejected", actor: "manager", req: "1a6c9e53", details: { via: "app", rejection_reason: "Too many people off that week" }, at: "11/3/2026, 10:15:32 AM" },
+  ];
+  const AUDIT_FILTERS = [["all", "All Actions"], ["request_submitted", "Submitted"], ["approved", "Approved"], ["rejected", "Rejected"], ["request_edited", "Edited"], ["request_cancelled", "Cancelled"], ["cancellation_requested", "Cancellation Requested"], ["cancellation_approved", "Cancellation Approved"], ["cancellation_denied", "Cancellation Denied"], ["sick_day_auto_approved", "Auto-Approved"], ["approved_request_edited", "Approved Edited"], ["rejected_request_resubmitted", "Resubmitted"], ["flexible_time_submitted", "Flexible Time Submitted"], ["flexible_time_approved", "Flexible Time Approved"], ["flexible_time_rejected", "Flexible Time Rejected"], ["flexible_time_completed", "Flexible Time Completed"], ["flexible_time_incomplete", "Flexible Time Incomplete"]];
+  let auditSearch = "";
+  let auditFilter = "all";
+  function auditRows() {
+    const s = auditSearch.toLowerCase();
+    const rows = AUDIT.filter((l) => (auditFilter === "all" || l.a === auditFilter) && (!s || l.a.includes(s) || l.actor.includes(s) || JSON.stringify(l.details).toLowerCase().includes(s)));
+    if (!rows.length) return `<p class="text-sm text-muted-foreground">No audit logs found.</p>`;
+    // Phones: each entry stacks (action, actor, details, then time).
+    return `<div class="${listCls("space-y-3")}" ${CHG}>${rows.map((l) => `
+      <div class="${rowCls("flex flex-col gap-1 md:flex-row md:items-start md:justify-between md:gap-3", "p-3 rounded-lg border border-border")}">
+        <div class="min-w-0">
+          <p class="text-sm font-medium text-foreground">${l.a.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</p>
+          <p class="text-xs text-muted-foreground">Actor: ${l.actor} · Request: ${l.req || "N/A"}</p>
+          <p class="text-xs text-muted-foreground mt-1 font-mono break-all">${esc(JSON.stringify(l.details).substring(0, 120))}</p>
+        </div>
+        <span class="text-xs text-muted-foreground whitespace-nowrap">${l.at}</span>
+      </div>`).join("")}</div>`;
+  }
+  function auditPage() {
+    return `
+    <div class="page max-w-5xl mx-auto space-y-6">
+      <div>
+        <h1 class="ui-title text-2xl font-bold text-foreground">Audit Log</h1>
+        <p class="text-muted-foreground">Complete history of all actions</p>
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <input id="auditSearch" class="${INPUT} w-full sm:w-64" placeholder="Search logs..." value="${esc(auditSearch)}">
+        ${selectBox("auditFilter", AUDIT_FILTERS, auditFilter, "w-full sm:w-56")}
+      </div>
+      <div class="${CARD}"><div id="auditList" class="p-6 pt-6">${auditRows()}</div></div>
+    </div>`;
+  }
+  function wireAudit() {
+    $("auditSearch").oninput = (e) => { auditSearch = e.target.value; $("auditList").innerHTML = auditRows(); };
+    $("auditFilter").onchange = (e) => { auditFilter = e.target.value; $("auditList").innerHTML = auditRows(); };
+  }
+
+  // ----- Flexible Time request page -----
+  let flexId = ENTRIES.findIndex((en) => en.k === "flex" && en.n === "Jordan Lee");
+  let flexBack = "manager";
+  function flexPage() {
+    const en = ENTRIES[flexId];
+    const own = en.n === ME;
+    const [ps, pe] = payPeriodOf(en.s);
+    const made = Math.round(en.makeup.reduce((t, m) => t + workHours(m.st, m.et), 0) * 100) / 100;
+    const short = Math.round((en.h - made) * 100) / 100;
+    const offLunch = lunchHours(en.st, en.et);
+    const doneBadge = (done) => grouped
+      ? `<div class="ui-badge ${done ? "is-ok" : "is-mute"} inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold" ${CHG}>${done ? "Completed" : "Pending"}</div>`
+      : `<div class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${done ? "bg-success/15 text-success border-success/30" : "bg-muted text-muted-foreground border-border"}">${done ? "Completed" : "Pending"}</div>`;
+    const rows = en.makeup.map((m) => `
+      <div class="${rowCls("flex items-center justify-between gap-3", "p-3 rounded-lg border border-border")}">
+        <div class="min-w-0">
+          <p class="text-sm font-medium text-foreground">${m.d}</p>
+          <p class="text-xs text-muted-foreground">${m.st} – ${m.et} · ${hrs(workHours(m.st, m.et))}${lunchHours(m.st, m.et) > 0 ? ` (excludes ${hrs(lunchHours(m.st, m.et))} lunch)` : ""}</p>
+        </div>
+        ${doneBadge(m.done)}
+      </div>`).join("");
+    const sumBox = Math.abs(short) > 0.01
+      ? "mb-3 p-3 rounded-lg text-sm bg-destructive/10 text-destructive"
+      : wellCls("mb-3 p-3 text-sm text-muted-foreground", "rounded-lg bg-muted/50");
+    return `
+    <div class="page max-w-2xl mx-auto space-y-6">
+      <button id="flexBackBtn" type="button" class="${BTN} ${SZ_SM} ${V_GHOST}">${svg(P.arrowLeft, "h-4 w-4 mr-1")} Back</button>
+
+      <div class="${CARD}">
+        <div class="flex flex-col space-y-1.5 p-6">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="text-lg font-semibold leading-none tracking-tight">Flexible Time Request</h3>
+            ${badge(en.status)}
+          </div>
+        </div>
+        <div class="p-6 pt-0 space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div><p class="text-muted-foreground">Employee</p><p class="font-medium text-foreground">${en.n}</p></div>
+            <div><p class="text-muted-foreground">Date Off</p><p class="font-medium text-foreground">${en.s}</p></div>
+            <div><p class="text-muted-foreground">Time</p><p class="font-medium text-foreground">${en.st} – ${en.et}</p></div>
+            <div><p class="text-muted-foreground">Total Hours</p><p class="font-medium text-foreground">${hrs(en.h)}</p>${offLunch > 0 ? `<p class="text-xs text-muted-foreground">Clock time is longer — the 12:00–13:00 lunch break (${hrs(offLunch)}) does not count as working time.</p>` : ""}</div>
+            <div class="md:col-span-2"><p class="text-muted-foreground">Pay Period</p><p class="font-medium text-foreground">${ps} → ${pe}</p></div>
+          </div>
+          <div>
+            <p class="text-sm text-muted-foreground mb-1">Make-Up Plan</p>
+            <p class="${wellCls("text-sm text-foreground p-3", "bg-muted/50 rounded-lg")}" ${CHG}>${esc(en.plan)}</p>
+          </div>
+        </div>
+      </div>
+
+      ${infoAlert(P.info, `All make-up time must be completed within the same pay period (${ps} → ${pe}).`)}
+
+      <div class="${CARD}">
+        ${cardHead("Make-Up Schedule", { tight: true })}
+        <div class="p-6 pt-0">
+          <div class="${sumBox}" ${CHG}>
+            <span class="font-medium">${hrs(made)} scheduled of ${hrs(en.h)} owed</span>${short > 0.01 ? `<span> — ${hrs(short)} short.</span>` : ""}${short < -0.01 ? `<span> — ${hrs(-short)} more than required.</span>` : ""}
+            <span class="block text-xs mt-1">Working hours only. The 12:00–13:00 lunch break never counts towards make-up time.</span>
+          </div>
+          <div class="${listCls("space-y-2")}" ${CHG}>${rows}</div>
+        </div>
+      </div>
+
+      ${own && isActive(en) ? `<button type="button" data-soon="Cancel Request" class="${BTN} ${SZ} ${V_DESTRUCTIVE}">${svg(P.xCircle, "h-4 w-4 mr-1")} Cancel Request</button>` : ""}
+
+      <div class="${CARD}">
+        ${cardHead("Timeline", { tight: true })}
+        <div class="p-6 pt-0"><div class="space-y-2">
+          <div class="text-sm"><span class="text-muted-foreground">${subAt(en)}</span> · <span class="text-foreground">flexible time submitted</span></div>
+          <div class="text-sm"><span class="text-muted-foreground">${shortDate(nextWorkday(en.sub))}, 9:30:12 AM</span> · <span class="text-foreground">flexible time approved</span></div>
+        </div></div>
+      </div>
+    </div>`;
+  }
+  function wireFlex() { $("flexBackBtn").onclick = () => go(flexBack, "pop", true); }
+
+  // ----- New Flexible Time request page -----
+  // Sample: shown as if no flexible time was used this quarter, so the form is visible.
+  const flexForm = {
+    date: "2026-11-19", st: "13:00", et: "15:00", nextId: 3,
+    entries: [{ id: 1, d: "2026-11-17", st: "17:00", et: "18:00" }, { id: 2, d: "2026-11-18", st: "17:00", et: "18:00" }],
+  };
+  const TIMES_30 = [];
+  for (let h = 0; h < 24; h++) for (const m of [0, 30]) TIMES_30.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+  function timeSelect(attrs, value, placeholder) {
+    return `<div class="relative"><select ${attrs} class="${SELECT}"><option value="">${placeholder}</option>${TIMES_30.map((t) => `<option${t === value ? " selected" : ""}>${t}</option>`).join("")}</select>${svg(P.chevDown, "h-4 w-4 opacity-50 absolute right-3 top-3 pointer-events-none")}</div>`;
+  }
+  function flexNewPage() {
+    const f = flexForm;
+    const off = workHours(f.st, f.et);
+    const lunch = lunchHours(f.st, f.et);
+    const made = Math.round(f.entries.reduce((t, e) => t + workHours(e.st, e.et), 0) * 100) / 100;
+    const sessions = f.entries.filter((e) => e.d && e.st && e.et).length;
+    const endBefore = !!f.st && !!f.et && f.et <= f.st;
+    const mismatch = Math.abs(made - off) > 0.01;
+    const pp = f.date ? payPeriodOf(f.date) : null;
+    const smallLabel = "text-xs font-medium leading-none";
+    const entries = f.entries.map((e, i) => `
+      <div class="${wellCls("p-3 space-y-2", "rounded-lg border border-border")}" ${CHG}>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="text-sm font-medium">Entry ${i + 1}</span>
+          ${f.entries.length > 1 ? `<button type="button" data-rm="${e.id}" class="${BTN} ${V_GHOST} ui-btn-icon h-9 w-9 md:h-7 md:w-7" aria-label="Remove entry ${i + 1}">${svg(P.trash, "h-3.5 w-3.5")}</button>` : ""}
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <div class="space-y-1"><label class="${smallLabel}" for="mk-d-${e.id}">Date</label><input id="mk-d-${e.id}" data-mk="${e.id}" data-f="d" type="date" class="${INPUT}" value="${e.d}"></div>
+          <div class="space-y-1"><label class="${smallLabel}" for="mk-st-${e.id}">Start</label>${timeSelect(`id="mk-st-${e.id}" data-mk="${e.id}" data-f="st"`, e.st, "Start")}</div>
+          <div class="space-y-1"><label class="${smallLabel}" for="mk-et-${e.id}">End</label>${timeSelect(`id="mk-et-${e.id}" data-mk="${e.id}" data-f="et"`, e.et, "End")}</div>
+        </div>
+        ${workHours(e.st, e.et) > 0 ? `<p class="text-xs text-muted-foreground">${hrs(workHours(e.st, e.et))} of make-up time${lunchHours(e.st, e.et) > 0 ? ` (excludes ${hrs(lunchHours(e.st, e.et))} lunch break 12:00–13:00)` : ""}</p>` : ""}
+      </div>`).join("");
+    return `
+    <div class="page max-w-2xl mx-auto space-y-6">
+      <div>
+        <h1 class="ui-title text-2xl font-bold text-foreground">Submit Flexible Time Request</h1>
+        <p class="text-muted-foreground">Request up to 4 hours off with a make-up plan.<span class="block text-xs mt-1">Available for office and admin staff only.</span></p>
+      </div>
+
+      ${infoAlert(P.clock, "You have 1 flexible time request available this quarter.", "border-primary/30 bg-primary/5", "text-sm")}
+
+      <div class="${CARD}">
+        ${cardHead("Time Off Details", { tight: true })}
+        <div class="p-6 pt-0">
+          <form id="flexForm" class="space-y-5" novalidate>
+            <div class="space-y-2">
+              <label class="${LABEL}" for="flexDate">Date of Time Off</label>
+              <input id="flexDate" type="date" class="${INPUT}" value="${f.date}" min="2026-11-12">
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div class="space-y-2"><label class="${LABEL}" for="flexSt">Start Time</label>${timeSelect('id="flexSt"', f.st, "Start time")}</div>
+              <div class="space-y-2"><label class="${LABEL}" for="flexEt">End Time</label>${timeSelect('id="flexEt"', f.et, "End time")}</div>
+            </div>
+            ${endBefore ? `<p class="text-sm text-destructive">End time must be after start time.</p>` : ""}
+            ${f.date && f.st && f.et && off > 0 ? `
+            <div class="p-3 rounded-lg border border-primary/30 bg-primary/5 text-sm space-y-1">
+              <p>You are requesting <span class="font-semibold">${off} working hour${off !== 1 ? "s" : ""}</span> off on <span class="font-semibold">${WEEKDAYS[parse(f.date).getDay()]}, ${fmt(f.date)}</span>, from <span class="font-semibold">${f.st}</span> to <span class="font-semibold">${f.et}</span>.${lunch > 0 ? `<span class="text-muted-foreground"> (excludes ${lunch}h lunch break 12:00–13:00)</span>` : ""}</p>
+              <p>You must make up exactly <span class="font-semibold">${off}h</span> across your entries. Current make-up total: <span class="font-semibold ${mismatch ? "text-destructive" : "text-primary"}">${made}h</span> (${sessions} session${sessions !== 1 ? "s" : ""}).</p>
+              ${off > 4 ? `<p class="text-destructive font-medium">⚠ This exceeds the 4-hour maximum.</p>` : ""}
+            </div>` : ""}
+
+            <div class="space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <p class="${LABEL}">Make-Up Time Entries</p>
+                <button id="mkAdd" type="button" class="${BTN} ${SZ_SM} ${V_OUTLINE}">${svg(P.plus, "h-4 w-4 mr-1")} Add Entry</button>
+              </div>
+              ${infoAlert(P.info, "All make-up time must be completed within the same pay period as your time off, in 30-minute intervals, and outside the hours you are taking off. The 12:00–13:00 lunch break does not count towards make-up time, so a block that crosses it is worth an hour less than the clock suggests.")}
+              ${pp ? `<p class="text-xs text-muted-foreground">Pay period: ${pp[0]} to ${pp[1]}. Make-up dates must fall within this period.</p>` : ""}
+              ${entries}
+              ${made > 0 ? `
+              <div class="${wellCls("p-3 text-sm", "rounded-lg border border-border bg-muted/50")}" ${CHG}>
+                <span class="font-medium">Total make-up hours:</span> ${hrs(made)}${off > 0 ? `<span class="ml-2">of ${hrs(off)} required${mismatch ? `<span class="text-destructive font-medium"> — ${hrs(Math.abs(off - made))} ${made < off ? "short" : "over"}</span>` : ""}</span>` : ""}
+                <span class="block text-xs text-muted-foreground mt-1">Working hours only — the 12:00–13:00 lunch break never counts as make-up time, for your time off or your make-up entries.</span>
+              </div>` : ""}
+            </div>
+
+            ${infoAlert(P.info, "This request will not take effect until it has been reviewed and approved by a manager.", "border-muted-foreground/20 bg-muted/50", "text-xs text-muted-foreground")}
+
+            <button type="submit" class="${BTN} ${SZ} ${V_PRIMARY} w-full"${endBefore || off <= 0 || mismatch ? " disabled" : ""}>Submit Request</button>
+          </form>
+        </div>
+      </div>
+    </div>`;
+  }
+  function wireFlexNew() {
+    const f = flexForm;
+    $("flexDate").onchange = (e) => { f.date = e.target.value; renderPage(null); };
+    $("flexSt").onchange = (e) => { f.st = e.target.value; renderPage(null); };
+    $("flexEt").onchange = (e) => { f.et = e.target.value; renderPage(null); };
+    document.querySelectorAll("[data-mk]").forEach((el) => {
+      el.onchange = (e) => { const en = f.entries.find((x) => x.id === Number(el.dataset.mk)); en[el.dataset.f] = e.target.value; renderPage(null); };
+    });
+    document.querySelectorAll("[data-rm]").forEach((b) => {
+      b.onclick = () => { f.entries = f.entries.filter((x) => x.id !== Number(b.dataset.rm)); renderPage(null); };
+    });
+    $("mkAdd").onclick = () => { f.entries.push({ id: f.nextId++, d: "", st: "", et: "" }); renderPage(null); };
+    $("flexForm").addEventListener("submit", (e) => { e.preventDefault(); toast("Flexible time request submitted for approval."); });
+  }
+
+  // ---------- Pop-ups ----------
+  let dlgBack = null;
+  let dlgTimer = null;
+  function onDlgKey(e) { if (e.key === "Escape") closeDialog(); }
+  function openDialog(inner, { focus, back } = {}) {
+    clearTimeout(dlgTimer);
+    const root = $("dialogRoot");
+    root.classList.remove("is-closing");
+    root.innerHTML = `
+      <div id="dlgOverlay" class="dlg-scrim fixed inset-0 z-50 bg-black/80"></div>
+      <div role="dialog" aria-modal="true" aria-labelledby="dlgTitle" class="dlg fixed left-1/2 top-1/2 z-50 grid grid-cols-1 w-[calc(100%-32px)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 border border-border bg-background p-4 sm:p-6 shadow-lg rounded-lg max-h-[calc(100dvh-32px)] overflow-y-auto">
+        ${inner}
+        <button id="dlgClose" type="button" class="dlg-x absolute right-3 top-3 sm:right-4 sm:top-4 h-8 w-8 inline-flex items-center justify-center rounded-sm opacity-70 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Close">${svg(P.x)}</button>
+      </div>`;
+    dlgBack = back || null;
+    document.addEventListener("keydown", onDlgKey);
+    $("dlgOverlay").onclick = () => closeDialog();
+    $("dlgClose").onclick = () => closeDialog();
+    if (focus && $(focus)) $(focus).focus();
+  }
+  // Closes the open pop-up. In the new look it fades out first; "now" skips that.
+  function closeDialog(now) {
+    const root = $("dialogRoot");
+    if (!root.firstElementChild) return;
+    document.removeEventListener("keydown", onDlgKey);
+    const back = dlgBack && $(dlgBack);
+    dlgBack = null;
+    const done = () => { root.innerHTML = ""; root.classList.remove("is-closing"); };
+    clearTimeout(dlgTimer);
+    if (now || REDUCED || !$("stage").classList.contains("look-apple")) done();
+    else { root.classList.add("is-closing"); dlgTimer = setTimeout(done, 170); }
+    if (back) back.focus();
+  }
+
+  // ---------- Screens ----------
+  const ROUTES = {
+    "time-off": { nav: "timeoff", label: "Time Off", html: timeOffPage, wire: wireTimeOff, hint: "Try it: tap New Request, then tap a row under My Requests." },
+    "manager": { nav: "manager", label: "Manager View", html: managerPage, wire: wireManager, hint: "Try it: tap Jordan Lee's request, or tap Export CSV." },
+    "request": { nav: "", label: "Request page", html: requestPage, wire: wireRequest, hint: "Try it: tap Approve or Reject, then the back arrow." },
+    "admin": { nav: "admin", label: "Admin Settings", html: adminPage, wire: wireAdmin, hint: "Try it: flip a switch, or add a blocked date." },
+    "audit": { nav: "audit", label: "Audit Log", html: auditPage, wire: wireAudit, hint: "This round: the entries sit in one grey box with thin lines. Flip Rows to Separate to see the live app today." },
+    "flex": { nav: "", label: "Flexible Time request", html: flexPage, wire: wireFlex, hint: "This round: the Make-Up Schedule rows are grouped and Completed / Pending are capsules. Flip Rows to compare." },
+    "flex-new": { nav: "", label: "New Flexible Time", html: flexNewPage, wire: wireFlexNew, hint: "This round: each make-up entry is a soft grey box with white fields. Try Add Entry, then flip Rows to compare. Sample: shown as if no flexible time was used this quarter." },
+  };
+  function fromHash() { const h = (location.hash || "").slice(1); return ROUTES[h] ? h : "audit"; }
+  let route = fromHash();
+  let animTimer = null;
+  const SEG = "inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  const seg = (attr, on, label) => `<button type="button" ${attr} class="${SEG} ${on ? "bg-background text-foreground shadow-sm" : "hover:text-foreground"}" aria-pressed="${on}">${label}</button>`;
+
+  function renderStrip() {
+    $("rowsRow").innerHTML = seg('data-rows="new"', grouped, "Grouped (new)") + seg('data-rows="today"', !grouped, "Separate (live today)");
+    $("rowsRow").querySelectorAll("[data-rows]").forEach((b) => { b.onclick = () => { grouped = b.dataset.rows === "new"; renderPage(null); }; });
+    $("screenRow").innerHTML = Object.keys(ROUTES).map((k) => seg(`data-screen="${k}"`, k === route, ROUTES[k].label)).join("");
+    $("screenRow").querySelectorAll("[data-screen]").forEach((b) => {
+      b.onclick = () => {
+        if (b.dataset.screen === "request") { reqId = JORDAN.id; reqBack = "manager"; }
+        if (b.dataset.screen === "flex") { flexId = ENTRIES.findIndex((en) => en.k === "flex" && en.n === "Jordan Lee"); flexBack = "manager"; }
+        go(b.dataset.screen, "tab", false);
+      };
+    });
+    $("tryHint").textContent = ROUTES[route].hint;
+  }
+
+  // kind: "tab" (menu), "push" (open a request), "pop" (back), or null to redraw in place with no movement.
+  function renderPage(kind) {
+    const r = ROUTES[route];
+    closeDialog(true);
+    const main = $("appMain");
+    main.innerHTML = r.html();
+    main.classList.toggle("admin-bg", route === "admin");
+    $("appRoot").classList.toggle("is-admin", route === "admin");
+    const page = main.firstElementChild;
+    clearTimeout(animTimer);
+    if (kind && page) {
+      [...page.children].forEach((el, i) => el.style.setProperty("--i", Math.min(i, 6)));
+      page.classList.add("anim-" + kind);
+      animTimer = setTimeout(() => page.classList.remove("anim-tab", "anim-push", "anim-pop"), 1100);
+    }
+    setNav(r.nav);
+    r.wire();
+    renderStrip();
+  }
+  function go(next, kind, fromApp) {
+    route = next;
+    renderPage(kind);
+    // A new page starts at its top, like a page load, when you were scrolled into the app.
+    if (fromApp) {
+      const top = $("app").getBoundingClientRect().top + window.scrollY;
+      if (window.scrollY > top) window.scrollTo(0, top);
+    }
+    try { if (location.hash.slice(1) !== next) location.hash = next; } catch (e) { /* hash not available */ }
+  }
+  function openRequest(id) {
+    const en = ENTRIES[id];
+    if (en.k === "flex") { if (route !== "flex") flexBack = route; flexId = id; go("flex", "push", true); return; }
+    if (route !== "request") reqBack = route;
+    reqId = id;
+    go("request", "push", true);
+  }
+  window.addEventListener("hashchange", () => { const h = fromHash(); if (h !== route) { route = h; renderPage("tab"); } });
+
+  let toastTimer;
+  function toast(msg) {
+    $("toastText").textContent = msg;
+    $("toast").classList.remove("hide");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => $("toast").classList.add("hide"), 3500);
+  }
+
+  // ---------- Start ----------
+  $("app").innerHTML = shellHtml();
+  $("app").addEventListener("click", (e) => {
+    const nav = e.target.closest("[data-nav]");
+    if (nav) {
+      e.preventDefault();
+      const it = NAV.find((x) => x.key === nav.dataset.nav);
+      if (it.route) go(it.route, "tab", true); else toast(`${it.label} is not in this mockup.`);
+      return;
+    }
+    const open = e.target.closest("[data-open]");
+    if (open) { e.preventDefault(); openRequest(Number(open.dataset.open)); return; }
+    const soon = e.target.closest("[data-soon]");
+    if (soon) { e.preventDefault(); toast(`${soon.dataset.soon} is not in this mockup.`); }
+  });
+  // The phone top bar gets its hairline only once content has scrolled under it. No scroll listener.
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(([en]) => {
+      $("appHeader").classList.toggle("is-stuck", !en.isIntersecting && en.boundingClientRect.top < 0);
+    }, { threshold: 0 }).observe($("hdrSentinel"));
+  }
+
+  $("outlineToggle").onclick = () => {
+    const on = $("outlineToggle").getAttribute("aria-checked") !== "true";
+    $("outlineToggle").setAttribute("aria-checked", String(on));
+    document.body.classList.toggle("show-changes", on);
+  };
+  document.body.classList.add("show-changes");
+  // "What changed" starts open on wide screens and folded on phones.
+  if (window.matchMedia && window.matchMedia("(min-width: 768px)").matches) $("changesBox").open = true;
+
+  renderPage("tab");
+</script>

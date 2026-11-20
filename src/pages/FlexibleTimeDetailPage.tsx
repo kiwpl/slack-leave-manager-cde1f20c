@@ -345,7 +345,7 @@ export default function FlexibleTimeDetailPage() {
 
             <div>
               <p className="text-sm text-muted-foreground mb-1">Make-Up Plan</p>
-              <p className="text-sm text-foreground bg-muted/50 p-3 rounded-lg">
+              <p className="ui-well text-sm text-foreground p-3">
                 {request.makeup_plan}
               </p>
             </div>
@@ -377,10 +377,10 @@ export default function FlexibleTimeDetailPage() {
           <CardContent>
             <div
               className={
-                "mb-3 p-3 rounded-lg text-sm " +
+                "mb-3 p-3 text-sm " +
                 (Math.abs(makeupShortfall) > 0.01
-                  ? "bg-destructive/10 text-destructive"
-                  : "bg-muted/50 text-muted-foreground")
+                  ? "rounded-lg bg-destructive/10 text-destructive"
+                  : "ui-well text-muted-foreground")
               }
             >
               <span className="font-medium">
@@ -398,11 +398,11 @@ export default function FlexibleTimeDetailPage() {
               </span>
             </div>
 
-            <div className="space-y-2">
+            <div className="ui-list">
               {entries.map((entry) => (
                 <div
                   key={entry.id}
-                  className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border"
+                  className="ui-row flex items-center justify-between gap-3"
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground">
@@ -419,8 +419,8 @@ export default function FlexibleTimeDetailPage() {
                     variant="outline"
                     className={
                       entry.completed
-                        ? "bg-success/15 text-success border-success/30"
-                        : "bg-muted text-muted-foreground border-border"
+                        ? "ui-badge is-ok"
+                        : "ui-badge is-mute"
                     }
                   >
                     {entry.completed ? "Completed" : "Pending"}

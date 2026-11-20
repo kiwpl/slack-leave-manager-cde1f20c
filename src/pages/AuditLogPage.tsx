@@ -87,11 +87,11 @@ export default function AuditLogPage() {
             ) : filtered.length === 0 ? (
               <p className="text-sm text-muted-foreground">No audit logs found.</p>
             ) : (
-              <div className="space-y-3">
+              <div className="ui-list">
                 {filtered.map((log) => (
                   <div
                     key={log.id}
-                    className="flex flex-col gap-1 p-3 rounded-lg border border-border md:flex-row md:items-start md:justify-between md:gap-3"
+                    className="ui-row flex flex-col gap-1 md:flex-row md:items-start md:justify-between md:gap-3"
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-foreground">
