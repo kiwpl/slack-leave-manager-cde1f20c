@@ -38,8 +38,15 @@ Frozen UI decisions. Do not change anything listed here unless Phil asks.
 - Small buttons (User Management, flexible time "remove entry") are at least 36px tall on phones.
 
 ## 2026-11-11 · Out today in the app chat (mockup round 4 approved)
-- The weekday "Out today · <weekday, month day>" message goes to managers and admins as a direct message in their Time Off Manager app chat. No Slack channel.
-- Message: one bullet per person, then "Later this week" (when ticked). No footer line (Phil, 2026-11-19: the "Sent to managers and admins every weekday at <time> · approved time off only" line is removed). A test message ends with "Test".
-- No message at all on a day when nobody is off (and none on weekends or stat holidays).
-- Admin Settings card 'Daily "Out today" post': description "Send who's away to managers and admins in their Time Off Manager app chat every weekday morning"; "Post every weekday" switch on the right with "Monday to Friday, skips stat holidays and days when nobody is off"; Time (7:00 to 9:00 AM); "Also list time off later this week"; Save; Send a test post; then "The test goes only to you, in your Time Off Manager app chat."
+- Messages go to managers and admins as a direct message in their Time Off Manager app chat. No Slack channel.
+- The daily "Out today" message, its "Later this week" part and the 'Daily "Out today" post' card: replaced by round 5 below (one weekly message).
+- No footer line (Phil, 2026-11-19: the "Sent to managers and admins every weekday at <time> · approved time off only" line is removed). A test message ends with "Test".
 - No Channel box and no /invite note.
+
+## 2026-11-20 · Weekly "Off this week" message (mockup round 5 approved)
+- One message on Monday morning: "Off this week · <Monday, month day> – <Friday, month day>". When Monday is a stat holiday it goes out Tuesday and covers Tuesday to Friday.
+- One bullet per person off any day that week: their days off, then "back <weekday, month day>". Anyone already away when it goes out also gets "(in N working days)"; working days skip weekends and stat holidays. Example: "Maya Torres: Vacation until Friday, November 20 · back Monday, November 23 (in 10 working days)".
+- Someone still off next week is listed again in next Monday's message.
+- Mid-week: a short "New this week · <weekday, month day>" message only on a day someone not yet in that week's messages is off (e.g. "Sam Patel: Sick day, this morning"). Otherwise nothing until next Monday.
+- No message in a week when nobody is off.
+- Admin Settings card 'Weekly "Off this week" message': description "Send who's off this week to managers and admins in their Time Off Manager app chat on Monday morning, with a short update when someone new is off"; "Weekly message on Mondays" switch on the right with "Goes out Tuesday when Monday is a stat holiday. Nothing is sent in a week when nobody is off."; Time (7:00 to 9:00 AM); Save; Send a test post; then "The test goes only to you, in your Time Off Manager app chat." No "later this week" box.
