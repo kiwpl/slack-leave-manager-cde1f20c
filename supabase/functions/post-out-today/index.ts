@@ -98,7 +98,8 @@ Deno.serve(async (req) => {
     }
 
     // The week the message is about. A test on a weekend shows next week's message.
-    const from = isTest && (now.weekday === 0 || now.weekday === 6) ? addDaysIso(now.date, now.weekday === 0 ? 1 : 2) : now.date;
+    const from =
+      isTest && (now.weekday === 0 || now.weekday === 6) ? addDaysIso(now.date, now.weekday === 0 ? 1 : 2) : now.date;
     const fromWeekday = new Date(`${from}T12:00:00Z`).getUTCDay();
     const monday = addDaysIso(from, 1 - fromWeekday);
     const friday = addDaysIso(from, 5 - fromWeekday);
@@ -117,9 +118,7 @@ Deno.serve(async (req) => {
 
     const all = await loadTimeOff(supabase, from, friday);
     const announced = new Set(state.sent);
-    const picked = weekly
-      ? all
-      : all.filter((o) => !announced.has(o.key) && o.start <= from && o.end >= from);
+    const picked = weekly ? all : all.filter((o) => !announced.has(o.key) && o.start <= from && o.end >= from);
 
     // Today is decided once, and what was listed is remembered for the rest of the week.
     const markDone = async () => {
@@ -139,7 +138,10 @@ Deno.serve(async (req) => {
       return json({ ok: true, skipped: weekly ? "nobody off this week" : "nobody new off today" });
     }
 
-    const names = await loadNames(supabase, picked.map((o) => o.employeeId));
+    const names = await loadNames(
+      supabase,
+      picked.map((o) => o.employeeId),
+    );
     const text = buildText(picked, names, { weekly, from, monday, friday, isTest });
 
     // Who gets it: the admin testing, or every active manager and admin with a Slack ID.
@@ -306,7 +308,8 @@ function describe(x: Off, from: string, monday: string, friday: string): string 
 
   if (x.type === "flex") {
     // "1:00 – 3:00 PM", or "11:00 AM – 1:00 PM" when it crosses noon.
-    const a = clock(x.startTime!), b = clock(x.endTime!);
+    const a = clock(x.startTime!),
+      b = clock(x.endTime!);
     const range = a.slice(-2) === b.slice(-2) ? `${a.slice(0, -3)} – ${b}` : `${a} – ${b}`;
     return `Flexible time, ${label(x.start, "")} ${range}`;
   }
