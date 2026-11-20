@@ -1,3 +1,6 @@
+// v4 – one "Off this week" message on the first working day of the week (with
+//      return dates and working days until back), plus a short "New this week"
+//      message only on a day someone not yet listed that week is off.
 // v3 – drop the "Sent to managers and admins every weekday at …" footer line.
 // v2 – send the "Out today" message to managers and admins in their Time Off
 //      Manager app chat (no channel), and send nothing on a day nobody is off.
@@ -5,19 +8,26 @@
 //
 // Called two ways:
 //  1. By pg_cron every 15 minutes on weekday mornings (body {}). Once a day,
-//     after the time set in Admin Settings, it looks at who is off today. If
-//     anyone is, every manager and admin with a Slack ID gets the message as a
-//     direct message from the app. If nobody is, nothing is sent. Never runs
-//     on a weekend or Ontario stat holiday.
+//     after the time set in Admin Settings:
+//       - On the first working day of the week (Monday, or Tuesday when Monday
+//         is a stat holiday) it sends "Off this week": everyone off any day
+//         from today to Friday.
+//       - On the other days it sends "New this week" only if someone is off
+//         today who wasn't in this week's messages yet. Otherwise nothing.
+//     Messages go to every active manager and admin with a Slack ID, as a
+//     direct message from the app. Nothing is sent when nobody is off. Never
+//     runs on a weekend or Ontario stat holiday.
 //  2. By an admin pressing "Send a test post" in Admin Settings (body
-//     { test: true } with the admin's sign-in token). That sends the message
-//     right away, to that admin only.
+//     { test: true } with the admin's sign-in token). That sends the weekly
+//     message as it would look now, to that admin only.
 //
 // Settings live in app_settings:
-//   out_today_enabled  "true" | "false" (off until an admin turns it on)
-//   out_today_time     "08:00" (Toronto time, 24h)
-//   out_today_later    "true" | "false" (also list time off later this week)
+//   out_today_enabled      "true" | "false" (off until an admin turns it on)
+//   out_today_time         "08:00" (Toronto time, 24h)
 //   out_today_last_posted  "YYYY-MM-DD" (written by this function: today is done)
+//   out_today_week         JSON {"week":"<Monday>","sent":["t:<id>","f:<id>",…]}
+//                          (written by this function: who this week's messages
+//                          already listed, so nobody is repeated mid-week)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -75,7 +85,6 @@ Deno.serve(async (req) => {
     // Off until an admin switches it on in Admin Settings.
     const enabled = s.get("out_today_enabled") === "true";
     const postTime = s.get("out_today_time") || "08:00";
-    const includeLater = (s.get("out_today_later") ?? "true") === "true";
     const testMode = s.get("slack_test_mode") === "true";
 
     const now = torontoNow();
@@ -88,21 +97,50 @@ Deno.serve(async (req) => {
       if (s.get("out_today_last_posted") === now.date) return json({ ok: true, skipped: "already done today" });
     }
 
-    const { text, anyoneOff } = await buildPost(supabase, now, includeLater, postTime, isTest);
+    // The week the message is about. A test on a weekend shows next week's message.
+    const from = isTest && (now.weekday === 0 || now.weekday === 6) ? addDaysIso(now.date, now.weekday === 0 ? 1 : 2) : now.date;
+    const fromWeekday = new Date(`${from}T12:00:00Z`).getUTCDay();
+    const monday = addDaysIso(from, 1 - fromWeekday);
+    const friday = addDaysIso(from, 5 - fromWeekday);
 
-    // Today is decided once: nobody off means no message, and no second look later.
-    const markDone = () =>
-      supabase
-        .from("app_settings")
-        .upsert(
-          { key: "out_today_last_posted", value: now.date, updated_at: new Date().toISOString() },
-          { onConflict: "key" },
-        );
-
-    if (!isTest && !anyoneOff) {
-      await markDone();
-      return json({ ok: true, skipped: "nobody off today" });
+    // Who this week's messages already listed. A new week starts empty, and the
+    // first working day of a new week gets the full "Off this week" message.
+    let state: { week: string; sent: string[] } = { week: "", sent: [] };
+    try {
+      const saved = JSON.parse(s.get("out_today_week") || "{}");
+      if (saved && typeof saved.week === "string" && Array.isArray(saved.sent)) state = saved;
+    } catch {
+      // Unreadable value: treat it as a new week.
     }
+    const weekly = isTest || state.week !== monday;
+    if (weekly && !isTest) state = { week: monday, sent: [] };
+
+    const all = await loadTimeOff(supabase, from, friday);
+    const announced = new Set(state.sent);
+    const picked = weekly
+      ? all
+      : all.filter((o) => !announced.has(o.key) && o.start <= from && o.end >= from);
+
+    // Today is decided once, and what was listed is remembered for the rest of the week.
+    const markDone = async () => {
+      const at = new Date().toISOString();
+      const sent = [...new Set([...state.sent, ...picked.map((o) => o.key)])];
+      await supabase.from("app_settings").upsert(
+        [
+          { key: "out_today_last_posted", value: now.date, updated_at: at },
+          { key: "out_today_week", value: JSON.stringify({ week: monday, sent }), updated_at: at },
+        ],
+        { onConflict: "key" },
+      );
+    };
+
+    if (!isTest && picked.length === 0) {
+      await markDone();
+      return json({ ok: true, skipped: weekly ? "nobody off this week" : "nobody new off today" });
+    }
+
+    const names = await loadNames(supabase, picked.map((o) => o.employeeId));
+    const text = buildText(picked, names, { weekly, from, monday, friday, isTest });
 
     // Who gets it: the admin testing, or every active manager and admin with a Slack ID.
     let recipients: string[] = [];
@@ -155,92 +193,146 @@ Deno.serve(async (req) => {
   }
 });
 
-// ── Building the message ────────────────────────────────────────────
+// ── Who is off ──────────────────────────────────────────────────────
 
-async function buildPost(supabase: any, now: TorontoNow, includeLater: boolean, postTime: string, isTest: boolean) {
-  const today = now.date;
-  const friday = addDaysIso(today, 5 - now.weekday);
+interface Off {
+  key: string; // "t:<request id>" or "f:<flexible time id>"
+  employeeId: string;
+  type: "vacation" | "sick" | "flex";
+  start: string;
+  end: string;
+  sp: string; // first day: "pm" = afternoon off
+  ep: string; // last day: "am" = morning off
+  startTime?: string;
+  endTime?: string;
+}
 
+/** Approved time off and flexible time on any day from `from` to `friday`. */
+async function loadTimeOff(supabase: any, from: string, friday: string): Promise<Off[]> {
   const { data: timeOff } = await supabase
     .from("time_off_requests")
-    .select("employee_id, request_type, start_date, end_date, sick_date, start_day_portion, end_day_portion")
+    .select("id, employee_id, request_type, start_date, end_date, sick_date, start_day_portion, end_day_portion")
     .in("status", ["approved", "cancel_requested"])
     .lte("start_date", friday)
-    .gte("end_date", today);
+    .gte("end_date", from);
 
   const { data: flex } = await supabase
     .from("flexible_time_requests")
-    .select("employee_id, date_off, start_time, end_time")
+    .select("id, employee_id, date_off, start_time, end_time")
     .in("status", ["approved", "completed", "incomplete"])
-    .eq("date_off", today);
+    .gte("date_off", from)
+    .lte("date_off", friday);
 
-  const ids = [
-    ...new Set([...(timeOff ?? []).map((r: any) => r.employee_id), ...(flex ?? []).map((r: any) => r.employee_id)]),
-  ];
+  const out: Off[] = [];
+  for (const r of timeOff ?? []) {
+    const start = r.start_date || r.sick_date;
+    const end = r.end_date || start;
+    if (!start || !end) continue;
+    out.push({
+      key: `t:${r.id}`,
+      employeeId: r.employee_id,
+      type: r.request_type === "sick" ? "sick" : "vacation",
+      start,
+      end,
+      sp: r.start_day_portion,
+      ep: r.end_day_portion,
+    });
+  }
+  for (const f of flex ?? []) {
+    out.push({
+      key: `f:${f.id}`,
+      employeeId: f.employee_id,
+      type: "flex",
+      start: f.date_off,
+      end: f.date_off,
+      sp: "full",
+      ep: "full",
+      startTime: f.start_time,
+      endTime: f.end_time,
+    });
+  }
+  return out;
+}
+
+async function loadNames(supabase: any, employeeIds: string[]): Promise<Map<string, string>> {
+  const ids = [...new Set(employeeIds)];
   const names = new Map<string, string>();
   if (ids.length) {
     const { data: people } = await supabase.from("profiles").select("id, full_name, email").in("id", ids);
     for (const p of people ?? []) names.set(p.id, p.full_name || p.email || "Someone");
   }
-  const nameOf = (id: string) => names.get(id) || "Someone";
+  return names;
+}
 
-  const todayLines: { name: string; line: string }[] = [];
-  const laterLines: { employeeId: string; name: string; start: string; line: string }[] = [];
-  const offToday = new Set<string>();
+// ── Building the message ────────────────────────────────────────────
 
-  for (const r of timeOff ?? []) {
-    const start = r.start_date || r.sick_date;
-    const end = r.end_date || start;
-    if (!start || !end) continue;
-    const kind = r.request_type === "sick" ? "Sick day" : "Vacation";
-    if (start <= today && end >= today) {
-      let detail = "";
-      if (start === today && end === today && r.start_day_portion === "pm") detail = "afternoon";
-      else if (start === today && end === today && r.end_day_portion === "am") detail = "morning";
-      else if (start === today && r.start_day_portion === "pm") detail = "from this afternoon";
-      else if (end === today && r.end_day_portion === "am") detail = "morning, back this afternoon";
-      if (!detail && r.request_type !== "sick") detail = `back ${longDay(returnDay(end))}`;
-      todayLines.push({
-        name: nameOf(r.employee_id),
-        line: `• ${nameOf(r.employee_id)}: ${kind}${detail ? `, ${detail}` : ""}`,
-      });
-      offToday.add(r.employee_id);
-    } else if (r.request_type === "vacation" && start > today && start <= friday) {
-      const oneDay = start === end;
-      const half =
-        oneDay && r.start_day_portion === "pm"
-          ? ", afternoon off"
-          : oneDay && r.end_day_portion === "am"
-            ? ", morning off"
-            : "";
-      laterLines.push({
-        employeeId: r.employee_id,
-        name: nameOf(r.employee_id),
-        start,
-        line: `• ${nameOf(r.employee_id)}: ${oneDay ? longDay(start) : `from ${longDay(start)}`}${half}`,
-      });
-    }
-  }
-  for (const f of flex ?? []) {
-    todayLines.push({
-      name: nameOf(f.employee_id),
-      line: `• ${nameOf(f.employee_id)}: Flexible time, ${clock(f.start_time)} – ${clock(f.end_time)}`,
-    });
-  }
+function buildText(
+  picked: Off[],
+  names: Map<string, string>,
+  o: { weekly: boolean; from: string; monday: string; friday: string; isTest: boolean },
+): string {
+  const rows = picked.map((x) => {
+    const name = names.get(x.employeeId) || "Someone";
+    const first = x.start > o.from ? x.start : o.from;
+    return { name, first, line: `• ${name}: ${describe(x, o.from, o.monday, o.friday)}` };
+  });
+  rows.sort((a, b) => a.first.localeCompare(b.first) || a.name.localeCompare(b.name));
+  // The same request saved twice shows once.
+  const lines = [...new Set(rows.map((r) => r.line))];
 
-  todayLines.sort((a, b) => a.name.localeCompare(b.name));
-  laterLines.sort((a, b) => a.start.localeCompare(b.start) || a.name.localeCompare(b.name));
-  // Someone already off today is not repeated under "Later this week".
-  const later = laterLines.filter((l) => !offToday.has(l.employeeId));
-
-  let text = `*Out today · ${longDay(today)}*\n`;
-  text += todayLines.length
-    ? todayLines.map((l) => l.line).join("\n")
-    : "No one is off today. On a normal day like this, no message is sent.";
-  if (includeLater && later.length) text += `\n\n*Later this week*\n${later.map((l) => l.line).join("\n")}`;
+  let text = o.weekly
+    ? `*Off this week · ${o.from === o.friday ? longDay(o.from) : `${longDay(o.from)} – ${longDay(o.friday)}`}*\n`
+    : `*New this week · ${longDay(o.from)}*\n`;
+  text += lines.length ? lines.join("\n") : "No one is off this week. In a week like this, no message is sent.";
   // No footer line on the real message; a test is marked so it can be told apart.
-  if (isTest) text += `\n\n_Test_`;
-  return { text, anyoneOff: todayLines.length > 0 };
+  if (o.isTest) text += `\n\n_Test_`;
+  return text;
+}
+
+/**
+ * "Vacation until Friday, November 20 · back Monday, November 23 (in 10 working days)"
+ * "Vacation, Friday afternoon · back Monday, November 16"
+ * "Sick day, this morning"
+ * "Flexible time, Wednesday 1:00 – 3:00 PM"
+ */
+function describe(x: Off, from: string, monday: string, friday: string): string {
+  // "today" / "this morning" on the day the message goes out, the weekday name
+  // for the rest of this week, the full date after this week.
+  const label = (iso: string, part: "" | "am" | "pm") => {
+    if (iso === from) return part === "am" ? "this morning" : part === "pm" ? "this afternoon" : "today";
+    const base = iso <= friday ? WEEKDAYS[new Date(`${iso}T12:00:00Z`).getUTCDay()] : longDay(iso);
+    return part === "am" ? `${base} morning` : part === "pm" ? `${base} afternoon` : base;
+  };
+
+  if (x.type === "flex") {
+    // "1:00 – 3:00 PM", or "11:00 AM – 1:00 PM" when it crosses noon.
+    const a = clock(x.startTime!), b = clock(x.endTime!);
+    const range = a.slice(-2) === b.slice(-2) ? `${a.slice(0, -3)} – ${b}` : `${a} – ${b}`;
+    return `Flexible time, ${label(x.start, "")} ${range}`;
+  }
+
+  const startPart = x.sp === "pm" ? "pm" : "";
+  const endPart = x.ep === "am" ? "am" : "";
+  // Already away when the message goes out (not just from this afternoon).
+  const away = x.start < from || (x.start === from && !startPart);
+
+  let days: string;
+  if (x.start === x.end) days = `, ${label(x.start, startPart || endPart)}`;
+  else if (away && x.start <= monday && x.end === friday && !endPart) days = " all week";
+  else if (away) days = ` until ${label(x.end, endPart)}`;
+  else days = ` from ${label(x.start, startPart)} until ${label(x.end, endPart)}`;
+
+  if (x.type === "sick") return `${x.start === x.end ? "Sick day" : "Sick days"}${days}`;
+
+  // Back the afternoon of the last day when that morning is off; otherwise the
+  // next working day.
+  const back = endPart ? x.end : returnDay(x.end);
+  let text = `Vacation${days} · back ${endPart ? (x.end === from ? "this afternoon" : `${longDay(x.end)} afternoon`) : longDay(back)}`;
+  if (away && back > from) {
+    const n = workingDaysBetween(from, back);
+    if (n > 0) text += ` (in ${n} working day${n === 1 ? "" : "s"})`;
+  }
+  return text;
 }
 
 // ── Dates and times (Toronto) ───────────────────────────────────────
@@ -279,14 +371,24 @@ function addDaysIso(iso: string, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** Monday to Friday and not an Ontario stat holiday. */
+function isWorkingDay(iso: string): boolean {
+  const w = new Date(`${iso}T12:00:00Z`).getUTCDay();
+  return w !== 0 && w !== 6 && !ontarioHolidayDates(Number(iso.slice(0, 4))).has(iso);
+}
+
 /** First working day after the last day off (skips weekends and stat holidays). */
 function returnDay(end: string): string {
   let d = addDaysIso(end, 1);
-  for (;;) {
-    const w = new Date(`${d}T12:00:00Z`).getUTCDay();
-    if (w !== 0 && w !== 6 && !ontarioHolidayDates(Number(d.slice(0, 4))).has(d)) return d;
-    d = addDaysIso(d, 1);
-  }
+  while (!isWorkingDay(d)) d = addDaysIso(d, 1);
+  return d;
+}
+
+/** Working days from `from` (counted) up to `to` (not counted). */
+function workingDaysBetween(from: string, to: string): number {
+  let n = 0;
+  for (let d = from; d < to; d = addDaysIso(d, 1)) if (isWorkingDay(d)) n++;
+  return n;
 }
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
