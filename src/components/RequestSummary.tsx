@@ -148,7 +148,7 @@ export default function RequestSummary({
   const holidayNote = getHolidayNote();
 
   return (
-    <div className="p-3 rounded-lg bg-accent/50 border border-border">
+    <div className="ui-well p-3">
       <p className="text-sm text-foreground">{getSummary()}</p>
       {holidayNote && <p className="text-sm text-muted-foreground mt-1">{holidayNote}</p>}
     </div>

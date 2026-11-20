@@ -107,7 +107,7 @@ export default function TimeOffSummaryCard({
   ).length;
 
   return (
-    <Card>
+    <Card className="ui-card-hero">
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Your time off in {year}</CardTitle>
       </CardHeader>
@@ -116,7 +116,7 @@ export default function TimeOffSummaryCard({
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <p className="text-sm font-medium text-foreground">Vacation</p>
             <p className="text-sm text-muted-foreground tabular-nums">
-              <span className="text-2xl font-bold text-foreground">{fmtDays(vacationTotal)}</span>{" "}
+              <span className="text-4xl font-bold leading-none tracking-tight text-foreground">{fmtDays(vacationTotal)}</span>{" "}
               {vacationTotal === 1 ? "day" : "days"} this year
             </p>
           </div>
@@ -127,14 +127,14 @@ export default function TimeOffSummaryCard({
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-lg border border-border p-3 min-w-0">
+          <div className="ui-well p-3 min-w-0">
             <p className="text-xs text-muted-foreground uppercase tracking-wider">Sick days</p>
-            <p className="mt-1 text-xl font-bold text-foreground tabular-nums">{fmtDays(t.sick)}</p>
+            <p className="mt-1 text-2xl font-bold tracking-tight text-foreground tabular-nums">{fmtDays(t.sick)}</p>
             <p className="text-xs text-muted-foreground">used this year</p>
           </div>
-          <div className="rounded-lg border border-border p-3 min-w-0">
+          <div className="ui-well p-3 min-w-0">
             <p className="text-xs text-muted-foreground uppercase tracking-wider">Flexible time</p>
-            <p className="mt-1 text-xl font-bold text-foreground tabular-nums">{flexThisQuarter} of 1</p>
+            <p className="mt-1 text-2xl font-bold tracking-tight text-foreground tabular-nums">{flexThisQuarter} of 1</p>
             <p className="text-xs text-muted-foreground">used this quarter</p>
           </div>
         </div>

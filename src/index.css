@@ -1,46 +1,273 @@
+/* Fonts first: the build drops an @import that comes after any other rule. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
-@tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+/* =====================================================================
+   Apple-style look (mockup round 6, see DESIGN.md).
+   These classes sit before the utilities on purpose, so a Tailwind class
+   on the same element can still override them.
+   Depth comes from one still backdrop, soft shadows and light edges.
+   Blur is used twice: the phone top bar and the toast.
+   Movement is transform/opacity only, after a tap or a page change.
+   Nothing runs while the screen is still.
+   ===================================================================== */
+
+/* Backdrop: one still layer of sky and sunlight behind the app. Admin Settings gets a warm glow. */
+.app-root { position: relative; isolation: isolate; }
+.app-root::before,
+.app-root::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+.app-root::before {
+  background:
+    radial-gradient(70% 55% at 8% 0%, var(--a-glow-sky), transparent 70%),
+    radial-gradient(60% 50% at 100% 6%, var(--a-glow-sun), transparent 70%),
+    var(--a-bg);
+}
+.app-root::after {
+  background:
+    radial-gradient(85% 60% at 50% 0%, var(--a-glow-admin), transparent 72%),
+    radial-gradient(60% 50% at 100% 100%, var(--a-glow-sun), transparent 70%),
+    var(--a-bg);
+  opacity: 0;
+}
+.app-root.is-admin::after { opacity: 1; }
+
+/* Sidebar (desktop) */
+.app-side { background: var(--a-side); box-shadow: inset -0.5px 0 0 var(--a-sep); }
+.app-side-foot { box-shadow: inset 0 0.5px 0 var(--a-sep); }
+.app-name { font-size: 1.0625rem; font-weight: 700; letter-spacing: -0.02em; }
+.nav-item {
+  border-radius: 10px; color: var(--a-fg); font-weight: 500; letter-spacing: -0.005em;
+  transition: background-color .2s, box-shadow .2s, transform .14s var(--ease);
+}
+.nav-item svg { color: var(--a-accent-text); }
+.nav-item[aria-current="page"] { background: var(--a-nav-on); box-shadow: var(--a-shadow-pill); font-weight: 600; }
+.nav-item:active { transform: scale(.98); }
+.nav-item:focus-visible,
+.mob-item:focus-visible { outline: 3px solid var(--a-focus); outline-offset: 2px; }
+.me-dot { background: linear-gradient(160deg, var(--a-accent-1), var(--a-accent-2)); color: var(--a-on-accent); }
+
+/* Phone top bar: frosted, stays put, content scrolls under it */
+.app-header {
+  position: sticky; top: 0; z-index: 30; background: var(--a-bar);
+  -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  transition: box-shadow .25s;
+}
+.app-header.is-stuck { box-shadow: 0 0.5px 0 var(--a-sep); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .app-header { background: var(--a-bg); }
+}
+
+/* Phone menu: 3 across with the icon above the label, drawn as a rounded tray */
+.app-mobnav { margin: 10px 16px 0; padding: 4px; gap: 2px; border-radius: 16px; background: var(--a-well-2); }
+.mob-item {
+  border-radius: 12px; padding: 8px 4px; color: var(--a-fg-2);
+  transition: background-color .2s, color .2s, box-shadow .2s, transform .14s var(--ease);
+}
+.mob-item[aria-current="page"] { background: var(--a-nav-on); color: var(--a-accent-text); box-shadow: var(--a-shadow-pill); }
+.mob-item:active { transform: scale(.96); }
+
+/* Type: page titles, card titles and the small capital labels */
+.app-main h1 { font-size: clamp(1.75rem, 1.55rem + 0.9vw, 2.125rem); line-height: 1.1; letter-spacing: -0.025em; font-weight: 700; }
+.app-main .ui-card h3.text-base { font-size: 1.0625rem; line-height: 1.2; letter-spacing: -0.015em; }
+.app-main .text-xs.uppercase.tracking-wider { font-size: 0.71875rem; font-weight: 600; letter-spacing: 0.04em; }
+
+/* Cards: a light, slightly see-through sheet that floats on a soft shadow */
+.ui-card { background: var(--a-card); border-radius: 22px; box-shadow: var(--a-shadow-card); }
+.ui-card-info { background: linear-gradient(var(--a-info-tint), var(--a-info-tint)), var(--a-card); }
+.ui-card-accent { box-shadow: var(--a-shadow-card), 0 0 0 1.5px var(--a-focus-soft); }
+.ui-card-hero { position: relative; overflow: hidden; }
+.ui-card-hero::after {
+  content: ""; position: absolute; top: -45%; right: -18%; width: 70%; height: 150%; pointer-events: none;
+  background: radial-gradient(closest-side, var(--a-glow-sky), transparent);
+}
+.ui-card-hero > * { position: relative; z-index: 1; }
+
+/* Wells: the small boxes inside a card sit slightly sunk in */
+.ui-well { background: var(--a-well); border-radius: 14px; }
+
+/* Lists: grouped rows with hairline dividers */
+.ui-list { background: var(--a-well); border-radius: 16px; overflow: hidden; }
+.ui-list > * { position: relative; }
+.ui-list > * + *::before {
+  content: ""; position: absolute; top: 0; left: 16px; right: 0; height: 1px;
+  background: var(--a-sep); transform: scaleY(.5); transform-origin: top;
+}
+.ui-row { padding: 13px 16px; transition: background-color .3s; }
+a.ui-row:active { background: var(--a-well-2); transition-duration: 0s; }
+a.ui-row:focus-visible { outline: 3px solid var(--a-focus); outline-offset: -3px; }
+.ui-list > .ui-btn { border-radius: 0; height: 44px; width: 100%; }
+.ui-list > .ui-btn:active:not(:disabled) { transform: none; background: var(--a-well-2); }
+
+/* Buttons: press in under the finger */
+.ui-btn {
+  border-radius: 12px; font-weight: 600; letter-spacing: -0.01em; touch-action: manipulation;
+  transition: transform .2s var(--ease), filter .2s, background-color .2s;
+}
+.ui-btn:focus-visible { outline: 3px solid var(--a-focus); outline-offset: 2px; }
+.ui-btn:active:not(:disabled) { transform: scale(.97); transition-duration: .06s; }
+.ui-btn-primary {
+  background: linear-gradient(180deg, var(--a-accent-1), var(--a-accent-2)); color: var(--a-on-accent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 1px 2px rgba(0, 50, 120, 0.25), 0 8px 16px -8px var(--a-accent-glow);
+}
+.ui-btn-destructive {
+  background: linear-gradient(180deg, var(--a-red-1), var(--a-red-2)); color: var(--a-on-accent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(120, 20, 10, 0.25), 0 8px 16px -8px var(--a-red-glow);
+}
+:is(.ui-btn-primary, .ui-btn-destructive):active:not(:disabled) { filter: brightness(.93); }
+.ui-btn-outline { background: var(--a-field); color: var(--a-accent-text); }
+.ui-btn-ghost { color: var(--a-accent-text); }
+.ui-btn-icon { border-radius: 999px; }
+.ui-btn-ghost.ui-btn-icon { background: var(--a-well); }
+:is(.ui-btn-outline, .ui-btn-ghost):active:not(:disabled) { background: var(--a-well-2); }
+
+/* Text boxes and dropdowns: soft filled fields that light up on focus */
+.ui-input {
+  background: var(--a-field); border: 1px solid transparent; border-radius: 12px; color: var(--a-fg);
+  transition: background-color .2s, box-shadow .2s, border-color .2s;
+}
+.ui-input:focus {
+  outline: none; background: var(--a-solid); border-color: var(--a-accent-text); box-shadow: 0 0 0 4px var(--a-focus-soft);
+}
+
+/* Checkboxes */
+.ui-cbx {
+  height: 1.25rem; width: 1.25rem; border-radius: 6px; border: 1.5px solid var(--a-cbx);
+  background-color: var(--a-solid); color: var(--a-on-accent);
+  transition: background-color .15s, border-color .15s, transform .25s var(--ease-pop);
+}
+.ui-cbx[data-state="checked"] { border-color: transparent; background-color: var(--a-accent-2); }
+.ui-cbx:active { transform: scale(.86); transition-duration: .06s; }
+.ui-cbx:focus-visible { outline: 3px solid var(--a-focus); outline-offset: 2px; }
+
+/* Switches: green when on, the knob stretches while pressed */
+.ui-switch { width: 51px; height: 31px; padding: 2px; border-radius: 999px; background: var(--a-track); transition: background-color .25s; }
+.ui-switch[data-state="checked"] { background: var(--a-on); }
+.ui-switch:focus-visible { outline: 3px solid var(--a-focus); outline-offset: 2px; }
+.ui-switch-thumb {
+  width: 27px; height: 27px; border-radius: 999px; background: var(--a-thumb); box-shadow: var(--a-shadow-thumb);
+  transition: transform .32s var(--ease-pop), width .2s var(--ease);
+}
+.ui-switch[data-state="checked"] .ui-switch-thumb { transform: translateX(20px); }
+.ui-switch:active .ui-switch-thumb { width: 32px; }
+.ui-switch[data-state="checked"]:active .ui-switch-thumb { transform: translateX(15px); }
+
+/* Status badges: tinted capsules */
+.ui-badge.is-ok,
+.ui-badge.is-wait,
+.ui-badge.is-bad,
+.ui-badge.is-mute,
+.ui-badge.is-special { border-color: transparent; padding-top: 3px; padding-bottom: 3px; letter-spacing: -0.005em; }
+.ui-badge.is-ok { background: var(--a-ok-bg); color: var(--a-ok-fg); }
+.ui-badge.is-wait { background: var(--a-wait-bg); color: var(--a-wait-fg); }
+.ui-badge.is-bad { background: var(--a-bad-bg); color: var(--a-bad-fg); }
+.ui-badge.is-mute { background: var(--a-mute-bg); color: var(--a-mute-fg); }
+.ui-badge.is-special { background: var(--a-yellow-bg); color: var(--a-yellow-fg); }
+/* Who else is off: blue = approved (Tailwind classes), amber = pending */
+.who-dot.is-wait { background: var(--a-wait-bg); color: var(--a-wait-fg); }
+
+/* Pop-ups: dim behind, solid sheet on a deep shadow */
+.ui-scrim { background: var(--a-scrim); }
+.ui-dlg { background: var(--a-solid); border-radius: 22px; box-shadow: var(--a-shadow-pop); }
+.ui-dlg h2 { font-size: 1.0625rem; letter-spacing: -0.015em; }
+.ui-dlg-x { border-radius: 999px; background: var(--a-well); color: var(--a-fg-2); transition: background-color .2s; }
+.ui-dlg-x:focus-visible { outline: 3px solid var(--a-focus); outline-offset: 2px; }
+
+/* Toast: a small frosted pill. The long selector is there to win over the toast library's own styles. */
+.toaster.group .toast.ui-toast {
+  background: var(--a-toast); border: 0; border-radius: 16px; box-shadow: var(--a-shadow-pop);
+  color: var(--a-fg); font-weight: 500;
+  -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+}
+
+/* Page changes: menu pages ease up card by card; a page opened from a list slides in from the right and Back slides in from the left */
+@keyframes a-fade { from { opacity: 0; } }
+@keyframes a-rise { from { opacity: 0; transform: translateY(14px) scale(.985); } }
+@keyframes a-push { from { opacity: 0; transform: translateX(28px); } }
+@keyframes a-pop { from { opacity: 0; transform: translateX(-28px); } }
+@keyframes a-bump { 0% { opacity: .3; transform: scale(.8); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
+.app-main.anim-tab > * > * { animation: a-rise .5s var(--ease) backwards; }
+.app-main.anim-tab > * > *:nth-child(2) { animation-delay: 50ms; }
+.app-main.anim-tab > * > *:nth-child(3) { animation-delay: 100ms; }
+.app-main.anim-tab > * > *:nth-child(4) { animation-delay: 150ms; }
+.app-main.anim-tab > * > *:nth-child(5) { animation-delay: 200ms; }
+.app-main.anim-tab > * > *:nth-child(6) { animation-delay: 250ms; }
+.app-main.anim-tab > * > *:nth-child(n+7) { animation-delay: 300ms; }
+.app-main.anim-push > * { animation: a-push .42s var(--ease) backwards; }
+.app-main.anim-pop > * { animation: a-pop .42s var(--ease) backwards; }
+.bump { animation: a-bump .42s var(--ease) backwards; }
+
+/* Hover only where there is a mouse */
+@media (hover: hover) {
+  .nav-item:not([aria-current="page"]):hover { background: var(--a-well); }
+  .mob-item:not([aria-current="page"]):hover { color: var(--a-fg); }
+  a.ui-row:hover { background: var(--a-well); }
+  :is(.ui-btn-primary, .ui-btn-destructive):hover { filter: brightness(1.07); }
+  .ui-btn-outline:hover,
+  .ui-btn-ghost.ui-btn-icon:hover,
+  .ui-dlg-x:hover { background: var(--a-well-2); }
+  .ui-btn-ghost:hover { background: var(--a-well); }
+}
+
+/* People who ask for less movement get a short fade, and nothing shifts. */
+@media (prefers-reduced-motion: reduce) {
+  .app-main.anim-tab > * > *,
+  .app-main.anim-push > *,
+  .app-main.anim-pop > *,
+  .bump { animation: a-fade .18s ease-out backwards; animation-delay: 0s; }
+  :is(.ui-btn, .nav-item, .mob-item, .ui-cbx):active { transform: none; }
+  .ui-switch-thumb { transition: none; }
+}
+/* People who ask for less see-through get solid surfaces and no blur. */
+@media (prefers-reduced-transparency: reduce) {
+  :root { --a-card: var(--a-solid); --a-side: var(--a-bg); --a-bar: var(--a-bg); --a-toast: var(--a-solid); }
+  .app-header, .toaster.group .toast.ui-toast { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (prefers-contrast: more) {
+  :root { --a-card: var(--a-solid); --a-sep: var(--a-fg-2); }
+  .ui-card { box-shadow: 0 0 0 1px var(--a-fg-2); }
+}
+
+@tailwind utilities;
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 220 20% 10%;
+    --background: 240 24% 96%;
+    --foreground: 240 3% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 10%;
+    --card-foreground: 240 3% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 10%;
+    --popover-foreground: 240 3% 12%;
 
-    --primary: 220 70% 50%;
+    --primary: 210 100% 42%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 94%;
-    --secondary-foreground: 220 20% 20%;
+    --secondary: 240 5% 93%;
+    --secondary-foreground: 240 3% 12%;
 
-    --muted: 220 14% 94%;
-    --muted-foreground: 220 10% 46%;
+    --muted: 240 5% 93%;
+    --muted-foreground: 240 2% 43%;
 
-    --accent: 220 14% 94%;
-    --accent-foreground: 220 20% 20%;
+    --accent: 240 5% 93%;
+    --accent-foreground: 240 3% 12%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 3 74% 46%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 90%;
-    --input: 220 13% 90%;
-    --ring: 220 70% 50%;
+    --border: 240 6% 88%;
+    --input: 240 6% 88%;
+    --ring: 210 100% 42%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --success: 142 71% 45%;
+    --success: 135 59% 40%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
+    --warning: 36 100% 50%;
     --warning-foreground: 0 0% 100%;
-    --info: 199 89% 48%;
+    --info: 204 90% 36%;
     --info-foreground: 0 0% 100%;
 
     --sidebar-background: 220 20% 97%;
@@ -51,42 +278,97 @@
     --sidebar-accent-foreground: 220 20% 20%;
     --sidebar-border: 220 13% 90%;
     --sidebar-ring: 220 70% 50%;
+
+    /* Apple-style look: surfaces */
+    --a-bg: #f2f2f7;
+    --a-glow-sky: rgba(10, 132, 255, 0.16);
+    --a-glow-sun: rgba(255, 170, 90, 0.14);
+    --a-glow-admin: rgba(255, 204, 0, 0.22);
+    --a-card: rgba(255, 255, 255, 0.82);
+    --a-solid: #ffffff;
+    --a-side: rgba(255, 255, 255, 0.55);
+    --a-bar: rgba(246, 246, 250, 0.72);
+    --a-toast: rgba(255, 255, 255, 0.82);
+    --a-nav-on: #ffffff;
+    --a-well: rgba(118, 118, 128, 0.08);
+    --a-well-2: rgba(118, 118, 128, 0.14);
+    --a-field: rgba(118, 118, 128, 0.11);
+    --a-track: rgba(120, 120, 128, 0.26);
+    --a-sep: rgba(60, 60, 67, 0.18);
+    --a-cbx: rgba(60, 60, 67, 0.34);
+    --a-info-tint: rgba(0, 122, 255, 0.06);
+    /* text */
+    --a-fg: #1d1d1f;
+    --a-fg-2: #6b6b70;
+    /* accent */
+    --a-accent-1: #0a74e6;
+    --a-accent-2: #0064cf;
+    --a-accent-text: #0068d6;
+    --a-accent-glow: rgba(0, 104, 214, 0.5);
+    --a-on-accent: #ffffff;
+    --a-red-1: #de2d24;
+    --a-red-2: #c81e16;
+    --a-red-glow: rgba(200, 30, 22, 0.42);
+    --a-focus: rgba(0, 122, 255, 0.5);
+    --a-focus-soft: rgba(0, 122, 255, 0.2);
+    --a-on: #34c759;
+    --a-thumb: #ffffff;
+    /* status */
+    --a-ok-fg: #1b7a36;
+    --a-ok-bg: rgba(52, 199, 89, 0.16);
+    --a-wait-fg: #8a5000;
+    --a-wait-bg: rgba(255, 159, 10, 0.18);
+    --a-bad-fg: #c4201a;
+    --a-bad-bg: rgba(255, 59, 48, 0.12);
+    --a-mute-fg: #5f5f66;
+    --a-mute-bg: rgba(118, 118, 128, 0.14);
+    --a-yellow-bg: rgba(255, 204, 0, 0.16);
+    --a-yellow-fg: #6b4a00;
+    /* depth */
+    --a-shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 0.5px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(15, 23, 42, 0.04), 0 14px 32px -16px rgba(15, 23, 42, 0.18);
+    --a-shadow-pop: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 24px 60px -12px rgba(15, 23, 42, 0.35);
+    --a-shadow-pill: 0 0 0 0.5px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(15, 23, 42, 0.12);
+    --a-shadow-thumb: 0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.16);
+    --a-scrim: rgba(0, 0, 0, 0.32);
+    /* movement */
+    --ease: cubic-bezier(.32, .72, 0, 1);
+    --ease-pop: cubic-bezier(.34, 1.45, .64, 1);
   }
 
   .dark {
-    --background: 220 20% 7%;
-    --foreground: 210 20% 95%;
+    --background: 240 10% 3%;
+    --foreground: 240 6% 96%;
 
-    --card: 220 20% 10%;
-    --card-foreground: 210 20% 95%;
+    --card: 240 3% 11%;
+    --card-foreground: 240 6% 96%;
 
-    --popover: 220 20% 10%;
-    --popover-foreground: 210 20% 95%;
+    --popover: 240 3% 11%;
+    --popover-foreground: 240 6% 96%;
 
-    --primary: 220 70% 55%;
+    --primary: 211 100% 65%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 16%;
-    --secondary-foreground: 210 20% 95%;
+    --secondary: 240 4% 18%;
+    --secondary-foreground: 240 6% 96%;
 
-    --muted: 220 14% 16%;
-    --muted-foreground: 220 10% 60%;
+    --muted: 240 4% 18%;
+    --muted-foreground: 240 3% 64%;
 
-    --accent: 220 14% 16%;
-    --accent-foreground: 210 20% 95%;
+    --accent: 240 4% 18%;
+    --accent-foreground: 240 6% 96%;
 
-    --destructive: 0 62% 40%;
+    --destructive: 3 100% 70%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 14% 18%;
-    --input: 220 14% 18%;
-    --ring: 220 70% 55%;
+    --border: 240 4% 22%;
+    --input: 240 4% 22%;
+    --ring: 211 100% 65%;
 
-    --success: 142 71% 40%;
+    --success: 135 64% 55%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 45%;
+    --warning: 36 100% 55%;
     --warning-foreground: 0 0% 100%;
-    --info: 199 89% 42%;
+    --info: 204 100% 66%;
     --info-foreground: 0 0% 100%;
 
     --sidebar-background: 220 20% 8%;
@@ -97,6 +379,53 @@
     --sidebar-accent-foreground: 210 20% 90%;
     --sidebar-border: 220 14% 18%;
     --sidebar-ring: 220 70% 55%;
+
+    --a-bg: #060608;
+    --a-glow-sky: rgba(10, 132, 255, 0.22);
+    --a-glow-sun: rgba(255, 140, 60, 0.1);
+    --a-glow-admin: rgba(255, 204, 0, 0.13);
+    --a-card: rgba(28, 28, 30, 0.82);
+    --a-solid: #1c1c1e;
+    --a-side: rgba(22, 22, 24, 0.6);
+    --a-bar: rgba(18, 18, 20, 0.7);
+    --a-toast: rgba(44, 44, 46, 0.82);
+    --a-nav-on: rgba(118, 118, 128, 0.32);
+    --a-well: rgba(118, 118, 128, 0.16);
+    --a-well-2: rgba(118, 118, 128, 0.26);
+    --a-field: rgba(118, 118, 128, 0.22);
+    --a-track: rgba(120, 120, 128, 0.4);
+    --a-sep: rgba(120, 120, 128, 0.36);
+    --a-cbx: rgba(235, 235, 245, 0.4);
+    --a-info-tint: rgba(10, 132, 255, 0.12);
+    --a-fg: #f5f5f7;
+    --a-fg-2: #a1a1a6;
+    --a-accent-1: #0a74e6;
+    --a-accent-2: #0064cf;
+    --a-accent-text: #4da3ff;
+    --a-accent-glow: rgba(10, 132, 255, 0.45);
+    --a-on-accent: #ffffff;
+    --a-red-1: #de2d24;
+    --a-red-2: #c81e16;
+    --a-red-glow: rgba(255, 69, 58, 0.35);
+    --a-focus: rgba(77, 163, 255, 0.65);
+    --a-focus-soft: rgba(77, 163, 255, 0.28);
+    --a-on: #30d158;
+    --a-thumb: #ffffff;
+    --a-ok-fg: #5edc7f;
+    --a-ok-bg: rgba(48, 209, 88, 0.2);
+    --a-wait-fg: #ffc052;
+    --a-wait-bg: rgba(255, 159, 10, 0.22);
+    --a-bad-fg: #ff7b72;
+    --a-bad-bg: rgba(255, 69, 58, 0.18);
+    --a-mute-fg: #b0b0b8;
+    --a-mute-bg: rgba(118, 118, 128, 0.24);
+    --a-yellow-bg: rgba(255, 204, 0, 0.14);
+    --a-yellow-fg: #ffe08a;
+    --a-shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 14px 32px -16px rgba(0, 0, 0, 0.6);
+    --a-shadow-pop: 0 0 0 0.5px rgba(255, 255, 255, 0.12), 0 24px 60px -12px rgba(0, 0, 0, 0.7);
+    --a-shadow-pill: 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.4);
+    --a-shadow-thumb: 0 3px 8px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.3);
+    --a-scrim: rgba(0, 0, 0, 0.55);
   }
 }
 
@@ -107,7 +436,9 @@
 
   body {
     @apply bg-background text-foreground font-sans;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 

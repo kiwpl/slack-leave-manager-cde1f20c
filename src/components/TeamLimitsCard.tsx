@@ -154,12 +154,12 @@ export default function TeamLimitsCard() {
                 </p>
               ) : (
                 <>
-                  <div className="space-y-2">
+                  <div className={blocked.length === 0 ? "space-y-2" : "ui-list"}>
                     {blocked.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No blocked dates.</p>
                     ) : (
                       blocked.map((b) => (
-                        <div key={b.id} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border border-border bg-card">
+                        <div key={b.id} className="ui-row flex flex-wrap items-center justify-between gap-2">
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-foreground">{formatRange(b.start_date, b.end_date)}</p>
                             <p className="text-xs text-muted-foreground break-words">{b.reason}</p>

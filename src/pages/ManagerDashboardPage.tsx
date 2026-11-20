@@ -201,12 +201,12 @@ export default function ManagerDashboardPage() {
             ) : rows.length === 0 ? (
               <p className="text-sm text-muted-foreground">No requests found.</p>
             ) : (
-              <div className="space-y-2">
+              <div className="ui-list">
                 {rows.map((row) => (
                   <Link
                     key={row.id}
                     to={row.href}
-                    className="flex items-start md:items-center justify-between gap-3 p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                    className="ui-row flex items-start md:items-center justify-between gap-3"
                   >
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
