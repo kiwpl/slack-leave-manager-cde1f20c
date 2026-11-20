@@ -486,7 +486,7 @@ export default function SubmitFlexibleTimePage() {
                   {makeupEntries.map((entry, i) => (
                     <div
                       key={entry.id}
-                      className="p-3 rounded-lg border border-border space-y-2"
+                      className="ui-well p-3 space-y-2"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-sm font-medium">
@@ -548,7 +548,7 @@ export default function SubmitFlexibleTimePage() {
 
                   {/* Total makeup hours */}
                   {totalMakeupHours > 0 && (
-                    <div className="p-3 rounded-lg border border-border bg-muted/50 text-sm">
+                    <div className="ui-well p-3 text-sm">
                       <span className="font-medium">
                         Total make-up hours:
                       </span>{" "}

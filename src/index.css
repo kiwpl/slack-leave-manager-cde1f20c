@@ -86,6 +86,8 @@
 
 /* Wells: the small boxes inside a card sit slightly sunk in */
 .ui-well { background: var(--a-well); border-radius: 14px; }
+/* Text boxes inside a well are white, so they stand out from the grey box around them. */
+.ui-well .ui-input { background: var(--a-solid); }
 
 /* Lists: grouped rows with hairline dividers */
 .ui-list { background: var(--a-well); border-radius: 16px; overflow: hidden; }

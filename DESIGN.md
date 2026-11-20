@@ -69,3 +69,11 @@ Frozen UI decisions. Do not change anything listed here unless Phil asks.
 - Pop-ups: white, 22px corners, lighter dim behind, round close button. Toast: small frosted white pill.
 - Movement: buttons, rows, checkboxes and menu items press in when tapped; menu pages ease up card by card; a page opened from a list slides in from the right and Back slides in from the left; the status badge on a request pops when it changes.
 - Kept light on phones: nothing moves while the screen is still; blur only on the phone top bar and the toast; movement uses transform and opacity only; "reduce motion" gets a short fade instead.
+
+## 2026-11-20 · Lists that match (mockup round 7 approved)
+- Audit Log: the entries are one grouped grey box with thin dividers, like My Requests. On phones each entry still stacks (action, actor, details, then time).
+- Flexible Time request page: the Make-Up Schedule rows are one grouped grey box; "Completed" is a green capsule and "Pending" a grey capsule, like the status badges.
+- Flexible Time request page: the Make-Up Plan text and the "scheduled of owed" line are light grey wells. The "short" version of that line stays red.
+- New Flexible Time request page: each make-up entry and the "Total make-up hours" line are light grey wells with no outline.
+- Text boxes and dropdowns inside a light grey well are white, so they stand out.
+- User Management (one card per person) and Policy Editor (a form) have no boxed rows and are unchanged.
