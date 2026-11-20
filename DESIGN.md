@@ -32,7 +32,7 @@ Frozen UI decisions. Do not change anything listed here unless Phil asks.
 - Phone menu under the header is a 3-across grid, icon above the label, so every page shows in at most 2 rows. Desktop sidebar unchanged.
 - Request page on phones: title on its own line, status badges on the row below; Request Details is one column (only wider screens use 2).
 - List rows (My Requests, Manager View): badges wrap onto their own line, the submitted date stays top right inside the row.
-- Audit Log on phones: each entry stacks (action, actor, details, then time); search and filter are full width.
+- Audit Log on phones: each entry stacks (what is in an entry is replaced by round 8 below: sentence, small line, then time); search and filter are full width.
 - Pop-ups keep a 16px margin from the screen edge, rounded corners, scroll when taller than the screen, and stacked buttons have space between them.
 - Text boxes use 16px text on phones (14px on desktop) so iPhones don't zoom in.
 - Small buttons (User Management, flexible time "remove entry") are at least 36px tall on phones.
@@ -71,9 +71,20 @@ Frozen UI decisions. Do not change anything listed here unless Phil asks.
 - Kept light on phones: nothing moves while the screen is still; blur only on the phone top bar and the toast; movement uses transform and opacity only; "reduce motion" gets a short fade instead.
 
 ## 2026-11-20 · Lists that match (mockup round 7 approved)
-- Audit Log: the entries are one grouped grey box with thin dividers, like My Requests. On phones each entry still stacks (action, actor, details, then time).
+- Audit Log: the entries are one grouped grey box with thin dividers, like My Requests. On phones each entry still stacks (what is in an entry is replaced by round 8 below).
 - Flexible Time request page: the Make-Up Schedule rows are one grouped grey box; "Completed" is a green capsule and "Pending" a grey capsule, like the status badges.
 - Flexible Time request page: the Make-Up Plan text and the "scheduled of owed" line are light grey wells. The "short" version of that line stays red.
 - New Flexible Time request page: each make-up entry and the "Total make-up hours" line are light grey wells with no outline.
 - Text boxes and dropdowns inside a light grey well are white, so they stand out.
 - User Management (one card per person) and Policy Editor (a form) have no boxed rows and are unchanged.
+
+## 2026-11-20 · Audit Log in plain sentences (mockup round 8 approved)
+- Each entry is a sentence, not code: who did it, what they did, whose request. Names are bold. Example: "David Chen approved Maria Santos's vacation request". No full stop.
+- People acting on their own request read "their": "Maria Santos asked to cancel their vacation request". A sick day reads "<name> recorded a sick day".
+- Under the sentence, one small grey line joined with " · ": the request's dates ("Dec 21 – Dec 24, 2026", "Nov 4, 2026 (morning)", "Nov 11, 2026 · 13:00–15:00 (2h)"), then "In Slack" or "In the app", then "Reason: <reason>".
+- A sick day's small line ends "Approved automatically".
+- Not shown any more: "Actor: staff", the short request code, and the code line.
+- Hand-made entries (a SQL fix, say) show their note as plain text: "Via: SQL fix · Change: afternoon off changed to morning off".
+- When the person is not known the sentence starts "A manager", "An admin", "A staff member" or "The app". When the request is not known it says "a request".
+- The time stays on the right (under the small line on phones). The grouped grey box, the search box and the filter are unchanged.
+- Search looks through what is shown: names, dates and reasons.

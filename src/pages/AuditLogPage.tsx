@@ -5,39 +5,139 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Tables } from "@/integrations/supabase/types";
+import { auditNote, auditSentence, type AuditRequestInfo } from "@/lib/auditLog";
 
 type AuditLog = Tables<"audit_logs">;
 
+/** Who the people are and what each request is, so entries can be read as sentences. */
+interface Lookups {
+  names: Map<string, string>;
+  requests: Map<string, AuditRequestInfo>;
+}
+
+const NO_LOOKUPS: Lookups = { names: new Map(), requests: new Map() };
+
+/**
+ * An audit log row only holds ids. This looks up the requests they point at
+ * (vacation / sick day or flexible time) and the names of everyone involved.
+ * A lookup that fails is logged and left out: the entry then falls back to
+ * "A manager" or "a request" instead of a name.
+ */
+async function loadLookups(rows: AuditLog[]): Promise<Lookups> {
+  const names = new Map<string, string>();
+  const requests = new Map<string, AuditRequestInfo>();
+  const requestIds = [...new Set(rows.map((r) => r.request_id).filter((id): id is string => !!id))];
+
+  let timeOff: Pick<
+    Tables<"time_off_requests">,
+    "id" | "employee_id" | "request_type" | "start_date" | "end_date" | "sick_date" | "start_day_portion" | "end_day_portion"
+  >[] = [];
+  let flex: Pick<Tables<"flexible_time_requests">, "id" | "employee_id" | "date_off" | "start_time" | "end_time" | "total_hours">[] = [];
+
+  if (requestIds.length > 0) {
+    // A request id belongs to one of two tables, so both are asked.
+    const [timeOffRes, flexRes] = await Promise.all([
+      supabase
+        .from("time_off_requests")
+        .select("id, employee_id, request_type, start_date, end_date, sick_date, start_day_portion, end_day_portion")
+        .in("id", requestIds),
+      supabase
+        .from("flexible_time_requests")
+        .select("id, employee_id, date_off, start_time, end_time, total_hours")
+        .in("id", requestIds),
+    ]);
+    if (timeOffRes.error) console.error("Audit log: request lookup failed", timeOffRes.error);
+    if (flexRes.error) console.error("Audit log: flexible time lookup failed", flexRes.error);
+    timeOff = timeOffRes.data ?? [];
+    flex = flexRes.data ?? [];
+  }
+
+  const personIds = [
+    ...new Set(
+      [...rows.map((r) => r.actor_id), ...timeOff.map((r) => r.employee_id), ...flex.map((r) => r.employee_id)].filter(
+        (id): id is string => !!id
+      )
+    ),
+  ];
+  if (personIds.length > 0) {
+    const { data: profiles, error } = await supabase.from("profiles").select("id, full_name, email").in("id", personIds);
+    if (error) console.error("Audit log: name lookup failed", error);
+    for (const p of profiles ?? []) names.set(p.id, p.full_name || p.email || "");
+  }
+
+  for (const r of timeOff) {
+    const start = r.start_date || r.sick_date;
+    if (!start) continue;
+    requests.set(r.id, {
+      kind: r.request_type === "sick" ? "sick" : "vacation",
+      employeeId: r.employee_id,
+      ownerName: names.get(r.employee_id) || "",
+      start,
+      end: r.end_date || start,
+      startPortion: r.start_day_portion,
+      endPortion: r.end_day_portion,
+    });
+  }
+  for (const r of flex) {
+    requests.set(r.id, {
+      kind: "flexible",
+      employeeId: r.employee_id,
+      ownerName: names.get(r.employee_id) || "",
+      start: r.date_off,
+      end: r.date_off,
+      timeFrom: r.start_time?.slice(0, 5),
+      timeTo: r.end_time?.slice(0, 5),
+      hours: Number(r.total_hours) || 0,
+    });
+  }
+
+  return { names, requests };
+}
+
 export default function AuditLogPage() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [lookups, setLookups] = useState<Lookups>(NO_LOOKUPS);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("all");
 
   useEffect(() => {
-    let query = supabase
-      .from("audit_logs")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(100);
+    let cancelled = false;
 
-    if (actionFilter !== "all") query = query.eq("action_type", actionFilter);
+    const load = async () => {
+      let query = supabase
+        .from("audit_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
 
-    query.then(({ data }) => {
-      setLogs(data || []);
+      if (actionFilter !== "all") query = query.eq("action_type", actionFilter);
+
+      const { data } = await query;
+      const rows = data || [];
+      const found = await loadLookups(rows);
+      if (cancelled) return;
+      setLogs(rows);
+      setLookups(found);
       setLoading(false);
-    });
+    };
+
+    load();
+    return () => { cancelled = true; };
   }, [actionFilter]);
 
-  const filtered = logs.filter((log) => {
-    if (!search) return true;
-    const s = search.toLowerCase();
-    return (
-      log.action_type.toLowerCase().includes(s) ||
-      log.actor_type.toLowerCase().includes(s) ||
-      JSON.stringify(log.details).toLowerCase().includes(s)
-    );
+  // Each entry as a sentence and a small line of facts. Search looks through
+  // what is shown, so names, dates and reasons can all be found.
+  const entries = logs.map((log) => {
+    const req = log.request_id ? lookups.requests.get(log.request_id) ?? null : null;
+    const actorName = log.actor_id ? lookups.names.get(log.actor_id) || null : null;
+    const sentence = auditSentence(log, actorName, req);
+    const note = auditNote(log, req);
+    return { log, sentence, note, text: `${sentence.map((p) => p.text).join("")} ${note}`.toLowerCase() };
   });
+
+  const s = search.trim().toLowerCase();
+  const filtered = s ? entries.filter((e) => e.text.includes(s)) : entries;
 
   return (
     <AppLayout>
@@ -88,23 +188,18 @@ export default function AuditLogPage() {
               <p className="text-sm text-muted-foreground">No audit logs found.</p>
             ) : (
               <div className="ui-list">
-                {filtered.map((log) => (
+                {filtered.map(({ log, sentence, note }) => (
                   <div
                     key={log.id}
                     className="ui-row flex flex-col gap-1 md:flex-row md:items-start md:justify-between md:gap-3"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground">
-                        {log.action_type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                      <p className="text-sm text-foreground">
+                        {sentence.map((part, i) => (
+                          <span key={i} className={part.bold ? "font-medium" : undefined}>{part.text}</span>
+                        ))}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        Actor: {log.actor_type} · Request: {log.request_id?.substring(0, 8) || "N/A"}
-                      </p>
-                      {log.details && (
-                        <p className="text-xs text-muted-foreground mt-1 font-mono break-all">
-                          {JSON.stringify(log.details).substring(0, 120)}
-                        </p>
-                      )}
+                      {note && <p className="text-xs text-muted-foreground mt-0.5">{note}</p>}
                     </div>
                     <span className="text-xs text-muted-foreground whitespace-nowrap">
                       {new Date(log.created_at).toLocaleString()}
