@@ -408,7 +408,7 @@ export default function DashboardPage() {
                       </div>
 
                       {/* Policy ack */}
-                      <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/50">
+                      <div className="ui-well flex items-start gap-3 p-3">
                         <Checkbox id="policyAck" checked={policyAcknowledged} onCheckedChange={(c) => setPolicyAcknowledged(c === true)} />
                         <Label htmlFor="policyAck" className="text-sm leading-snug cursor-pointer">
                           I have read and understand the policy
@@ -438,7 +438,7 @@ export default function DashboardPage() {
             ) : allItems.length === 0 ? (
               <p className="text-sm text-muted-foreground">No requests yet.</p>
             ) : (
-              <div className="space-y-2">
+              <div className="ui-list">
                 {displayedItems.map((item) => {
                   if (item.kind === "flexible") {
                     const req = item.data;
@@ -446,7 +446,7 @@ export default function DashboardPage() {
                       <Link
                         key={req.id}
                         to={`/flexible-time/${req.id}`}
-                        className="flex items-start md:items-center justify-between gap-3 p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                        className="ui-row flex items-start md:items-center justify-between gap-3"
                       >
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">
@@ -469,7 +469,7 @@ export default function DashboardPage() {
                     <Link
                       key={req.id}
                       to={`/requests/${req.id}`}
-                      className="flex items-start md:items-center justify-between gap-3 p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
+                      className="ui-row flex items-start md:items-center justify-between gap-3"
                     >
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">

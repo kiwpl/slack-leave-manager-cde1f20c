@@ -37,7 +37,7 @@ export default function PolicyDisplay() {
   };
 
   return (
-    <Card className="border-info/30 bg-info/5">
+    <Card className="ui-card-info">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base text-info">
           <AlertCircle className="h-4 w-4" />

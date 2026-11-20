@@ -50,7 +50,7 @@ export default function AdminSettingsPage() {
 
   return (
     <AppLayout>
-      <div className="bg-yellow-50 -m-4 md:-m-8 p-4 md:p-8 min-h-full">
+      <div className="-m-4 md:-m-8 p-4 md:p-8 min-h-full">
         <div className="max-w-3xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Admin Settings</h1>

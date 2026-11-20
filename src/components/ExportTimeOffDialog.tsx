@@ -199,7 +199,7 @@ export default function ExportTimeOffDialog({ open, onOpenChange }: { open: bool
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100%-2rem)] grid-cols-1 rounded-lg max-h-[calc(100dvh-2rem)] overflow-y-auto p-4 sm:p-6">
+      <DialogContent className="w-[calc(100%-2rem)] grid-cols-1 max-h-[calc(100dvh-2rem)] overflow-y-auto p-4 sm:p-6">
         <DialogHeader className="px-6 sm:px-0 sm:pr-6 min-w-0">
           <DialogTitle>Export time off</DialogTitle>
           <DialogDescription>Download days used per person as a CSV file for payroll.</DialogDescription>
@@ -261,7 +261,7 @@ export default function ExportTimeOffDialog({ open, onOpenChange }: { open: bool
             <p className="text-sm text-muted-foreground">Loading...</p>
           ) : (
             <>
-              <div className="rounded-md border border-border overflow-x-auto">
+              <div className="ui-well overflow-x-auto">
                 <table className="w-full text-sm tabular-nums">
                   <thead className="border-b border-border">
                     <tr>

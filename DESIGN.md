@@ -50,3 +50,22 @@ Frozen UI decisions. Do not change anything listed here unless Phil asks.
 - Mid-week: a short "New this week · <weekday, month day>" message only on a day someone not yet in that week's messages is off (e.g. "Sam Patel: Sick day, this morning"). Otherwise nothing until next Monday.
 - No message in a week when nobody is off.
 - Admin Settings card 'Weekly "Off this week" message': description "Send who's off this week to managers and admins in their Time Off Manager app chat on Monday morning, with a short update when someone new is off"; "Weekly message on Mondays" switch on the right with "Goes out Tuesday when Monday is a stat holiday. Nothing is sent in a week when nobody is off."; Time (7:00 to 9:00 AM); Save; Send a test post; then "The test goes only to you, in your Time Off Manager app chat." No "later this week" box.
+
+## 2026-11-20 · Apple-style look (mockup round 6 approved)
+- Look only: every word, the order of things and what each button does stay as they were. Everything above still applies.
+- Background: soft grey with one still sky-blue and sunlight glow behind the signed-in app. Admin Settings has a warm yellow glow instead of the flat yellow page.
+- Cards: white, slightly see-through, 22px corners, soft shadow, no outline. "Your time off" has a faint blue glow top right, the Policy card a light blue tint, "Your Decision" a thin blue ring.
+- Small boxes inside cards (request summary, Sick days / Flexible time, Who else is off days, policy tick box, export table) are light grey wells with no outline.
+- Lists (My Requests, Manager View, Who else is off people, Blocked dates) are one grouped grey box with thin dividers between rows, not separate boxes. "Show all N requests" is the last row.
+- Page titles are large and bold (28px on phones up to 34px on desktop). Card and pop-up titles are 17px.
+- Font: Apple's system font on iPhone, iPad and Mac; Inter everywhere else.
+- Buttons: 12px corners, bold label. Main = blue gradient with a soft glow; delete/reject = red gradient; outline = light grey fill with blue text; ghost = blue text; icon buttons are round.
+- Text boxes and dropdowns: light grey fill, no outline, 12px corners; white with a blue ring when focused. Still 16px text on phones.
+- Checkboxes: 20px, rounded, blue when ticked. Switches: Apple size, green when on.
+- Status badges: tinted capsules with no outline (green approved, amber pending, red rejected, grey cancelled, yellow "Special approval"). Red alert boxes have a light red fill.
+- Phone top bar: frosted glass, stays at the top while scrolling, with a thin line under it once content scrolls beneath. Sign-out is a round button.
+- Phone menu: still 3 across with the icon above the label, drawn as a rounded grey tray; the current page is a white pill with a blue icon and label.
+- Desktop sidebar: see-through panel, blue icons; the current page is a white pill.
+- Pop-ups: white, 22px corners, lighter dim behind, round close button. Toast: small frosted white pill.
+- Movement: buttons, rows, checkboxes and menu items press in when tapped; menu pages ease up card by card; a page opened from a list slides in from the right and Back slides in from the left; the status badge on a request pops when it changes.
+- Kept light on phones: nothing moves while the screen is still; blur only on the phone top bar and the toast; movement uses transform and opacity only; "reduce motion" gets a short fade instead.

@@ -1,4 +1,5 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { Link, useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,17 +20,39 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { profile, signOut, hasAnyRole, roles } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const navigationType = useNavigationType();
+  const headerRef = useRef<HTMLElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const visibleItems = navItems.filter(
     (item) => item.roles.length === 0 || hasAnyRole(item.roles as any)
   );
 
+  // How the page arrives: menu pages ease up card by card, a page opened from
+  // a list slides in from the right, and Back slides in from the left.
+  const isMenuPage = navItems.some((item) => item.to === location.pathname);
+  const wentBack = navigationType === "POP" && location.key !== "default";
+  const enterClass = wentBack ? "anim-pop" : isMenuPage ? "anim-tab" : "anim-push";
+
+  // The phone top bar gets its hairline only once content has scrolled under
+  // it. An observer on a 1px marker, so nothing runs while scrolling.
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    const header = headerRef.current;
+    if (!sentinel || !header || !("IntersectionObserver" in window)) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      header.classList.toggle("is-stuck", !entry.isIntersecting && entry.boundingClientRect.top < 0);
+    });
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className={cn("app-root flex min-h-screen", location.pathname === "/admin/settings" && "is-admin")}>
       {/* Sidebar */}
-      <aside className="hidden md:flex w-56 flex-col border-r border-border bg-card">
-        <div className="p-5 border-b border-border">
-          <h1 className="text-lg font-bold text-foreground">Time Off Manager</h1>
+      <aside className="app-side hidden md:flex w-56 flex-col">
+        <div className="p-5 pb-2">
+          <h1 className="app-name text-foreground">Time Off Manager</h1>
         </div>
 
         <nav className="flex-1 p-3 space-y-1">
@@ -40,12 +63,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.to}
                 to={item.to}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                )}
+                aria-current={isActive ? "page" : undefined}
+                className="nav-item flex items-center gap-3 px-3 py-2 text-sm"
               >
                 <Icon className="h-4 w-4" />
                 {item.label}
@@ -54,9 +73,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="p-4 border-t border-border">
+        <div className="app-side-foot p-4">
           <div className="flex items-center gap-3 mb-3">
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
+            <div className="me-dot h-8 w-8 rounded-full flex items-center justify-center font-semibold text-sm">
               {profile?.full_name?.charAt(0)?.toUpperCase() || "?"}
             </div>
             <div className="flex-1 min-w-0">
@@ -66,7 +85,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <Button
             variant="ghost"
             size="sm"
-            className="w-full justify-start text-muted-foreground"
+            className="w-full justify-start font-medium text-muted-foreground"
             onClick={() => { signOut(); navigate("/login"); }}
           >
             <LogOut className="h-4 w-4 mr-2" />
@@ -77,16 +96,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile header */}
       <div className="flex-1 min-w-0 flex flex-col">
-        <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card">
-          <h1 className="text-lg font-bold text-foreground">Time Off Manager</h1>
-          <Button variant="ghost" size="sm" onClick={() => { signOut(); navigate("/login"); }}>
+        <div ref={sentinelRef} className="md:hidden h-px -mb-px" aria-hidden="true" />
+        <header ref={headerRef} className="app-header md:hidden flex items-center justify-between px-4 py-2">
+          <h1 className="app-name text-foreground">Time Off Manager</h1>
+          <Button variant="ghost" size="sm" className="ui-btn-icon text-muted-foreground" onClick={() => { signOut(); navigate("/login"); }}>
             <LogOut className="h-4 w-4" />
           </Button>
         </header>
 
         {/* Mobile nav */}
         {visibleItems.length > 1 && (
-          <nav className="md:hidden grid grid-cols-3 border-b border-border bg-card px-2">
+          <nav className="app-mobnav md:hidden grid grid-cols-3">
             {visibleItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.to;
@@ -94,12 +114,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.to}
                   to={item.to}
-                  className={cn(
-                    "flex flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] leading-tight font-medium text-center whitespace-nowrap border-b-2 transition-colors",
-                    isActive
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  )}
+                  aria-current={isActive ? "page" : undefined}
+                  className="mob-item flex flex-col items-center justify-center gap-1 text-[11px] leading-tight font-medium text-center whitespace-nowrap"
                 >
                   <Icon className="h-4 w-4" />
                   {item.label}
@@ -109,7 +125,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </nav>
         )}
 
-        <main className="flex-1 min-w-0 p-4 md:p-8 overflow-x-hidden overflow-y-auto break-words">
+        <main className={cn("app-main flex-1 min-w-0 p-4 md:p-8 overflow-x-hidden overflow-y-auto break-words", enterClass)}>
           {children}
         </main>
       </div>

@@ -314,7 +314,9 @@ export default function RequestDetailPage() {
               <p className="text-sm text-muted-foreground">{employeeName}</p>
             )}
           </div>
-          <StatusBadge status={request.status} approvalSource={request.approval_source} />
+          <span key={request.status} className="bump inline-flex">
+            <StatusBadge status={request.status} approvalSource={request.approval_source} />
+          </span>
           {(request as any).requires_special_approval && <SpecialApprovalBadge />}
         </div>
 
@@ -401,7 +403,7 @@ export default function RequestDetailPage() {
 
         {/* Manager decision */}
         {canDecide && (
-          <Card className="border-primary/30">
+          <Card className="ui-card-accent">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Your Decision</CardTitle>
             </CardHeader>

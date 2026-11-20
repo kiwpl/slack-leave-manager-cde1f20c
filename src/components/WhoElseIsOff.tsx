@@ -60,7 +60,7 @@ function Initials({ name, pending }: { name: string; pending: boolean }) {
       title={name}
       className={cn(
         "h-6 w-6 shrink-0 rounded-full inline-flex items-center justify-center text-[10px] font-semibold",
-        pending ? "bg-warning/15 text-warning" : "bg-primary/10 text-primary"
+        pending ? "who-dot is-wait" : "bg-primary/10 text-primary"
       )}
     >
       {initials(name)}
@@ -191,7 +191,7 @@ export default function WhoElseIsOff({
                 {days.map((d) => (
                   <div
                     key={d.iso}
-                    className="rounded-md border border-border p-2 min-w-0 flex items-center gap-3 sm:block sm:text-center"
+                    className="ui-well p-2 min-w-0 flex items-center gap-3 sm:block sm:text-center"
                   >
                     <div className="w-14 shrink-0 sm:w-auto">
                       <p className="text-xs text-muted-foreground uppercase tracking-wider">{format(d.date, "EEE")}</p>
@@ -224,11 +224,11 @@ export default function WhoElseIsOff({
                 No one else has vacation booked or waiting for approval on these days.
               </p>
             ) : (
-              <div className="space-y-2">
+              <div className="ui-list">
                 {others.map((o) => (
                   <div
                     key={o.id}
-                    className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border border-border"
+                    className="ui-row flex flex-wrap items-center justify-between gap-2"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <Initials name={o.name} pending={o.status === "pending_approval"} />
